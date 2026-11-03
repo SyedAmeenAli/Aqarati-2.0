@@ -247,7 +247,9 @@ class AccountActiveScreen extends ConsumerWidget {
       title: f.t('active.title'),
       subtitle: business ? f.t('active.business') : f.t('active.buyer'),
       bottom: Column(mainAxisSize: MainAxisSize.min, children: [
-        AQPrimaryButton(label: business ? f.t('active.docs') : f.t('active.home'), onPressed: () => context.go(business ? '/onboarding/verification-intro' : '/onboarding/interests')),
+        // A shopper goes straight to Home, which is the service-discovery entry point. The "What are you looking for?"
+        // step is no longer part of the sequence; its Skip destination was this same /app/home.
+        AQPrimaryButton(label: business ? f.t('active.docs') : f.t('active.home'), onPressed: () => context.go(business ? '/onboarding/verification-intro' : '/app/home')),
         AQTextButton(label: f.t('ev.cta'), color: AQColors.of(context).accent, onPressed: () => context.push('/verify-email')),
       ]),
       children: [
