@@ -212,15 +212,18 @@ void main() {
     });
 
     testWidgets(
-      'a new buyer is sent to interests after the account is active; a business is not',
+      'a new buyer goes straight to Home after the account is active (no interests step); a business goes to documents',
       (t) async {
         _phone(t);
         await t.pumpWidget(_app('/account/active'));
         await _settle(t);
         await t.tap(find.text('Go to home'));
         await _settle(t);
-        expect(find.text('What are you looking for?'), findsOneWidget);
+        // The "What are you looking for?" step was removed on purpose; Home is the service entry point.
+        expect(find.text('What are you looking for?'), findsNothing);
+        expect(find.byType(AQHomeScreen), findsOneWidget);
 
+        await t.pumpWidget(const SizedBox());
         await t.pumpWidget(
           _app(
             '/account/active',
