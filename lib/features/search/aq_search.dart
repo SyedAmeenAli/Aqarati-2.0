@@ -139,7 +139,18 @@ class AQQueryFieldState extends State<AQQueryField> {
               textInputAction: TextInputAction.search,
               cursorColor: c.accent,
               style: AQTypography.of(context, AQText.bodyMedium),
-              decoration: InputDecoration.collapsed(hintText: widget.hint, hintStyle: AQTypography.of(context, AQText.bodyMedium, color: c.inkFaint)),
+              // The whole rounded field carries the focus ring (the accent border above); the app-wide input theme must not
+              // add a second box around the text.
+              decoration: InputDecoration.collapsed(hintText: widget.hint, hintStyle: AQTypography.of(context, AQText.bodyMedium, color: c.inkFaint)).copyWith(
+                border: InputBorder.none,
+                enabledBorder: InputBorder.none,
+                focusedBorder: InputBorder.none,
+                disabledBorder: InputBorder.none,
+                errorBorder: InputBorder.none,
+                focusedErrorBorder: InputBorder.none,
+                hoverColor: Colors.transparent,
+                fillColor: Colors.transparent,
+              ),
               onChanged: widget.onChanged,
               onSubmitted: widget.onSubmitted,
             ),

@@ -340,9 +340,9 @@ class AQSearchEntry extends StatelessWidget {
       onFocus: () {},
       label: hint,
       excludeSemantics: true,
-      onTap: () => context.push('/search/start'),
+      onTap: () => context.go('/app/explore?focus=1'),
       child: AQPressable(
-        onTap: () => context.push('/search/start'),
+        onTap: () => context.go('/app/explore?focus=1'),
         // A field-shaped row, not a Material input: a raised pill with a hairline and a soft lift, the
         // search glyph first and a small accent disc (filters) at the end. The whole row opens search.
         child: Container(
