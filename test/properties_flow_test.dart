@@ -354,12 +354,15 @@ void main() {
       }
     });
 
-    testWidgets('Home greets with a line of context', (t) async {
+    testWidgets('Home is the search bar then the services, with no greeting', (t) async {
       _phone(t, h: 1400);
       await t.pumpWidget(home());
       await _settle(t);
-      expect(find.text('Welcome back'), findsOneWidget);
-      expect(find.text('What are you looking for today?'), findsOneWidget);
+      // The greeting was removed from Shop Home on purpose: search first, then the banner, then the services.
+      expect(find.text('Welcome back'), findsNothing);
+      expect(find.text('What are you looking for today?'), findsNothing);
+      expect(find.byType(AQSearchEntry), findsOneWidget);
+      expect(find.text('Development'), findsOneWidget);
     });
 
     testWidgets('each service opens its own journey', (t) async {

@@ -98,14 +98,15 @@ void main() {
       ..debugAdd(_ad('Two', 'Second title that is much longer than the first'));
     await t.pumpWidget(_app(const AQHomeScreen(), repo));
     await _settle(t);
-    final heroBefore = t.getTopLeft(find.textContaining('looking for today'));
+    // A service title sits below the banner: if the rotating banner changed the layout, it would move.
+    final heroBefore = t.getTopLeft(find.text('Development'));
     expect(find.text('First title'), findsOneWidget);
     await t.pump(kAdRotation + const Duration(milliseconds: 700));
     expect(
       find.text('Second title that is much longer than the first'),
       findsOneWidget,
     );
-    expect(t.getTopLeft(find.textContaining('looking for today')), heroBefore);
+    expect(t.getTopLeft(find.text('Development')), heroBefore);
   });
 
   testWidgets('no eligible ad: no banner and no blank space', (t) async {

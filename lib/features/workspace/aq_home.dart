@@ -16,7 +16,6 @@ import '../../core/localization/flow_strings.dart';
 import '../../data/models/enums.dart';
 import '../../core/aq/aq_help.dart';
 import '../ads/sponsored_banner.dart';
-import '../account/buyer_profile.dart' show buyerProfileProvider;
 import 'aq_cards.dart' show AQCompactPropertyCard, AQPropertyCard, AQResultGrid, aqListMaxWidth;
 import 'aq_home_sections.dart';
 import 'aq_home_services.dart';
@@ -1055,62 +1054,37 @@ class AQHomeScreen extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final f = FlowStrings.of(context);
-    final first = ref.watch(buyerProfileProvider).valueOrNull?.firstName.trim() ?? '';
-    // Home reads top to bottom: who and where, search, one lead picture, the sponsored banner, the
-    // services, then featured properties and trusted professionals as rails that run to the edge.
+    // Shop Home has three things, in this order: the search bar, the sponsored banner and the six services.
     return SafeArea(
       bottom: false,
       child: SingleChildScrollView(
         child: Align(
           alignment: Alignment.topCenter,
-          child: LayoutBuilder(
-            builder: (context, box) {
-              final wide = box.maxWidth >= 720;
-              final column = wide ? 880.0 : AQSpacing.maxContent + AQSpacing.gutter * 2;
-              final width = box.maxWidth < column ? box.maxWidth : column;
-              const pad = EdgeInsets.symmetric(horizontal: AQSpacing.gutter);
-              return ConstrainedBox(
-                constraints: BoxConstraints(maxWidth: column),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.stretch,
-                  children: [
+          child: ConstrainedBox(
+            constraints: BoxConstraints(
+              maxWidth: MediaQuery.sizeOf(context).width >= 720 ? 880 : AQSpacing.maxContent + AQSpacing.gutter * 2,
+            ),
+            child: Padding(
+              padding: const EdgeInsets.fromLTRB(AQSpacing.gutter, AQSpacing.x1, AQSpacing.gutter, 128),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                children: [
+                  const AQHomeHeader(),
+                  if (modeSwitch != null)
                     Padding(
-                      padding: pad,
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.stretch,
-                        children: [
-                          const SizedBox(height: AQSpacing.x1),
-                          const AQHomeHeader(),
-                          if (modeSwitch != null)
-                            Padding(
-                              padding: const EdgeInsets.only(top: AQSpacing.x1),
-                              child: Align(alignment: AlignmentDirectional.centerEnd, child: modeSwitch),
-                            ),
-                          ?topSlot,
-                          const SizedBox(height: AQSpacing.x4),
-                          AQHomeGreeting(
-                            title: first.isEmpty ? f.t('hm7.welcome') : f.t('hm7.welcomeName', {'name': first}),
-                            sub: f.t('hm7.sub'),
-                          ),
-                          const SizedBox(height: AQSpacing.x5),
-                          AQSearchEntry(hint: f.t('hm8.search')),
-                          const SizedBox(height: AQSpacing.x6),
-                          const AQHomeHero(),
-                          const SizedBox(height: AQSpacing.x4),
-                          const SponsoredBannerSlot(),
-                          AQSectionHeader(f.t('hm8.services'), sub: f.t('hm8.services.s')),
-                          const AQHomeServices(),
-                        ],
-                      ),
+                      padding: const EdgeInsets.only(top: AQSpacing.x1),
+                      child: Align(alignment: AlignmentDirectional.centerEnd, child: modeSwitch),
                     ),
-                    AQHomeFeatured(width: width),
-                    const SizedBox(height: AQSpacing.x2),
-                    AQHomePros(width: width),
-                    const SizedBox(height: 128),
-                  ],
-                ),
-              );
-            },
+                  ?topSlot,
+                  const SizedBox(height: AQSpacing.x3),
+                  AQSearchEntry(hint: f.t('home.search.hint')),
+                  const SizedBox(height: AQSpacing.x5),
+                  const SponsoredBannerSlot(),
+                  const SizedBox(height: AQSpacing.x4),
+                  const AQHomeServices(),
+                ],
+              ),
+            ),
           ),
         ),
       ),

@@ -11,7 +11,6 @@ import '../../core/localization/flow_strings.dart';
 import '../../data/repositories/providers.dart';
 import '../entry/widgets/entry_common.dart' show MasterLogo;
 import '../media/aq_media.dart';
-import '../notifications/notifications.dart' show unreadNotificationsProvider;
 import '../viewing/widgets/viewing_format.dart';
 import 'aq_cards.dart';
 import 'aq_home.dart' show AQLocationPill, AQSectionHeader, aqImg;
@@ -25,45 +24,11 @@ class AQHomeHeader extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final c = AQColors.of(context);
     final f = FlowStrings.of(context);
-    final unread = ref.watch(unreadNotificationsProvider);
     return Row(
       children: [
         SizedBox(height: 40, child: FittedBox(fit: BoxFit.contain, child: MasterLogo(width: 80))),
         const Spacer(),
-        Semantics(
-          button: true,
-          focusable: true,
-          onFocus: () {},
-          label: unread > 0 ? '${f.t('hm8.notifications')}, ${VFmt.n(context, unread)}' : f.t('hm8.notifications'),
-          excludeSemantics: true,
-          onTap: () => context.push('/notifications'),
-          child: AQPressable(
-            onTap: () => context.push('/notifications'),
-            pressedScale: 0.92,
-            child: SizedBox(
-              width: AQControl.tap,
-              height: AQControl.tap,
-              child: Stack(
-                alignment: Alignment.center,
-                children: [
-                  AQIcon('bell', size: 24, color: c.ink),
-                  if (unread > 0)
-                    PositionedDirectional(
-                      end: 11,
-                      top: 11,
-                      child: Container(
-                        width: 9,
-                        height: 9,
-                        decoration: BoxDecoration(color: c.accent, shape: BoxShape.circle, border: Border.all(color: c.background, width: 1.5)),
-                      ),
-                    ),
-                ],
-              ),
-            ),
-          ),
-        ),
         Semantics(
           button: true,
           focusable: true,
