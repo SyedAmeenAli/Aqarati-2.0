@@ -1,9 +1,11 @@
+import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../core/config/backend_mode.dart';
 import '../../core/config/qa_faults.dart';
 import '../../data/api/account_api.dart' show ApiErrorCode, ApiException;
 import '../devbuild/db_models.dart' show PermissionDeniedException;
+import '../../data/models/enums.dart' show PropertyType;
 import 'ebroker_models.dart';
 
 /// Customer side of Aqary e-Broker (`POST /properties` for a buyer who is selling). The service owns
@@ -137,6 +139,9 @@ class DemoEBrokerRepository implements EBrokerRepository {
     );
   }
 
+  /// REVIEW TOOLS ONLY: fictional submissions in several states (see [seedActivityDemo]).
+  void seedDemo(List<EBrokerSubmission> items) => _items.addAll(items);
+
   /// QA only: a reviewer's decision.
   void debugSet(String id, EBrokerStatus status, {String? feedback}) {
     final i = _items.indexWhere((s) => s.id == id);
@@ -160,11 +165,43 @@ class DemoEBrokerRepository implements EBrokerRepository {
   }
 }
 
-final eBrokerRepositoryProvider = Provider<EBrokerRepository>(
-  (ref) => kUseDemoBackend
-      ? DemoEBrokerRepository()
-      : const UnavailableEBrokerRepository(),
-);
+/// REVIEW TOOLS ONLY, and only for `?session=activity`: four clearly fictional submissions, one in
+/// each state, so every status of the Selling tab can be reviewed. Never runs in a normal build, and
+/// never touches the sessions the tests use.
+void seedActivityDemo(DemoEBrokerRepository repo) {
+  if (!kShowReviewTools || !kIsWeb) return;
+  if ((Uri.base.queryParameters['session'] ?? '') != 'activity') return;
+  EBrokerInput mk(String title, String deed, PropertyType t) => EBrokerInput(
+    title: title,
+    description: 'Fictional demo submission.',
+    type: t,
+    governorate: 'Muscat',
+    wilayat: 'Bawshar',
+    sizeSqm: 420,
+    priceOmr: 120000,
+    titleDeed: deed,
+    ownerIdName: 'owner-id.jpg',
+    deedDocName: 'title-deed.pdf',
+    photoNames: const ['photo-1.jpg'],
+    feeAccepted: true,
+  );
+  final now = DateTime.now();
+  EBrokerSubmission sub(String id, String title, String deed, PropertyType t, EBrokerStatus st, int daysAgo, {String? feedback}) =>
+      EBrokerSubmission(id: id, input: mk(title, deed, t), status: st, feedback: feedback, submittedAt: now.subtract(Duration(days: daysAgo)), feeAcceptedAt: now.subtract(Duration(days: daysAgo)));
+  repo.seedDemo([
+    sub('eb-demo1', 'Demo villa, in review (fictional)', 'DEMO-1001', PropertyType.villa, EBrokerStatus.pendingVerification, 1),
+    sub('eb-demo2', 'Demo apartment, approved (fictional)', 'DEMO-1002', PropertyType.apartment, EBrokerStatus.approved, 6),
+    sub('eb-demo3', 'Demo plot, rejected (fictional)', 'DEMO-1003', PropertyType.residentialLand, EBrokerStatus.rejected, 9, feedback: 'The title deed does not match the owner (fictional reason).'),
+    sub('eb-demo4', 'Demo shop, changes requested (fictional)', 'DEMO-1004', PropertyType.shop, EBrokerStatus.resubmissionRequired, 3, feedback: 'Add a clearer photo of the deed (fictional reason).'),
+  ]);
+}
+
+final eBrokerRepositoryProvider = Provider<EBrokerRepository>((ref) {
+  if (!kUseDemoBackend) return const UnavailableEBrokerRepository();
+  final repo = DemoEBrokerRepository();
+  seedActivityDemo(repo);
+  return repo;
+});
 final myEBrokerProvider = FutureProvider.autoDispose<List<EBrokerSubmission>>(
   (ref) => ref.watch(eBrokerRepositoryProvider).mine(),
 );

@@ -1,9 +1,10 @@
-import 'package:flutter/material.dart';
+import 'package:flutter/material.dart' hide Text;
 import 'package:flutter/services.dart';
 
 import '../core/aq/aq_primitives.dart';
 import '../core/aq/aq_tokens.dart';
 import '../core/aq/aq_typography.dart';
+import 'admin_l10n.dart';
 
 /// The Admin Console's own control kit. The customer app keeps its large, soft controls; an
 /// administration tool needs compact, content-sized ones, so the sizes live here and nowhere else.
@@ -56,7 +57,8 @@ class _AdminButtonState extends State<AdminButton> {
     final c = AQColors.of(context);
     final enabled = widget.onPressed != null && !widget.loading;
     final k = widget.kind;
-    final h = widget.compact ? AdminSize.buttonCompact : AdminSize.button;
+    // A full-size text button (the Back control) is a 44 px target.
+    final h = widget.compact ? AdminSize.buttonCompact : (widget.kind == AdminButtonKind.text ? 44.0 : AdminSize.button);
     Color bg, fg, border;
     switch (k) {
       case AdminButtonKind.primary:
@@ -108,7 +110,7 @@ class _AdminButtonState extends State<AdminButton> {
       focusable: true,
       enabled: enabled,
       onFocus: () {},
-      label: widget.semanticsLabel ?? widget.label,
+      label: tr(widget.semanticsLabel ?? widget.label),
       excludeSemantics: true,
       onTap: enabled ? widget.onPressed : null,
       child: MouseRegion(
@@ -213,7 +215,7 @@ class _AdminIconButtonState extends State<AdminIconButton> {
       button: true,
       focusable: true,
       onFocus: () {},
-      label: widget.semanticsLabel,
+      label: tr(widget.semanticsLabel),
       excludeSemantics: true,
       onTap: widget.onPressed,
       child: MouseRegion(
@@ -300,14 +302,14 @@ class AdminField extends StatelessWidget {
       cursorColor: c.accent,
       decoration: InputDecoration(
         isDense: true,
-        labelText: label,
+        labelText: tr(label),
         floatingLabelBehavior: FloatingLabelBehavior.always,
         floatingLabelStyle: AQTypography.of(context, AQText.labelMedium, color: error != null ? c.danger : c.inkSoft),
-        hintText: hint,
+        hintText: hint == null ? null : tr(hint!),
         hintStyle: AQTypography.of(context, AQText.bodyMedium, color: c.inkFaint),
-        helperText: error == null ? helper : null,
+        helperText: error == null ? (helper == null ? null : tr(helper!)) : null,
         helperMaxLines: 2,
-        errorText: error,
+        errorText: error == null ? null : tr(error!),
         errorMaxLines: 2,
         filled: true,
         fillColor: enabled ? c.surface : c.surface.withValues(alpha: 0.5),
@@ -315,7 +317,7 @@ class AdminField extends StatelessWidget {
         constraints: const BoxConstraints(minHeight: AdminSize.field),
         prefixIcon: prefix,
         prefixIconConstraints: const BoxConstraints(minWidth: 40, minHeight: AdminSize.field),
-        suffixIcon: suffix ?? (valid ? Padding(padding: const EdgeInsets.only(right: 10), child: AQIcon('check', size: 16, color: c.success)) : null),
+        suffixIcon: suffix ?? (valid ? Padding(padding: const EdgeInsetsDirectional.only(end: 10), child: AQIcon('check', size: 16, color: c.success)) : null),
         suffixIconConstraints: const BoxConstraints(minWidth: 40, minHeight: AdminSize.field),
         enabledBorder: b(c.hairline),
         disabledBorder: b(c.hairline.withValues(alpha: 0.6)),
@@ -366,7 +368,7 @@ class _AdminPasswordFieldState extends State<AdminPasswordField> {
     autofill: const [AutofillHints.password],
     suffix: AdminIconButton(
       icon: _show ? 'eye-off' : 'eye',
-      semanticsLabel: _show ? widget.hideLabel : widget.showLabel,
+      semanticsLabel: tr(_show ? widget.hideLabel : widget.showLabel),
       onPressed: () => setState(() => _show = !_show),
     ),
   );
@@ -393,7 +395,7 @@ class _AdminChipState extends State<AdminChip> {
       focusable: true,
       selected: sel,
       onFocus: () {},
-      label: widget.label,
+      label: tr(widget.label),
       excludeSemantics: true,
       onTap: widget.onTap,
       child: MouseRegion(

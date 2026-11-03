@@ -50,7 +50,7 @@ class _ApprovedScreenState extends ConsumerState<ApprovedScreen> with SingleTick
     final v = ref.watch(verificationProvider);
     return v.when(
       loading: () => aqLoadingFrame(context, title: f.t('ap.title')),
-      error: (_, _) => aqErrorFrame(context, ref, title: f.t('ap.title'), onRetry: () => ref.invalidate(verificationProvider)),
+      error: (e, _) => aqErrorFrame(context, ref, title: f.t('ap.title'), onRetry: () => ref.invalidate(verificationProvider), error: e),
       data: (info) {
         if (info.grant != GrantState.approved) {
           // Never celebrate something the server has not approved.
@@ -125,7 +125,7 @@ class VerifiedSummaryScreen extends ConsumerWidget {
     final v = ref.watch(verificationProvider);
     return v.when(
       loading: () => aqLoadingFrame(context, title: f.t('sum.title')),
-      error: (_, _) => aqErrorFrame(context, ref, title: f.t('sum.title'), onRetry: () => ref.invalidate(verificationProvider)),
+      error: (e, _) => aqErrorFrame(context, ref, title: f.t('sum.title'), onRetry: () => ref.invalidate(verificationProvider), error: e),
       data: (info) {
         if (info.grant != GrantState.approved) {
           WidgetsBinding.instance.addPostFrameCallback((_) => context.go('/verification'));
@@ -172,7 +172,7 @@ class WorkspaceActivationScreen extends ConsumerWidget {
     final v = ref.watch(verificationProvider);
     return v.when(
       loading: () => aqLoadingFrame(context, title: f.t('ws.title')),
-      error: (_, _) => aqErrorFrame(context, ref, title: f.t('ws.title'), onRetry: () => ref.invalidate(verificationProvider)),
+      error: (e, _) => aqErrorFrame(context, ref, title: f.t('ws.title'), onRetry: () => ref.invalidate(verificationProvider), error: e),
       data: (info) {
         if (info.grant != GrantState.approved) {
           WidgetsBinding.instance.addPostFrameCallback((_) => context.go('/verification'));

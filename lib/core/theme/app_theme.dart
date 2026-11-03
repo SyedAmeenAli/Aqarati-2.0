@@ -24,6 +24,8 @@ class AppTheme {
       colorScheme: colorScheme,
       scaffoldBackgroundColor: AppColors.background,
       fontFamily: AppTypography.textTheme.bodyMedium?.fontFamily,
+      // Arabic glyphs and any Material default style reach the bundled Arabic family before a system font.
+      fontFamilyFallback: const ['IBMPlexSansArabic'],
       textTheme: AppTypography.textTheme,
       dividerColor: AppColors.divider,
       splashFactory: InkRipple.splashFactory,

@@ -74,6 +74,19 @@ const _p6Images = [
   'assets/properties/p6/05_Rear_utility_area_of_shop.jpg',
 ];
 
+/// Demo photographs for the two fictional non-residential fixtures below. They reuse existing project
+/// images (construction and landscape photography), so they are placeholders, not the real places.
+const _p7Images = [
+  'assets/businesses/b2/04_Construction_site_structure_in_M.jpg',
+  'assets/businesses/b2/03_Construction_equipment_at_buildi.jpg',
+  'assets/businesses/b2/05_Construction_site_with_tower_crane.jpg',
+];
+const _p8Images = [
+  'assets/location/12_Nizwa_Fort_and_mountains_landscape.jpg',
+  'assets/location/05_Desert_landscape_with_rugged_mou.jpg',
+  'assets/location/08_Modern_family_home_in_Nizwa.jpg',
+];
+
 /// Fictional demo properties. Coherent, Oman-only, never presented as real listings.
 final List<Property> mockProperties = [
   Property(
@@ -193,5 +206,37 @@ final List<Property> mockProperties = [
     latitude: 23.5893,
     longitude: 58.5470,
     description: 'A ground-floor retail shop on a high-footfall Ruwi street.',
+  ),
+  Property(
+    id: 'p7',
+    title: 'Demo Warehouse, Sohar Industrial Estate (fictional)',
+    locationLabel: 'Sohar, Oman',
+    area: 'Sohar',
+    type: PropertyType.warehouse,
+    transactionType: TransactionType.lease,
+    price: const Money(2400),
+    areaSqm: 1200,
+    verification: const PropertyVerification(status: VerificationStatus.verified),
+    imageUrls: _p7Images,
+    listedByBusinessId: 'b2',
+    latitude: 24.3560,
+    longitude: 56.6900,
+    description: 'DEMO RECORD. An invented industrial unit with loading access, used to review how an industrial listing is presented. It is not a real property.',
+  ),
+  Property(
+    id: 'p8',
+    title: 'Demo Farm, Nizwa (fictional)',
+    locationLabel: 'Nizwa, Ad Dakhiliyah, Oman',
+    area: 'Nizwa',
+    type: PropertyType.farm,
+    transactionType: TransactionType.buy,
+    price: const Money(95000),
+    areaSqm: 18000,
+    verification: const PropertyVerification(status: VerificationStatus.verified),
+    imageUrls: _p8Images,
+    listedByBusinessId: 'b2',
+    latitude: 22.9333,
+    longitude: 57.5300,
+    description: 'DEMO RECORD. An invented agricultural plot with a falaj water share, used to review how an agricultural listing is presented. It is not a real property.',
   ),
 ];

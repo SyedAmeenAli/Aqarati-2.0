@@ -96,7 +96,7 @@ class _OnboardingEntryScreenState extends ConsumerState<OnboardingEntryScreen> w
     final compact = AQLayout.compact(context);
     final measure = AQLayout.contentWidth(context) * 0.84;
     // Pick the largest display step whose longest line ("Property Journey") still fits one line.
-    final headlineRole = compact ? AQText.displayMedium : (AQLayout.contentWidth(context) >= 480 ? AQText.displayLarge : AQText.displayMedium);
+    final headlineRole = hh < 740 ? AQText.displaySmall : compact ? AQText.displayMedium : (AQLayout.contentWidth(context) >= 480 ? AQText.displayLarge : AQText.displayMedium);
 
     return AnnotatedRegion<SystemUiOverlayStyle>(
       value: SystemUiOverlayStyle(

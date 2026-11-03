@@ -1,14 +1,12 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:go_router/go_router.dart';
 
-import '../../core/aq/aq_primitives.dart';
 import '../../core/aq/aq_scene.dart';
 import '../../core/localization/flow_strings.dart';
 import '../../data/api/account_api.dart' show meProvider;
+import '../role_home/mode_switch.dart' show WorkspaceAccessNotice;
 import '../role_home/role_home_model.dart';
 import '../viewing/screens/viewing_kit.dart' show AQViewingSkeleton;
-import '../viewing/widgets/viewing_components.dart';
 import '../viewing/widgets/viewing_scaffold.dart';
 
 /// Only an approved real estate agent reaches the agent workspace. A shopper, a guest and an agent
@@ -43,25 +41,7 @@ class AgentGuard extends ConsumerWidget {
     }
     final resolution = resolveHome(me.valueOrNull);
     if (!resolution.canSwitch) {
-      return AQViewingScaffold(
-        title: title,
-        backLabel: f.t('common.back'),
-        onBack: back,
-        bottom: AQBottomActionBar(
-          primary: AQPrimaryButton(
-            label: f.t('common.back'),
-            trailingChevron: false,
-            onPressed: () => context.go('/app/home'),
-          ),
-        ),
-        children: [
-          AQNoticeCard(
-            icon: 'lock',
-            title: f.t('ls.noAccess.t'),
-            body: f.t('ls.noAccess.b'),
-          ),
-        ],
-      );
+      return WorkspaceAccessNotice(title: title, next: '/work', agent: true);
     }
     return builder(context);
   }

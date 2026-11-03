@@ -39,7 +39,7 @@ class AQAuthScaffold extends StatefulWidget {
     this.onAction,
     this.backdrop = 'assets/entry/oman_terrace_2k.jpg',
     this.showLogo = true,
-    this.logoWidth = 104,
+    this.logoWidth = 84,
     this.centered = false,
     this.showBack = true,
   });
@@ -180,7 +180,7 @@ class _AQAuthScaffoldState extends State<AQAuthScaffold>
                                           : null,
                                       style: AQTypography.of(
                                         context,
-                                        AQText.displaySmall,
+                                        AQText.headlineLarge,
                                       ),
                                     ),
                                   ),

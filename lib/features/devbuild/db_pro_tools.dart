@@ -8,6 +8,9 @@ import '../../core/aq/aq_primitives.dart';
 import '../../core/aq/aq_scene.dart';
 import '../../core/aq/aq_tokens.dart';
 import '../../core/aq/aq_typography.dart';
+import '../media/aq_media.dart';
+import 'db_review_widgets.dart';
+import 'db_service_toggles.dart';
 import '../../core/domain/account_models.dart';
 import '../../core/localization/flow_strings.dart';
 import '../../data/api/account_api.dart' show verificationProvider;
@@ -47,6 +50,8 @@ class _DbProfileEditScreenState extends ConsumerState<DbProfileEditScreen> {
   final _wa = TextEditingController();
   String? _gov;
   InteriorExteriorServiceType? _service;
+  AqMediaImage? _logo, _cover;
+  bool _mediaTouched = false;
   bool _loaded = false;
   bool _busy = false;
   Object? _failure;
@@ -91,6 +96,10 @@ class _DbProfileEditScreenState extends ConsumerState<DbProfileEditScreen> {
               governorate: _gov ?? '',
             ),
           );
+      if (_mediaTouched) {
+        ref.read(businessLogoProvider.notifier).state = _logo;
+        ref.read(businessCoverProvider.notifier).state = _cover;
+      }
       ref.read(dbProfileSaveProvider.notifier).state = r;
       ref.invalidate(dbMyOrgProvider);
       if (mounted) context.push('/app/account/workspace/profile/status');
@@ -156,15 +165,19 @@ class _DbProfileEditScreenState extends ConsumerState<DbProfileEditScreen> {
                 ]),
                 if (type == ProType.interiorExterior)
                   _section(context, f.t('db.services'), [
-                    DbPillRow(
-                      pills: [
-                        for (final s in InteriorExteriorServiceType.values)
-                          (
-                            f.t('service.${s.name}'),
-                            _service == s,
-                            () => setState(() => _service = s),
-                          ),
-                      ],
+                    DbServiceToggles(value: _service, onChanged: (v) => setState(() => _service = v)),
+                    const SizedBox(height: AQSpacing.x3),
+                    // The private preview of the change next to what the public sees now.
+                    Container(
+                      padding: const EdgeInsets.all(AQSpacing.x3),
+                      decoration: BoxDecoration(color: c.surfaceRaised, borderRadius: BorderRadius.circular(AQRadius.medium), border: Border.all(color: c.hairline)),
+                      child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+                        Text('${f.t('svc.public')}: ${serviceSummary(f, o.serviceType)}', style: AQTypography.of(context, AQText.bodySmall, soft: true)),
+                        if (_service != o.serviceType) ...[
+                          const SizedBox(height: 2),
+                          Text('${f.t('svc.pending')}: ${serviceSummary(f, _service)}', style: AQTypography.of(context, AQText.labelMedium, color: c.accentDeep)),
+                        ],
+                      ]),
                     ),
                   ]),
                 _section(context, f.t('db.pe.about'), [
@@ -212,7 +225,16 @@ class _DbProfileEditScreenState extends ConsumerState<DbProfileEditScreen> {
                   ),
                 ]),
                 _section(context, f.t('db.pe.media'), [
-                  DbNotice(f.t('db.pe.media.off'), icon: 'lock'),
+                  // The same picker, sheet and editor as every other picture. A logo is contained, a cover is wide.
+                  Text(f.t('media.logo'), style: AQTypography.of(context, AQText.labelMedium, soft: true)),
+                  const SizedBox(height: AQSpacing.x2),
+                  AqMediaField(kind: AqMediaKind.logo, value: _logo ?? (_mediaTouched ? null : ref.watch(businessLogoProvider)), onChanged: (v) => setState(() { _logo = v; _mediaTouched = true; })),
+                  const SizedBox(height: AQSpacing.x4),
+                  Text(f.t('media.cover'), style: AQTypography.of(context, AQText.labelMedium, soft: true)),
+                  const SizedBox(height: AQSpacing.x2),
+                  AqMediaField(kind: AqMediaKind.cover, value: _cover ?? (_mediaTouched ? null : ref.watch(businessCoverProvider)), onChanged: (v) => setState(() { _cover = v; _mediaTouched = true; })),
+                  const SizedBox(height: AQSpacing.x2),
+                  Text(f.t('media.local'), style: AQTypography.of(context, AQText.bodySmall, soft: true)),
                 ]),
                 _section(context, f.t('db.pe.verif'), [
                   Text(
@@ -241,7 +263,7 @@ class _DbProfileEditScreenState extends ConsumerState<DbProfileEditScreen> {
                     label: f.t('db.pe.save'),
                     trailingChevron: false,
                     loading: _busy,
-                    onPressed: _busy ? null : _save,
+                    onPressed: _busy || (type == ProType.interiorExterior && _service == null) ? null : _save,
                   ),
                   Padding(
                     padding: EdgeInsets.only(top: AQSpacing.x2),
@@ -633,6 +655,24 @@ class _DbBizReviewsScreenState extends ConsumerState<DbBizReviewsScreen> {
           subtitle: f.t('db.bizrev.sub'),
           onBack: () => aqBack(context, _wsBack),
           children: [
+            Text(f.t('rv.settings'), style: AQTypography.of(context, AQText.titleSmall)),
+            const SizedBox(height: AQSpacing.x2),
+            DbSettingToggle(
+              title: f.t('rv.show.t'),
+              sub: f.t('rv.show.s'),
+              value: ref.watch(reviewsPublicProvider),
+              onChanged: (v) => ref.read(reviewsPublicProvider.notifier).state = v,
+            ),
+            const SizedBox(height: AQSpacing.x2),
+            DbSettingToggle(
+              title: f.t('rv.notify.t'),
+              sub: f.t('rv.notify.s'),
+              value: ref.watch(reviewsNotifyProvider),
+              onChanged: (v) => ref.read(reviewsNotifyProvider.notifier).state = v,
+            ),
+            const SizedBox(height: AQSpacing.x2),
+            Text(f.t('rv.settings.note'), style: AQTypography.of(context, AQText.labelSmall, color: AQColors.of(context).inkFaint)),
+            const SizedBox(height: AQSpacing.x4),
             if (revs == null)
               const DbSkeletonList(count: 2, height: 100)
             else
@@ -652,6 +692,8 @@ class _DbBizReviewsScreenState extends ConsumerState<DbBizReviewsScreen> {
                   return Column(
                     crossAxisAlignment: CrossAxisAlignment.stretch,
                     children: [
+                      DbRatingSummary(reviews: list),
+                      const SizedBox(height: AQSpacing.x3),
                       DbPillRow(
                         pills: [
                           (
@@ -1011,6 +1053,14 @@ class _PortfolioState extends ConsumerState<DbPortfolioScreen> {
                 const SizedBox(height: AQSpacing.x3),
                 Text(f.t('db.pf.pick'), style: AQTypography.of(d, AQText.labelMedium, soft: true)),
                 const SizedBox(height: AQSpacing.x2),
+                // Or your own picture, through the same sheet and editor as every other picture.
+                AqMediaField(
+                  kind: AqMediaKind.portfolio,
+                  width: 240,
+                  value: image.startsWith('memory:') ? aqMemoryMedia[image] : null,
+                  onChanged: (v) => set(() => image = v == null ? DemoDevBuildRepository.portfolioChoices.first : registerAqMedia(v)),
+                ),
+                const SizedBox(height: AQSpacing.x3),
                 Wrap(spacing: AQSpacing.x2, runSpacing: AQSpacing.x2, children: [
                   for (final (n, img) in DemoDevBuildRepository.portfolioChoices.indexed)
                     Semantics(
@@ -1106,27 +1156,28 @@ class _PortfolioState extends ConsumerState<DbPortfolioScreen> {
         final on = repo.caps.portfolio;
         final list = on ? ref.watch(dbMyPortfolioProvider) : null;
         final org = on ? null : ref.watch(dbMyOrgProvider);
+        // A portfolio piece is a photograph-led card: the picture first (16:10), then its title and note.
         Widget tile(PortfolioItem it) => Padding(
-          padding: const EdgeInsets.only(bottom: AQSpacing.x3),
+          padding: const EdgeInsets.only(bottom: AQSpacing.x4),
           child: AQSurface(
             padding: EdgeInsets.zero,
-            child: Row(children: [
-              SizedBox(width: 104, height: 96, child: ClipRRect(borderRadius: const BorderRadiusDirectional.horizontal(start: Radius.circular(AQRadius.medium)), child: aqImg(it.image, cacheWidth: 300))),
-              const SizedBox(width: AQSpacing.x3),
-              Expanded(
-                child: Padding(
-                  padding: const EdgeInsets.symmetric(vertical: AQSpacing.x2),
+            child: ClipRRect(
+              borderRadius: BorderRadius.circular(AQRadius.medium),
+              child: Column(crossAxisAlignment: CrossAxisAlignment.stretch, children: [
+                AspectRatio(aspectRatio: 16 / 10, child: ExcludeSemantics(child: aqImg(it.image, cacheWidth: 800))),
+                Padding(
+                  padding: const EdgeInsets.fromLTRB(AQSpacing.x4, AQSpacing.x3, AQSpacing.x4, AQSpacing.x1),
                   child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-                    Text(VFmt.iso(it.title), maxLines: 2, overflow: TextOverflow.ellipsis, style: AQTypography.of(context, AQText.titleSmall)),
-                    if (it.note.isNotEmpty) Text(VFmt.iso(it.note), maxLines: 2, overflow: TextOverflow.ellipsis, style: AQTypography.of(context, AQText.bodySmall, soft: true)),
+                    Text(VFmt.iso(it.title), maxLines: 2, overflow: TextOverflow.ellipsis, style: AQTypography.of(context, AQText.headlineSmall)),
+                    if (it.note.isNotEmpty) Padding(padding: const EdgeInsets.only(top: 2), child: Text(VFmt.iso(it.note), maxLines: 3, overflow: TextOverflow.ellipsis, style: AQTypography.of(context, AQText.bodySmall, soft: true))),
                     Wrap(children: [
                       AQTextButton(label: f.t('db.pf.edit'), color: c.accent, onPressed: () => _edit(it)),
                       AQTextButton(label: f.t('db.pf.remove'), color: c.inkSoft, onPressed: () => _remove(it)),
                     ]),
                   ]),
                 ),
-              ),
-            ]),
+              ]),
+            ),
           ),
         );
         return DbShellPage(
@@ -1156,10 +1207,11 @@ class _PortfolioState extends ConsumerState<DbPortfolioScreen> {
                   if (media.isEmpty) return DbNotice(f.t('db.pf.empty'), icon: 'work');
                   return GridView.count(
                     crossAxisCount: aqLargeText(context) ? 1 : 2,
+                    childAspectRatio: 1.25,
                     shrinkWrap: true,
                     physics: const NeverScrollableScrollPhysics(),
-                    mainAxisSpacing: AQSpacing.x2,
-                    crossAxisSpacing: AQSpacing.x2,
+                    mainAxisSpacing: AQSpacing.x3,
+                    crossAxisSpacing: AQSpacing.x3,
                     children: [for (final m in media) ClipRRect(borderRadius: BorderRadius.circular(AQRadius.medium), child: aqImg(m, cacheWidth: 500))],
                   );
                 },

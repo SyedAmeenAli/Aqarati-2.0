@@ -10,6 +10,7 @@ import '../../core/aq/aq_scene.dart';
 import '../../core/aq/aq_tokens.dart';
 import '../../core/aq/aq_typography.dart';
 import '../../core/domain/account_models.dart' show InteriorExteriorServiceType;
+import '../../core/config/backend_mode.dart' show kUseDemoBackend;
 import '../../core/localization/flow_strings.dart';
 import '../../core/widgets/aqarati_map_view.dart';
 import '../property/property_detail_screen.dart' show aqRequireSession;
@@ -17,6 +18,7 @@ import '../viewing/widgets/viewing_format.dart';
 import '../viewing/widgets/viewing_scaffold.dart';
 import '../workspace/aq_home.dart' show aqImg;
 import 'db_models.dart';
+import 'db_review_widgets.dart';
 import 'db_repository.dart';
 import 'db_widgets.dart';
 
@@ -42,8 +44,9 @@ Widget dbMissingFrame(
 Future<void> showDbContactSheet(
   BuildContext context,
   WidgetRef ref,
-  DbProfessional pro,
-) {
+  DbProfessional pro, {
+  ProType? about,
+}) {
   final repo = ref.read(devBuildRepositoryProvider);
   return showAQSheet<void>(
     context,
@@ -205,6 +208,14 @@ Future<void> showDbContactSheet(
                 style: AQTypography.of(s, AQText.headlineSmall),
               ),
             ),
+            if (about != null) ...[
+              const SizedBox(height: AQSpacing.x1),
+              Text(
+                f.t('db.svc.about', {'s': dbCategoryLabel(f, pro, about)}),
+                key: const ValueKey('db-enquiry-about'),
+                style: AQTypography.of(s, AQText.labelMedium, color: c.accentDeep),
+              ),
+            ],
             const SizedBox(height: AQSpacing.x2),
             Text(
               f.t('db.contact.note'),
@@ -315,7 +326,11 @@ class DbReviewCard extends StatelessWidget {
 
 class DbProfileScreen extends ConsumerStatefulWidget {
   final String id;
-  const DbProfileScreen({super.key, required this.id});
+
+  /// The service category the visitor came from (a `ProType` name), so an enquiry opens in that
+  /// service's context. Ignored unless the business actually offers it.
+  final String? service;
+  const DbProfileScreen({super.key, required this.id, this.service});
   @override
   ConsumerState<DbProfileScreen> createState() => _DbProfileScreenState();
 }
@@ -324,8 +339,123 @@ class _DbProfileScreenState extends ConsumerState<DbProfileScreen> {
   int _tab = 0;
   int _photo = 0;
   bool _more = false;
+  final _pager = PageController();
+
+  @override
+  void dispose() {
+    _pager.dispose();
+    super.dispose();
+  }
+
+  /// A fixed 16:9 gallery, capped so the name and the key facts stay in the first screen.
+  double _galleryHeight(BuildContext context) {
+    final w = MediaQuery.sizeOf(context).width.clamp(0.0, AQSpacing.maxContent + AQSpacing.gutter * 2);
+    return (w / (16 / 9)).clamp(150.0, 240.0);
+  }
+
+  Widget _galleryArrow(BuildContext context, FlowStrings f, {required bool forward}) {
+    final c = AQColors.of(context);
+    return PositionedDirectional(
+      start: forward ? null : AQSpacing.x2,
+      end: forward ? AQSpacing.x2 : null,
+      top: 0,
+      bottom: 0,
+      child: Center(
+        child: Container(
+          decoration: BoxDecoration(color: c.surfaceRaised.withValues(alpha: 0.85), shape: BoxShape.circle),
+          child: AQIconButton(
+            icon: forward ? 'chevron-right' : 'chevron-left',
+            directional: true,
+            semanticsLabel: f.t(forward ? 'db.photo.next' : 'db.photo.prev'),
+            onPressed: () {
+              final n = (_pager.page?.round() ?? 0) + (forward ? 1 : -1);
+              if (n < 0) return;
+              _pager.animateToPage(n, duration: AQMotion.scaled(context, AQMotion.standard), curve: Curves.easeOutCubic);
+            },
+          ),
+        ),
+      ),
+    );
+  }
+
+  /// Logo or monogram, the name with the verified mark beside it, the primary category, any
+  /// additional service as a quiet tag, and the place.
+  Widget _identity(BuildContext context, FlowStrings f, AQColors c, DbProfessional p) {
+    final logo = p.logoUrl;
+    final extras = p.extraTypes.where((t) => t != p.type).toList();
+    return Row(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Container(
+          width: 52,
+          height: 52,
+          decoration: BoxDecoration(color: c.surfaceSelected, borderRadius: BorderRadius.circular(AQRadius.medium), border: Border.all(color: c.hairline)),
+          clipBehavior: Clip.antiAlias,
+          child: logo != null ? aqImg(logo, cacheWidth: 200) : Center(child: AQIcon(p.type.icon, size: 26, color: c.accent)),
+        ),
+        const SizedBox(width: AQSpacing.x3),
+        Expanded(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              // The mark follows the last word of the name and never wraps on its own.
+              Semantics(
+                header: true,
+                child: Text.rich(
+                  TextSpan(children: [
+                    TextSpan(text: VFmt.iso(p.name)),
+                    if (p.verified) ...[
+                      const TextSpan(text: '\u00A0'),
+                      WidgetSpan(
+                        alignment: PlaceholderAlignment.middle,
+                        child: Semantics(label: f.t('disc.verified'), child: AQIcon('verified', size: 22, color: c.accent)),
+                      ),
+                    ],
+                  ]),
+                  // Narrow phones use the next size down so the name and its mark share one line.
+                  style: AQTypography.of(context, MediaQuery.sizeOf(context).width < 340 ? AQText.headlineSmall : AQText.headlineMedium),
+                ),
+              ),
+              const SizedBox(height: 2),
+              Text(f.t(p.type.key), style: AQTypography.of(context, AQText.bodyMedium, soft: true)),
+              if (extras.isNotEmpty) ...[
+                const SizedBox(height: AQSpacing.x2),
+                Wrap(
+                  spacing: AQSpacing.x2,
+                  runSpacing: 4,
+                  crossAxisAlignment: WrapCrossAlignment.center,
+                  children: [
+                    Text(f.t('db.alsoOffers'), style: AQTypography.of(context, AQText.bodySmall, soft: true)),
+                    for (final t in extras)
+                      Container(
+                        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 3),
+                        decoration: BoxDecoration(color: c.surfaceSelected, borderRadius: BorderRadius.circular(12)),
+                        child: Text(dbCategoryLabel(f, p, t), style: AQTypography.of(context, AQText.labelMedium, color: c.accentDeep)),
+                      ),
+                  ],
+                ),
+              ],
+              const SizedBox(height: AQSpacing.x2),
+              Row(children: [
+                AQIcon('pin', size: 16, color: c.accent),
+                const SizedBox(width: 4),
+                Flexible(child: Text(VFmt.iso(p.locationLabel), style: AQTypography.of(context, AQText.bodyMedium, soft: true))),
+              ]),
+            ],
+          ),
+        ),
+      ],
+    );
+  }
 
   void _back() => aqBack(context, '/app/explore/build');
+
+  /// The category to enquire about: the one the visitor browsed from, when it is one of this
+  /// business's categories; otherwise none (the primary role is the default context).
+  ProType? _about(DbProfessional p) {
+    final t = proTypeOfName(widget.service);
+    return t != null && p.allTypes.contains(t) ? t : null;
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -365,7 +495,6 @@ class _DbProfileScreenState extends ConsumerState<DbProfileScreen> {
         final projects = p.type.hasProjects
             ? ref.watch(dbApprovedProjectsProvider(p.id))
             : null;
-        final large = aqLargeText(context);
         final photos = p.mediaUrls;
         final tabs = [
           (f.t('db.tab.overview'), 0),
@@ -389,7 +518,7 @@ class _DbProfileScreenState extends ConsumerState<DbProfileScreen> {
                           Stack(
                             children: [
                               SizedBox(
-                                height: large ? 200 : 260,
+                                height: _galleryHeight(context),
                                 child: photos.isEmpty
                                     ? ColoredBox(
                                         color: c.surfaceSelected,
@@ -402,6 +531,7 @@ class _DbProfileScreenState extends ConsumerState<DbProfileScreen> {
                                         ),
                                       )
                                     : PageView.builder(
+                                        controller: _pager,
                                         itemCount: photos.length,
                                         onPageChanged: (i) =>
                                             setState(() => _photo = i),
@@ -435,6 +565,10 @@ class _DbProfileScreenState extends ConsumerState<DbProfileScreen> {
                                   ),
                                 ),
                               ),
+                              if (photos.length > 1) ...[
+                                _galleryArrow(context, f, forward: false),
+                                _galleryArrow(context, f, forward: true),
+                              ],
                               if (photos.length > 1)
                                 PositionedDirectional(
                                   end: AQSpacing.x3,
@@ -470,59 +604,7 @@ class _DbProfileScreenState extends ConsumerState<DbProfileScreen> {
                             child: Column(
                               crossAxisAlignment: CrossAxisAlignment.start,
                               children: [
-                                Row(
-                                  children: [
-                                    Flexible(
-                                      child: Semantics(
-                                        header: true,
-                                        child: Text(
-                                          VFmt.iso(p.name),
-                                          style: AQTypography.of(
-                                            context,
-                                            AQText.displaySmall,
-                                          ),
-                                        ),
-                                      ),
-                                    ),
-                                    if (p.verified) ...[
-                                      const SizedBox(width: 8),
-                                      Semantics(
-                                        label: f.t('disc.verified'),
-                                        child: AQIcon(
-                                          'verified',
-                                          size: 24,
-                                          color: c.accent,
-                                        ),
-                                      ),
-                                    ],
-                                  ],
-                                ),
-                                const SizedBox(height: 2),
-                                Text(
-                                  dbProLabel(f, p),
-                                  style: AQTypography.of(
-                                    context,
-                                    AQText.bodyMedium,
-                                    soft: true,
-                                  ),
-                                ),
-                                const SizedBox(height: 4),
-                                Row(
-                                  children: [
-                                    AQIcon('pin', size: 16, color: c.accent),
-                                    const SizedBox(width: 4),
-                                    Flexible(
-                                      child: Text(
-                                        VFmt.iso(p.locationLabel),
-                                        style: AQTypography.of(
-                                          context,
-                                          AQText.bodyMedium,
-                                          soft: true,
-                                        ),
-                                      ),
-                                    ),
-                                  ],
-                                ),
+                                _identity(context, f, c, p),
                                 const SizedBox(height: AQSpacing.x4),
                                 _stats(
                                   context,
@@ -532,15 +614,10 @@ class _DbProfileScreenState extends ConsumerState<DbProfileScreen> {
                                   projects?.valueOrNull?.length,
                                 ),
                                 const SizedBox(height: AQSpacing.x4),
-                                DbPillRow(
-                                  pills: [
-                                    for (final t in tabs)
-                                      (
-                                        t.$1,
-                                        _tab == t.$2,
-                                        () => setState(() => _tab = t.$2),
-                                      ),
-                                  ],
+                                DbSegmentedTabs(
+                                  labels: [for (final t in tabs) t.$1],
+                                  selected: tabs.indexWhere((t) => t.$2 == _tab).clamp(0, tabs.length - 1),
+                                  onChanged: (i) => setState(() => _tab = tabs[i].$2),
                                 ),
                                 const SizedBox(height: AQSpacing.x4),
                                 AnimatedSwitcher(
@@ -557,7 +634,8 @@ class _DbProfileScreenState extends ConsumerState<DbProfileScreen> {
                                     },
                                   ),
                                 ),
-                                const SizedBox(height: AQSpacing.x6),
+                                // The last content clears the pinned Contact bar with room to spare.
+                                const SizedBox(height: AQSpacing.x8),
                               ],
                             ),
                           ),
@@ -578,7 +656,7 @@ class _DbProfileScreenState extends ConsumerState<DbProfileScreen> {
                           context,
                           ref,
                           actionKey: 'db.a.contact',
-                          go: () => showDbContactSheet(context, ref, p),
+                          go: () => showDbContactSheet(context, ref, p, about: _about(p)),
                         )
                       : null,
                 ),
@@ -590,6 +668,8 @@ class _DbProfileScreenState extends ConsumerState<DbProfileScreen> {
     );
   }
 
+  /// Rating and verification as one full-width band of equal columns. It stacks when the content is
+  /// narrower than 260 px or the text is large. Demo records are flagged as sample data.
   Widget _stats(
     BuildContext context,
     FlowStrings f,
@@ -610,50 +690,69 @@ class _DbProfileScreenState extends ConsumerState<DbProfileScreen> {
         ('shield', f.t('disc.verified'), f.t('db.approvedBusiness')),
     ];
     if (cells.isEmpty) return const SizedBox.shrink();
-    return Container(
-      padding: const EdgeInsets.symmetric(vertical: AQSpacing.x3),
-      decoration: BoxDecoration(
-        color: c.surfaceRaised,
-        borderRadius: BorderRadius.circular(AQRadius.medium),
-        border: Border.all(color: c.hairline),
-      ),
-      child: Wrap(
-        alignment: WrapAlignment.spaceAround,
-        runSpacing: AQSpacing.x3,
+    Widget cell((String, String, String) x) => Semantics(
+      label: '${x.$2}, ${x.$3}',
+      excludeSemantics: true,
+      child: Row(
         children: [
-          for (final x in cells)
-            SizedBox(
-              width: 104,
-              child: Semantics(
-                label: '${x.$2}, ${x.$3}',
-                excludeSemantics: true,
-                child: Column(
-                  children: [
-                    AQIcon(
-                      x.$1,
-                      size: 20,
-                      color: x.$1 == 'star-fill' ? c.warning : c.accent,
-                    ),
-                    const SizedBox(height: 2),
-                    Text(
-                      x.$2,
-                      style: AQTypography.of(context, AQText.titleMedium),
-                    ),
-                    Text(
-                      x.$3,
-                      textAlign: TextAlign.center,
-                      style: AQTypography.of(
-                        context,
-                        AQText.labelSmall,
-                        soft: true,
-                      ),
-                    ),
-                  ],
-                ),
-              ),
+          AQIcon(x.$1, size: 22, color: x.$1 == 'star-fill' ? c.warning : c.accent),
+          const SizedBox(width: AQSpacing.x2),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(x.$2, style: AQTypography.of(context, AQText.titleMedium)),
+                Text(x.$3, style: AQTypography.of(context, AQText.bodySmall, soft: true)),
+              ],
             ),
+          ),
         ],
       ),
+    );
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        Container(
+          padding: const EdgeInsets.symmetric(horizontal: AQSpacing.x4, vertical: AQSpacing.x3),
+          decoration: BoxDecoration(
+            color: c.surfaceRaised,
+            borderRadius: BorderRadius.circular(AQRadius.medium),
+            border: Border.all(color: c.hairline),
+          ),
+          child: LayoutBuilder(
+            builder: (context, box) {
+              final stack = box.maxWidth < 380 || aqLargeText(context);
+              if (stack) {
+                return Column(children: [
+                  for (var i = 0; i < cells.length; i++) ...[
+                    if (i > 0) Divider(height: AQSpacing.x4 * 2, color: c.hairline),
+                    cell(cells[i]),
+                  ],
+                ]);
+              }
+              return IntrinsicHeight(
+                child: Row(
+                  crossAxisAlignment: CrossAxisAlignment.center,
+                  children: [
+                    for (var i = 0; i < cells.length; i++) ...[
+                      if (i > 0) ...[
+                        const SizedBox(width: AQSpacing.x3),
+                        VerticalDivider(width: 1, thickness: 1, color: c.hairline),
+                        const SizedBox(width: AQSpacing.x3),
+                      ],
+                      Expanded(flex: cells[i].$1 == 'star-fill' ? 5 : 7, child: cell(cells[i])),
+                    ],
+                  ],
+                ),
+              );
+            },
+          ),
+        ),
+        if (kUseDemoBackend) ...[
+          const SizedBox(height: AQSpacing.x2),
+          Text(f.t('db.sampleRecord'), style: AQTypography.of(context, AQText.labelSmall, color: c.inkFaint).copyWith(letterSpacing: 0.2)),
+        ],
+      ],
     );
   }
 
@@ -692,23 +791,33 @@ class _DbProfileScreenState extends ConsumerState<DbProfileScreen> {
             trailingIcon: _more ? null : 'chevron-down',
             onPressed: () => setState(() => _more = !_more),
           ),
-        if (p.serviceType != null) ...[
+        if (p.serviceType != null || p.extraTypes.isNotEmpty) ...[
           const SizedBox(height: AQSpacing.x4),
           Text(
-            f.t('db.services'),
+            f.t('db.svc.title'),
             style: AQTypography.of(context, AQText.headlineSmall),
           ),
           const SizedBox(height: AQSpacing.x2),
           DbTagRow(
+            key: const ValueKey('db-service-tags'),
             tags: [
-              if (p.serviceType == InteriorExteriorServiceType.interior ||
-                  p.serviceType == InteriorExteriorServiceType.both)
-                f.t('service.interior'),
-              if (p.serviceType == InteriorExteriorServiceType.exterior ||
-                  p.serviceType == InteriorExteriorServiceType.both)
-                f.t('service.exterior'),
+              for (final t in p.allTypes)
+                if (t == p.type && t == ProType.interiorExterior && p.serviceType != null) ...[
+                  if (p.serviceType == InteriorExteriorServiceType.interior || p.serviceType == InteriorExteriorServiceType.both) f.t('service.interior'),
+                  if (p.serviceType == InteriorExteriorServiceType.exterior || p.serviceType == InteriorExteriorServiceType.both) f.t('service.exterior'),
+                ] else if (t == p.type)
+                  '${dbCategoryLabel(f, p, t)} · ${f.t('db.svc.primary')}'
+                else
+                  dbCategoryLabel(f, p, t),
             ],
           ),
+          if (p.extraTypes.isNotEmpty) ...[
+            const SizedBox(height: AQSpacing.x2),
+            Text(
+              f.t('db.svc.note'),
+              style: AQTypography.of(context, AQText.bodySmall, soft: true),
+            ),
+          ],
         ],
         const SizedBox(height: AQSpacing.x4),
         Text(
@@ -778,6 +887,24 @@ class _DbProfileScreenState extends ConsumerState<DbProfileScreen> {
     DbProfessional p,
   ) {
     final async = ref.watch(dbReviewsProvider(p.id));
+    // The business's own preview honours its visibility choice.
+    if (p.id == 'me' && !ref.watch(reviewsPublicProvider)) {
+      return DbNotice(f.t('rv.hidden'), icon: 'eye-off');
+    }
+    if (p.id == 'me') {
+      return async.when(
+        loading: () => const DbSkeleton(height: 100),
+        error: (e, _) => DbErrorCard(error: e, onRetry: () => ref.invalidate(dbReviewsProvider(p.id))),
+        data: (list) => list.isEmpty
+            ? DbNotice(f.t('db.rev.none'))
+            : Column(crossAxisAlignment: CrossAxisAlignment.stretch, children: [
+                DbRatingSummary(reviews: list),
+                const SizedBox(height: AQSpacing.x3),
+                for (final r in list.take(2)) DbReviewCard(r),
+                AQSecondaryButton(label: f.t('db.rev.all'), trailingChevron: false, onPressed: () => context.push('/build/pro/${p.id}/reviews')),
+              ]),
+      );
+    }
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
@@ -1059,8 +1186,7 @@ class DbProjectDetailScreen extends ConsumerWidget {
     String value,
     String label,
   ) => Container(
-    width: 104,
-    padding: const EdgeInsets.all(AQSpacing.x3),
+    padding: const EdgeInsets.symmetric(vertical: AQSpacing.x3, horizontal: AQSpacing.x2),
     decoration: BoxDecoration(
       color: c.surfaceRaised,
       borderRadius: BorderRadius.circular(AQRadius.medium),
@@ -1246,10 +1372,24 @@ class DbProjectDetailScreen extends ConsumerWidget {
                 ),
               ),
             const SizedBox(height: AQSpacing.x4),
-            Wrap(
-              spacing: AQSpacing.x2,
-              runSpacing: AQSpacing.x2,
-              children: facts,
+            // Facts in even rows of three; a shorter last row shares the full width instead of leaving a gap.
+            Column(
+              children: [
+                for (var i = 0; i < facts.length; i += 3) ...[
+                  if (i > 0) const SizedBox(height: AQSpacing.x2),
+                  IntrinsicHeight(
+                    child: Row(
+                      crossAxisAlignment: CrossAxisAlignment.stretch,
+                      children: [
+                        for (var j = i; j < i + 3 && j < facts.length; j++) ...[
+                          if (j > i) const SizedBox(width: AQSpacing.x2),
+                          Expanded(child: facts[j]),
+                        ],
+                      ],
+                    ),
+                  ),
+                ],
+              ],
             ),
             if (p.mediaUrls.isNotEmpty) ...[
               DbSectionTitle(

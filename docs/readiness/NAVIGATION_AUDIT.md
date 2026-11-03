@@ -1,5 +1,32 @@
 # Customer navigation audit (2026-10-29)
 
+## Current state (2026-10-31, master implementation pass) — read this first
+
+Everything below this section is the history of earlier passes. Where it differs, this section describes the working tree now. Full route list: `ROUTE_MATRIX.md`. Screens: `SCREENSHOT_INDEX.md`. Widths: `VIEWPORT_MATRIX.md`. Local only; nothing committed, pushed or deployed.
+
+- **Home** holds only the greeting and sub line, one sponsored banner and six services (Properties, Development, Interior & Exterior Designer, Construction Company, Loan Calculator, Maintenance). The four-card block, search entry, category row, featured listings and the old development, maintenance and broker-loan sections are gone from Home on purpose; their destinations remain reachable (Properties landing, Explore, Maintenance and Loan Calculator tiles).
+- **Properties** opens its own landing at `/properties` (no `cat`, `tx` or `types`): Buy, Rent, Sell with Aqary e-Broker, My Favorites. The old redirect from `/properties` to Home is removed. Back from the category step returns to this landing. The contextual `?` explainer sits on this landing.
+- **Explore** now lists every property type of all four markets (“Browse by property type”, each type opens `/properties/all?cat=…&types=…`), the development projects and a “Find people” row (agents, trusted brokers) next to the professional directories.
+- **Account** is regrouped (Account, Preferences, Help and legal, Session) and each row opens a settings page under `/app/account/settings/<security|notifications|language|appearance|privacy|preferences|support|about>`.
+- **Agent and professional workspaces** gained `/agent/analytics`, `/agent/settings` (+ `/p/<name>`), `/pro/analytics`, `/pro/settings` (+ `/p/<name>`). They are reached from More and from the Home KPI link, and the More tab stays selected on them. Business settings are separate from customer settings; language and appearance are shared app-wide.
+- Browser walk (`j80`, `j82`, `j90`, `j42`, `j44`): 230 checks, 0 failures. Customer navigation after the change: the bottom bar stays on every audited customer route; selected tab unchanged from the table below, except Properties landing, Buy, Rent and Favorites keep the Home tab.
+
+| Source | Action | Destination | Nav | Tab |
+|---|---|---|---|---|
+| Home | Properties | Properties landing | yes | Home |
+| Home | Development, Interior & Exterior Designer, Construction Company | their directories | yes | Explore |
+| Home | Loan Calculator | Property tools | yes | Home |
+| Home | Maintenance | Maintenance providers | yes | Home |
+| Properties landing | Buy / Rent | categories (tx kept) | yes | Home |
+| Properties landing | Sell with Aqary e-Broker | e-Broker intro | yes | Home |
+| Properties landing | My Favorites | Saved | yes | Home |
+| Categories → Types → Results | Commercial → Offices | results for that market and type | yes | Home |
+| Explore | a property type | results for that market and type | yes | Explore |
+| Explore | Real estate agents / Trusted brokers | `/broker/list`, `/broker` | yes | Explore |
+| Account | any settings row | its settings page | yes | Account |
+| Professional More | Analytics / Business settings | `/pro/analytics`, `/pro/settings` | pro bar | More |
+
+
 Method: every route below was opened in headless Chromium on the QA build (`?session=buyer`), recording whether the four-tab bar is present, which tab is selected and the page's first text (`j27_audit.js`, result `docs/readiness/evidence/browser/j27_route_audit.json`).
 
 ## Before (route audit of the previous build)
@@ -70,3 +97,24 @@ Browser evidence: `j30` (admin), `j32` (professional workspaces), `j33` (e-Broke
 - e-Broker submissions are not in the admin moderation queue (the console has its own sample queue).
 - The professional "Add portfolio work" and project editing for Construction, Architecture and Interior & Exterior remain unavailable (the service is not confirmed). Development has project creation. Contact activity, engagements (confirm locally) and portfolio images are sample data in a preview build only.
 - Nothing has been deployed. The console on the Vercel address is not verified.
+
+## Current state, gap-closure pass (2026-11-01)
+
+This section supersedes any earlier statement here about the professional bars and the Admin Console language. The route-by-route tables are in `ROUTE_MATRIX.md`.
+
+- **Every business role has six destinations of its own**, with Analytics a tab (the fifth). Agent: Dashboard, Listings, Contacts, Calendar, Analytics, More. Development: Overview, Projects, Units, Enquiries, Analytics, Company. Construction: Overview, Projects, Requests, Services, Analytics, Company. Architecture: Studio, Portfolio, Projects, Briefs, Analytics, Profile. Interior and exterior: Studio, Portfolio, Services, Engagements, Analytics, Profile. The five sets differ (tested).
+- **Phones.** One floating bar with six equal tabs; at 320 px each is 48 px wide and its label scales down. Nothing is behind a menu. At 1280 px the bar becomes a side rail with the same six destinations.
+- **The last tab is a hub** (`/pro/more`, titled Company or Profile): public profile, Business settings, reviews, verification status, workspace summary, the role's destinations that are not tabs, the way into the shopper app, and Sign out.
+- **Side rail accessibility fixed.** At 900 px and wider the rail of every business workspace was not exposed to screen readers or the keyboard (the page's navigator blocked its semantics). It is now painted after the content, so it is exposed, and it mirrors in Arabic (rail on the right, separator on its left edge). Browser: all six rail items are findable and in order at 1280 for all five roles.
+- **Back behaviour.** Analytics is a tab, so it has no Back control; the password page returns to Account and security; a profile opened from a service category returns to that category's results.
+- **Admin Console.** The sidebar sits at the start edge: left in English, right in Arabic. On screens under 960 px a menu button opens a drawer (right edge in Arabic). The language button is on sign-in, the code step, the sidebar and the narrow top bar.
+- **Customer shell** is unchanged: Home, Explore, Activity, Account.
+
+## Visual pass (2026-11-01): phone bars are four destinations plus More
+
+This supersedes the "six equal tabs on phones" statements above and in `GAP_CLOSURE.md`.
+
+- Under 700 px every business workspace shows **four day-to-day destinations plus More**; from 700 px a **side rail lists all six**. Details and routes: `ROUTE_MATRIX.md` sections 3 and 4, reasons and evidence: `VISUAL_QA.md`.
+- Analytics and the company or profile hub are reached from **More**, which stays selected on them. Nothing was removed.
+- Tab labels are never scaled to a tiny size: a tab is 62 px wide at 320 px with a 10.5 px label on five-item bars.
+- The Architecture tab previously named Briefs is now **Enquiries** everywhere (bar and rail).

@@ -8,6 +8,7 @@ import 'core/config/web_keyboard.dart';
 import 'core/localization/entry_strings.dart';
 import 'data/demo/demo_providers.dart';
 import 'core/startup/intro_host.dart';
+import 'features/settings/app_settings.dart';
 import 'core/theme/app_theme.dart';
 import 'core/aq/aq_tokens.dart';
 import 'data/repositories/local_persistence.dart';
@@ -74,6 +75,17 @@ class AqaratiApp extends ConsumerWidget {
                 .copyWith(textScaler: TextScaler.linear(scale)),
             child: app,
           );
+        final prefs = ref.watch(appSettingsProvider);
+        if (prefs.textScale != 1 || prefs.reducedMotion) {
+          final mq = MediaQuery.of(context);
+          app = MediaQuery(
+            data: mq.copyWith(
+              textScaler: prefs.textScale == 1 ? mq.textScaler : TextScaler.linear(prefs.textScale),
+              disableAnimations: mq.disableAnimations || prefs.reducedMotion,
+            ),
+            child: app,
+          );
+        }
         return app;
       },
       supportedLocales: const [Locale('en'), Locale('ar')],

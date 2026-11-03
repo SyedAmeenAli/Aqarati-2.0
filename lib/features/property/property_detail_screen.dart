@@ -21,6 +21,8 @@ import '../enquiry/make_offer_screen.dart';
 import '../viewing/widgets/viewing_format.dart';
 import '../viewing/widgets/viewing_scaffold.dart';
 import '../workspace/aq_home.dart' show aqImg, AQSkeletonBox;
+import '../workspace/aq_cards.dart' show AQPhotoTag;
+import '../workspace/aq_thumb.dart' show AQThumb;
 import 'property_gallery_screen.dart';
 
 final aqPropertyProvider = FutureProvider.autoDispose.family<Property?, String>((ref, id) => ref.watch(propertyRepositoryProvider).getById(id));
@@ -70,6 +72,10 @@ Future<void> aqRequireSession(BuildContext context, WidgetRef ref, {required Str
     ),
   );
 }
+
+/// Desktop layout of Property Details starts here; the content column widens to [kPropertyWideMax].
+const double kPropertyWideFrom = 1000;
+const double kPropertyWideMax = 1180;
 
 String _typeLabel(FlowStrings f, PropertyType t) => FlowStrings.keys.contains('ptype.${t.name}') ? f.t('ptype.${t.name}') : t.label;
 
@@ -192,7 +198,7 @@ class _PropertyDetailScreenState extends ConsumerState<PropertyDetailScreen> {
     Widget gallery() => ClipRRect(
           borderRadius: BorderRadius.circular(AQRadius.large),
           child: AspectRatio(
-            aspectRatio: large ? 4 / 3 : 16 / 11,
+            aspectRatio: large ? 1 : (MediaQuery.sizeOf(context).width >= 700 && !(MediaQuery.sizeOf(context).width >= kPropertyWideFrom) ? 16 / 10 : 4 / 3),
             child: Stack(fit: StackFit.expand, children: [
               if (images.isEmpty)
                 ColoredBox(color: c.surfaceSelected, child: Center(child: AQIcon('home', size: 48, color: c.inkFaint)))
@@ -211,21 +217,13 @@ class _PropertyDetailScreenState extends ConsumerState<PropertyDetailScreen> {
               PositionedDirectional(
                 start: AQSpacing.x3,
                 top: AQSpacing.x3,
-                child: Container(
-                  padding: const EdgeInsets.symmetric(horizontal: AQSpacing.x3, vertical: 6),
-                  decoration: BoxDecoration(color: const Color(0xB32D2823), borderRadius: BorderRadius.circular(16)),
-                  child: Row(mainAxisSize: MainAxisSize.min, children: [
-                    Container(width: 8, height: 8, decoration: BoxDecoration(color: p.transactionType == TransactionType.buy ? const Color(0xFF58B47A) : const Color(0xFFE2B866), shape: BoxShape.circle)),
-                    const SizedBox(width: 6),
-                    Text(tx, style: AQTypography.of(context, AQText.labelMedium, color: Colors.white)),
-                  ]),
-                ),
+                child: AQPhotoTag(tx),
               ),
               if (images.length > 1)
                 PositionedDirectional(
                   end: AQSpacing.x3,
                   top: AQSpacing.x3,
-                  child: Container(padding: const EdgeInsets.symmetric(horizontal: AQSpacing.x3, vertical: 6), decoration: BoxDecoration(color: const Color(0xB32D2823), borderRadius: BorderRadius.circular(16)), child: Text('${VFmt.n(context, _i + 1)}/${VFmt.n(context, images.length)}', style: AQTypography.of(context, AQText.labelMedium, color: Colors.white))),
+                  child: AQPhotoTag('${VFmt.n(context, _i + 1)} / ${VFmt.n(context, images.length)}'),
                 ),
               if (images.length > 1) ...[
                 PositionedDirectional(start: AQSpacing.x2, top: 0, bottom: 0, child: Center(child: _circle(context, label: f.t('pd.prev'), size: 40, onTap: () => _go(_i - 1, images.length), child: AQIcon('chevron-left', size: 20, color: c.ink, directional: true)))),
@@ -266,12 +264,12 @@ class _PropertyDetailScreenState extends ConsumerState<PropertyDetailScreen> {
 
     final titleBlock = Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
       Row(crossAxisAlignment: CrossAxisAlignment.start, children: [
-        Expanded(child: Semantics(header: true, child: Text(VFmt.iso(p.title), style: AQTypography.of(context, large ? AQText.headlineLarge : AQText.displaySmall)))),
+        Expanded(child: Semantics(header: true, child: Text(VFmt.iso(p.title), style: AQTypography.of(context, AQText.headlineLarge)))),
         const SizedBox(width: AQSpacing.x2),
         _heart(context, p),
       ]),
       const SizedBox(height: AQSpacing.x2),
-      Text(p.priceLabel, style: AQTypography.of(context, AQText.headlineLarge, color: c.accentDeep)),
+      Text(p.priceLabel, style: AQTypography.of(context, AQText.headlineMedium, color: c.accentDeep)),
       const SizedBox(height: AQSpacing.x2),
       Wrap(crossAxisAlignment: WrapCrossAlignment.center, spacing: AQSpacing.x3, children: [
         Row(mainAxisSize: MainAxisSize.min, children: [AQIcon('pin', size: 16, color: c.accent), const SizedBox(width: 4), Flexible(child: Text(VFmt.iso(loc), style: AQTypography.of(context, AQText.bodyMedium, soft: true)))]),
@@ -281,6 +279,120 @@ class _PropertyDetailScreenState extends ConsumerState<PropertyDetailScreen> {
         Padding(padding: const EdgeInsets.only(top: AQSpacing.x1), child: Row(mainAxisSize: MainAxisSize.min, children: [AQIcon('verified', size: 18, color: c.accent), const SizedBox(width: 6), Flexible(child: Text(f.t('pd.verifiedListing'), style: AQTypography.of(context, AQText.labelMedium, color: c.accentDeep)))])),
     ]);
 
+    final wide = MediaQuery.sizeOf(context).width >= kPropertyWideFrom;
+    Widget factsW() => LayoutBuilder(builder: (context, box) {
+          const gap = AQSpacing.x2;
+          final cols = large ? 2 : (wide || facts.length >= 4 ? 4 : facts.length.clamp(1, 4));
+          final w = (box.maxWidth - gap * (cols - 1)) / cols;
+          return Wrap(spacing: gap, runSpacing: gap, children: [for (final x in facts) _fact(context, x.$1, x.$2, x.$3, w)]);
+        });
+    // Amenities as one calm card: an icon-and-label grid (two columns on a phone, three on wide screens).
+    Widget amenitiesW() => LayoutBuilder(builder: (context, box) {
+          final cols = large ? 1 : (box.maxWidth >= 520 ? 3 : 2);
+          const gap = AQSpacing.x2;
+          final w = ((box.maxWidth - AQSpacing.x4 * 2 - gap * (cols - 1)) / cols).floorToDouble() - 1;
+          return Container(
+            padding: const EdgeInsets.all(AQSpacing.x4),
+            decoration: BoxDecoration(color: c.surfaceRaised, borderRadius: BorderRadius.circular(AQRadius.medium), border: Border.all(color: c.hairline)),
+            child: Wrap(spacing: gap, runSpacing: AQSpacing.x3, children: [
+              for (final a in p.amenities)
+                SizedBox(
+                  width: w,
+                  child: Row(crossAxisAlignment: CrossAxisAlignment.start, children: [
+                    Container(width: 26, height: 26, decoration: BoxDecoration(color: c.surfaceSelected, shape: BoxShape.circle), child: Center(child: AQIcon('check', size: 14, color: c.accentDeep))),
+                    const SizedBox(width: AQSpacing.x2),
+                    Expanded(child: Padding(padding: const EdgeInsets.only(top: 3), child: Text(a, style: AQTypography.of(context, AQText.bodyMedium)))),
+                  ]),
+                ),
+            ]),
+          );
+        });
+    final descBlock = <Widget>[
+      _head(context, f.t('pd.description')),
+      Text(desc, maxLines: _more ? null : 4, overflow: _more ? null : TextOverflow.ellipsis, style: AQTypography.of(context, AQText.bodyLarge).copyWith(height: 1.65)),
+      if (desc.length > 110) Align(alignment: AlignmentDirectional.centerStart, child: AQTextButton(label: _more ? f.t('flt.less') : f.t('pd.readMore'), color: c.accentDeep, trailingIcon: 'chevron-down', onPressed: () => setState(() => _more = !_more))),
+      _head(context, f.t('pd.details')),
+      Container(
+        padding: const EdgeInsets.all(AQSpacing.x4),
+        decoration: BoxDecoration(color: c.surfaceRaised, borderRadius: BorderRadius.circular(AQRadius.medium), border: Border.all(color: c.hairline)),
+        child: Column(children: [
+          _kv(context, f.t('flt.type'), _typeLabel(f, p.type)),
+          Divider(height: 1, color: c.hairline),
+          _kv(context, f.t('flt.purpose'), tx),
+          Divider(height: 1, color: c.hairline),
+          _kv(context, f.t('pd.builtUp'), '${VFmt.n(context, p.areaSqm.round())} m²'),
+        ]),
+      ),
+      if (p.transactionType == TransactionType.buy) ...[
+        const SizedBox(height: AQSpacing.x3),
+        AQSecondaryButton(label: f.t('pd.offer'), trailingChevron: false, leadingIcon: 'send', onPressed: () => aqRequireSession(context, ref, actionKey: 'pd.a.offer', go: () => Navigator.of(context).push(AQRoute.route<void>(MakeOfferScreen(property: p))))),
+      ],
+    ];
+    final listerBlock = <Widget>[
+      _head(context, f.t('pd.listedBy')),
+      _lister(context, f, c, p, lister),
+    ];
+    final mapBlock = <Widget>[
+      if (p.latitude != null && p.longitude != null) ...[
+        _head(context, f.t('pd.location')),
+        ClipRRect(
+          borderRadius: BorderRadius.circular(AQRadius.large),
+          child: SizedBox(
+            height: large ? 300 : (wide ? 260 : 190),
+            child: AqaratiMapView(initialCenter: LatLng(p.latitude!, p.longitude!), initialZoom: 14, interactive: false, borderRadius: BorderRadius.zero),
+          ),
+        ),
+        const SizedBox(height: AQSpacing.x2),
+        Text(VFmt.iso(p.locationLabel), style: AQTypography.of(context, AQText.bodySmall, soft: true)),
+      ],
+    ];
+    final actions = AQBottomActionBar(
+      secondary: AQBarSecondaryButton(
+        label: f.t('pd.enquire'),
+        onPressed: () => aqRequireSession(context, ref, actionKey: 'pd.a.enquire', go: () => Navigator.of(context).push(AQRoute.route<void>(EnquiryScreen(property: p)))),
+      ),
+      primary: AQPrimaryButton(
+        label: f.t('pd.book'),
+        trailingChevron: false,
+        onPressed: () => aqRequireSession(context, ref, actionKey: 'pd.a.book', go: () => context.push('/property/${p.id}/viewing')),
+      ),
+    );
+
+    // Phone: one column. Desktop: gallery beside the key facts, then the reading column beside lister and map.
+    final List<Widget> content = wide
+        ? [
+            Row(crossAxisAlignment: CrossAxisAlignment.start, children: [
+              Expanded(flex: 7, child: Column(crossAxisAlignment: CrossAxisAlignment.stretch, children: [gallery(), if (images.length > 1) ...[const SizedBox(height: AQSpacing.x3), thumbs]])),
+              const SizedBox(width: AQSpacing.x8),
+              Expanded(flex: 5, child: Column(crossAxisAlignment: CrossAxisAlignment.stretch, children: [
+                titleBlock,
+                const SizedBox(height: AQSpacing.x5),
+                factsW(),
+                if (p.amenities.isNotEmpty) ...[_head(context, f.t('cmp.amen')), amenitiesW()],
+              ])),
+            ]),
+            const SizedBox(height: AQSpacing.x2),
+            Row(crossAxisAlignment: CrossAxisAlignment.start, children: [
+              Expanded(flex: 7, child: Column(crossAxisAlignment: CrossAxisAlignment.stretch, children: descBlock)),
+              const SizedBox(width: AQSpacing.x8),
+              Expanded(flex: 5, child: Column(crossAxisAlignment: CrossAxisAlignment.stretch, children: [...listerBlock, ...mapBlock])),
+            ]),
+            const SizedBox(height: AQSpacing.x4),
+          ]
+        : [
+            gallery(),
+            if (images.length > 1) ...[const SizedBox(height: AQSpacing.x3), thumbs],
+            const SizedBox(height: AQSpacing.x4),
+            titleBlock,
+            const SizedBox(height: AQSpacing.x4),
+            factsW(),
+            if (p.amenities.isNotEmpty) ...[_head(context, f.t('cmp.amen')), amenitiesW()],
+            ...descBlock,
+            ...listerBlock,
+            ...mapBlock,
+            const SizedBox(height: AQSpacing.x4),
+          ];
+
     return Scaffold(
       backgroundColor: c.background,
       body: Stack(fit: StackFit.expand, children: [
@@ -288,7 +400,7 @@ class _PropertyDetailScreenState extends ConsumerState<PropertyDetailScreen> {
         SafeArea(
           child: Center(
             child: ConstrainedBox(
-              constraints: const BoxConstraints(maxWidth: AQSpacing.maxContent + AQSpacing.gutter * 2),
+              constraints: BoxConstraints(maxWidth: wide ? kPropertyWideMax : (MediaQuery.sizeOf(context).width >= 700 ? 760 : AQSpacing.maxContent + AQSpacing.gutter * 2)),
               child: Column(children: [
                 Padding(
                   padding: const EdgeInsets.symmetric(horizontal: AQSpacing.x4),
@@ -304,76 +416,11 @@ class _PropertyDetailScreenState extends ConsumerState<PropertyDetailScreen> {
                 Expanded(
                   child: SingleChildScrollView(
                     padding: const EdgeInsets.fromLTRB(AQSpacing.gutter, AQSpacing.x2, AQSpacing.gutter, AQSpacing.x6),
-                    child: Column(crossAxisAlignment: CrossAxisAlignment.stretch, children: [
-                      gallery(),
-                      if (images.length > 1) ...[const SizedBox(height: AQSpacing.x3), thumbs],
-                      const SizedBox(height: AQSpacing.x4),
-                      titleBlock,
-                      const SizedBox(height: AQSpacing.x4),
-                      LayoutBuilder(builder: (context, box) {
-                        const gap = AQSpacing.x2;
-                        final cols = large ? 2 : (facts.length >= 4 ? 4 : facts.length.clamp(1, 4));
-                        final w = (box.maxWidth - gap * (cols - 1)) / cols;
-                        return Wrap(spacing: gap, runSpacing: gap, children: [for (final x in facts) _fact(context, x.$1, x.$2, x.$3, w)]);
-                      }),
-                      if (p.amenities.isNotEmpty) ...[
-                        const SizedBox(height: AQSpacing.x3),
-                        Wrap(spacing: AQSpacing.x2, runSpacing: AQSpacing.x2, children: [
-                          for (final a in p.amenities)
-                            Container(
-                              constraints: const BoxConstraints(minHeight: 40),
-                              padding: const EdgeInsets.symmetric(horizontal: AQSpacing.x3),
-                              decoration: BoxDecoration(color: c.surfaceRaised, borderRadius: BorderRadius.circular(AQRadius.medium), border: Border.all(color: c.hairline)),
-                              child: Row(mainAxisSize: MainAxisSize.min, children: [AQIcon('check', size: 16, color: c.accent), const SizedBox(width: 6), Flexible(child: Text(a, style: AQTypography.of(context, AQText.labelMedium, color: c.inkSoft)))]),
-                            ),
-                        ]),
-                      ],
-                      _head(context, f.t('pd.description')),
-                      Text(desc, maxLines: _more ? null : 3, overflow: _more ? null : TextOverflow.ellipsis, style: AQTypography.of(context, AQText.bodyMedium)),
-                      if (desc.length > 110) Align(alignment: AlignmentDirectional.centerStart, child: AQTextButton(label: _more ? f.t('flt.less') : f.t('pd.readMore'), color: c.accentDeep, trailingIcon: 'chevron-down', onPressed: () => setState(() => _more = !_more))),
-                      _head(context, f.t('pd.details')),
-                      Container(
-                        padding: const EdgeInsets.all(AQSpacing.x4),
-                        decoration: BoxDecoration(color: c.surfaceRaised, borderRadius: BorderRadius.circular(AQRadius.large), border: Border.all(color: c.hairline)),
-                        child: Column(children: [
-                          _kv(context, f.t('flt.type'), _typeLabel(f, p.type)),
-                          _kv(context, f.t('flt.purpose'), tx),
-                          _kv(context, f.t('pd.builtUp'), '${VFmt.n(context, p.areaSqm.round())} m²'),
-                        ]),
-                      ),
-                      if (p.transactionType == TransactionType.buy) ...[
-                        const SizedBox(height: AQSpacing.x3),
-                        AQSecondaryButton(label: f.t('pd.offer'), trailingChevron: false, leadingIcon: 'send', onPressed: () => aqRequireSession(context, ref, actionKey: 'pd.a.offer', go: () => Navigator.of(context).push(AQRoute.route<void>(MakeOfferScreen(property: p))))),
-                      ],
-                      _head(context, f.t('pd.listedBy')),
-                      _lister(context, f, c, p, lister),
-                      if (p.latitude != null && p.longitude != null) ...[
-                        _head(context, f.t('pd.location')),
-                        ClipRRect(
-                          borderRadius: BorderRadius.circular(AQRadius.large),
-                          child: SizedBox(
-                            height: large ? 300 : 190,
-                            child: AqaratiMapView(initialCenter: LatLng(p.latitude!, p.longitude!), initialZoom: 14, interactive: false, borderRadius: BorderRadius.zero),
-                          ),
-                        ),
-                        const SizedBox(height: AQSpacing.x2),
-                        Text(VFmt.iso(p.locationLabel), style: AQTypography.of(context, AQText.bodySmall, soft: true)),
-                      ],
-                      const SizedBox(height: AQSpacing.x4),
-                    ]),
+                    child: Column(crossAxisAlignment: CrossAxisAlignment.stretch, children: content),
                   ),
                 ),
-                AQBottomActionBar(
-                  secondary: AQBarSecondaryButton(
-                    label: f.t('pd.enquire'),
-                    onPressed: () => aqRequireSession(context, ref, actionKey: 'pd.a.enquire', go: () => Navigator.of(context).push(AQRoute.route<void>(EnquiryScreen(property: p)))),
-                  ),
-                  primary: AQPrimaryButton(
-                    label: f.t('pd.book'),
-                    trailingChevron: false,
-                    onPressed: () => aqRequireSession(context, ref, actionKey: 'pd.a.book', go: () => context.push('/property/${p.id}/viewing')),
-                  ),
-                ),
+                // The pinned bar stays at the foot; on desktop it is a centred dock, not a full-width strip.
+                wide ? Center(child: ConstrainedBox(constraints: const BoxConstraints(maxWidth: 560), child: actions)) : actions,
               ]),
             ),
           ),
@@ -383,7 +430,7 @@ class _PropertyDetailScreenState extends ConsumerState<PropertyDetailScreen> {
   }
 
   Widget _kv(BuildContext context, String k, String v) => Padding(
-        padding: const EdgeInsets.symmetric(vertical: 6),
+        padding: const EdgeInsets.symmetric(vertical: 12),
         child: Row(crossAxisAlignment: CrossAxisAlignment.start, children: [
           Expanded(child: Text(k, style: AQTypography.of(context, AQText.bodyMedium, soft: true))),
           const SizedBox(width: AQSpacing.x3),
@@ -393,13 +440,12 @@ class _PropertyDetailScreenState extends ConsumerState<PropertyDetailScreen> {
 
   Widget _lister(BuildContext context, FlowStrings f, AQColors c, Property p, Business? b) {
     final name = b?.name ?? f.t('pd.unknownLister');
-    final initials = name.trim().isEmpty ? '?' : name.trim().split(RegExp(r'\s+')).take(2).map((w) => w[0].toUpperCase()).join();
     return Container(
       padding: const EdgeInsets.all(AQSpacing.x4),
-      decoration: BoxDecoration(color: c.surfaceRaised, borderRadius: BorderRadius.circular(AQRadius.large), border: Border.all(color: c.hairline)),
+      decoration: BoxDecoration(color: c.surfaceRaised, borderRadius: BorderRadius.circular(AQRadius.medium), border: Border.all(color: c.hairline)),
       child: Column(crossAxisAlignment: CrossAxisAlignment.stretch, children: [
         Row(children: [
-          Container(width: 52, height: 52, decoration: BoxDecoration(color: c.surfaceSelected, shape: BoxShape.circle), child: Center(child: Text(initials, style: AQTypography.of(context, AQText.titleMedium, color: c.accentDeep)))),
+          AQThumb(monogramOf: name, size: 56),
           const SizedBox(width: AQSpacing.x3),
           Expanded(
             child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [

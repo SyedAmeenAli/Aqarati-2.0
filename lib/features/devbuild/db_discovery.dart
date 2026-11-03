@@ -768,7 +768,11 @@ class _DbResultsScreenState extends ConsumerState<DbResultsScreen> {
                 selected: _map && _selected == p.id,
                 onTap: _map && _selected != p.id
                     ? () => setState(() => _selected = p.id)
-                    : null,
+                    // Browsing a category a business offers as an additional service opens its
+                    // profile in that service's context, so an enquiry names the right service.
+                    : (_q.type != null && p.type != _q.type
+                          ? () => context.push('/build/pro/${p.id}?svc=${_q.type!.name}')
+                          : null),
               ),
             ),
           if (page.hasMore)

@@ -40,7 +40,7 @@ class AQChoicePill extends StatelessWidget {
           duration: AQMotion.scaled(context, AQMotion.fast),
           constraints: const BoxConstraints(minHeight: AQControl.tap - 4),
           padding: const EdgeInsets.symmetric(horizontal: AQSpacing.x4),
-          decoration: BoxDecoration(color: selected ? c.accent : c.surface, borderRadius: BorderRadius.circular(AQControl.tap), border: Border.all(color: selected ? c.accent : c.hairline)),
+          decoration: BoxDecoration(color: selected ? c.accent : c.surfaceRaised, borderRadius: BorderRadius.circular(AQControl.tap), border: Border.all(color: selected ? c.accent : c.hairline)),
           child: Center(widthFactor: 1, child: Text(label, style: AQTypography.of(context, AQText.labelMedium, color: selected ? c.onAccent : c.inkSoft))),
         ),
       ),
@@ -75,7 +75,7 @@ class AQResultsBar extends StatelessWidget {
         child: Container(
           constraints: const BoxConstraints(minHeight: AQControl.tap - 4),
           padding: const EdgeInsets.symmetric(horizontal: AQSpacing.x3),
-          decoration: BoxDecoration(color: badge > 0 ? c.surfaceSelected : c.surface, borderRadius: BorderRadius.circular(AQControl.tap), border: Border.all(color: badge > 0 ? c.accent : c.hairline)),
+          decoration: BoxDecoration(color: badge > 0 ? c.surfaceSelected : c.surfaceRaised, borderRadius: BorderRadius.circular(AQControl.tap), border: Border.all(color: badge > 0 ? c.accent : c.hairline)),
           child: Row(mainAxisSize: MainAxisSize.min, children: [
             AQIcon(icon, size: 18, color: c.accentDeep),
             const SizedBox(width: 6),
@@ -93,8 +93,8 @@ class AQResultsBar extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final f = FlowStrings.of(context);
-    final text = Semantics(liveRegion: true, child: Text(f.t('props.count', {'n': VFmt.n(context, count)}), style: AQTypography.of(context, AQText.titleMedium)));
-    final filters = _button(context, icon: 'search', label: f.t('flt.button'), badge: activeFilters, onTap: onFilters);
+    final text = Semantics(liveRegion: true, child: Text(f.t('props.count', {'n': VFmt.n(context, count)}), style: AQTypography.of(context, AQText.headlineSmall)));
+    final filters = _button(context, icon: 'sliders', label: f.t('flt.button'), badge: activeFilters, onTap: onFilters);
     final sort = _button(context, icon: 'chevron-down', label: f.t('sort.button'), onTap: onSort);
     // Stack the count above the two buttons on narrow screens as well as at large text.
     if (aqLargeText(context) || MediaQuery.sizeOf(context).width < 360) {
@@ -130,6 +130,8 @@ Future<AQFilters?> showAQFilterSheet(BuildContext context, {required List<Proper
   final c = AQColors.of(context);
   return showModalBottomSheet<AQFilters>(
     context: context,
+    // On the root navigator the sheet covers the floating tab bar, so Reset and Show results stay reachable.
+    useRootNavigator: true,
     isScrollControlled: true,
     backgroundColor: Colors.transparent,
     barrierColor: const Color(0x66000000),
@@ -348,14 +350,15 @@ class _FilterBodyState extends State<_FilterBody> {
             padding: const EdgeInsets.fromLTRB(AQSpacing.gutter, AQSpacing.x3, AQSpacing.gutter, AQSpacing.x1),
             child: aqLargeText(context)
                 ? Column(mainAxisSize: MainAxisSize.min, crossAxisAlignment: CrossAxisAlignment.stretch, children: [_show(context, f, n), const SizedBox(height: AQSpacing.x2), _reset(f)])
-                : Row(children: [Expanded(child: _reset(f)), const SizedBox(width: AQSpacing.x3), Expanded(child: _show(context, f, n))]),
+                : Row(children: [Expanded(flex: 2, child: _reset(f, compact: MediaQuery.sizeOf(context).width < 400)), const SizedBox(width: AQSpacing.x3), Expanded(flex: 3, child: _show(context, f, n))]),
           ),
         ),
       ),
     ]);
   }
 
-  Widget _reset(FlowStrings f) => AQSecondaryButton(label: f.t('flt.reset'), leadingIcon: 'refresh', trailingChevron: false, onPressed: () => setState(_d.reset));
+  // On narrow phones the icon is dropped so "Show N results" keeps one line next to Reset.
+  Widget _reset(FlowStrings f, {bool compact = false}) => AQSecondaryButton(label: f.t('flt.reset'), leadingIcon: compact ? null : 'refresh', trailingChevron: false, onPressed: () => setState(_d.reset));
 
   Widget _show(BuildContext context, FlowStrings f, int n) => AQPrimaryButton(
         label: n == 0 ? f.t('flt.none') : f.t('flt.show', {'n': VFmt.n(context, n)}),

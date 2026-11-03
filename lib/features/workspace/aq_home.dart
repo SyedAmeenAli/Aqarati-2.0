@@ -1,3 +1,6 @@
+import '../../core/aq/aq_glass.dart';
+import '../media/aq_media.dart';
+import '../account/profile_photo.dart';
 import 'dart:typed_data';
 
 import 'package:flutter/material.dart';
@@ -13,8 +16,10 @@ import '../../core/localization/flow_strings.dart';
 import '../../data/models/enums.dart';
 import '../../core/aq/aq_help.dart';
 import '../ads/sponsored_banner.dart';
-import '../onboarding/interests.dart';
-import 'aq_action_card.dart';
+import '../account/buyer_profile.dart' show buyerProfileProvider;
+import 'aq_cards.dart' show AQCompactPropertyCard, AQPropertyCard, AQResultGrid, aqListMaxWidth;
+import 'aq_home_sections.dart';
+import 'aq_home_services.dart';
 import '../../data/models/property.dart';
 import '../../data/repositories/app_state_providers.dart'
     show savedPropertyIdsProvider;
@@ -46,12 +51,18 @@ Widget aqImg(
   String asset, {
   int cacheWidth = 500,
   Alignment alignment = Alignment.center,
-}) => Image.asset(
+}) => asset.startsWith('memory:') && aqMemoryMedia[asset] != null
+    ? AqMediaView(image: aqMemoryMedia[asset]!, kind: AqMediaKind.portfolio)
+    : Image.asset(
   asset,
   fit: BoxFit.cover,
   alignment: alignment,
   cacheWidth: cacheWidth,
   filterQuality: FilterQuality.medium,
+  // Photographs ease in once decoded instead of popping; reduced motion shows them at once.
+  frameBuilder: (context, child, frame, sync) => sync || AQMotion.reduced(context)
+      ? child
+      : AnimatedOpacity(opacity: frame == null ? 0 : 1, duration: AQMotion.scaled(context, AQMotion.slow), curve: Curves.easeOut, child: child),
   errorBuilder: (_, _, _) => const ColoredBox(color: Color(0x22000000)),
 );
 
@@ -161,7 +172,7 @@ class AQHero extends StatelessWidget {
                       ),
                     const Spacer(),
                     if (showLocation) ...[
-                      const _LocationPill(),
+                      const AQLocationPill(),
                       const SizedBox(width: AQSpacing.x2),
                     ],
                     Semantics(
@@ -173,22 +184,7 @@ class AQHero extends StatelessWidget {
       onTap: () => context.go('/app/account'),
                       child: AQPressable(
                         onTap: () => context.go('/app/account'),
-                        child: Container(
-                          width: 44,
-                          height: 44,
-                          decoration: BoxDecoration(
-                            color: c.surfaceRaised,
-                            shape: BoxShape.circle,
-                            border: Border.all(color: c.hairline),
-                          ),
-                          child: Center(
-                            child: AQIcon(
-                              'user',
-                              size: 22,
-                              color: c.accentDeep,
-                            ),
-                          ),
-                        ),
+                        child: const AQAvatar(size: 44),
                       ),
                     ),
                   ],
@@ -236,8 +232,8 @@ class AQHero extends StatelessWidget {
   }
 }
 
-class _LocationPill extends ConsumerWidget {
-  const _LocationPill();
+class AQLocationPill extends ConsumerWidget {
+  const AQLocationPill({super.key});
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -254,14 +250,13 @@ class _LocationPill extends ConsumerWidget {
       onTap: () => _pickArea(context, ref),
       child: AQPressable(
         onTap: () => _pickArea(context, ref),
-        child: Container(
-          constraints: const BoxConstraints(minHeight: 44, maxWidth: 170),
-          padding: const EdgeInsets.symmetric(horizontal: AQSpacing.x3),
-          decoration: BoxDecoration(
-            color: c.surfaceRaised,
-            borderRadius: BorderRadius.circular(22),
-            border: Border.all(color: c.hairline),
-          ),
+        child: ConstrainedBox(
+          constraints: const BoxConstraints(minHeight: AQControl.tap, maxWidth: 170),
+          child: AQGlass(
+          radius: 22,
+          blur: 14,
+          fill: 0.7,
+          padding: const EdgeInsets.symmetric(horizontal: AQSpacing.x3, vertical: 11),
           child: Row(
             mainAxisSize: MainAxisSize.min,
             children: [
@@ -278,6 +273,7 @@ class _LocationPill extends ConsumerWidget {
               const SizedBox(width: 4),
               AQIcon('chevron-down', size: 16, color: c.inkSoft),
             ],
+          ),
           ),
         ),
       ),
@@ -348,18 +344,20 @@ class AQSearchEntry extends StatelessWidget {
       onTap: () => context.push('/search/start'),
       child: AQPressable(
         onTap: () => context.push('/search/start'),
+        // A field-shaped row, not a Material input: a raised pill with a hairline and a soft lift, the
+        // search glyph first and a small accent disc (filters) at the end. The whole row opens search.
         child: Container(
-          constraints: const BoxConstraints(minHeight: 56),
-          padding: const EdgeInsets.symmetric(horizontal: AQSpacing.x4),
+          constraints: const BoxConstraints(minHeight: AQControl.field),
+          padding: const EdgeInsetsDirectional.only(start: AQSpacing.x5, end: AQSpacing.x2, top: AQSpacing.x2, bottom: AQSpacing.x2),
           decoration: BoxDecoration(
             color: c.surfaceRaised,
-            borderRadius: BorderRadius.circular(28),
-            boxShadow: AQElevation.floating,
+            borderRadius: BorderRadius.circular(AQControl.field),
             border: Border.all(color: c.hairline),
+            boxShadow: AQElevation.floating,
           ),
           child: Row(
             children: [
-              AQIcon('search', size: 22, color: c.ink),
+              AQIcon('search', size: 22, color: c.accentDeep),
               const SizedBox(width: AQSpacing.x3),
               Expanded(
                 child: Text(
@@ -369,9 +367,16 @@ class AQSearchEntry extends StatelessWidget {
                   style: AQTypography.of(
                     context,
                     AQText.bodyMedium,
-                    color: c.inkFaint,
+                    color: c.inkSoft,
                   ),
                 ),
+              ),
+              const SizedBox(width: AQSpacing.x2),
+              Container(
+                width: 40,
+                height: 40,
+                decoration: BoxDecoration(color: c.accent, shape: BoxShape.circle),
+                child: Center(child: AQIcon('sliders', size: 18, color: c.onAccent)),
               ),
             ],
           ),
@@ -458,97 +463,6 @@ class AQSectionHeader extends StatelessWidget {
   }
 }
 
-/// Square-ish photo tile with a label under it. Four per row; two at large text.
-class _TileRow extends StatelessWidget {
-  final List<(String image, String label, VoidCallback onTap)> tiles;
-  const _TileRow(this.tiles);
-
-  @override
-  Widget build(BuildContext context) {
-    final c = AQColors.of(context);
-    final cols = aqLargeText(context) ? 2 : 4;
-    return LayoutBuilder(
-      builder: (context, box) {
-        const gap = AQSpacing.x2;
-        final w = (box.maxWidth - gap * (cols - 1)) / cols;
-        return Wrap(
-          spacing: gap,
-          runSpacing: gap,
-          children: [
-            for (final t in tiles)
-              SizedBox(
-                width: w,
-                child: Semantics(
-                  button: true,
-                  focusable: true,
-                  onFocus: () {},
-                  label: t.$2,
-                  excludeSemantics: true,
-      onTap: () {
-                      AQHaptics.selection();
-                      t.$3();
-                    },
-                  child: AQPressable(
-                    onTap: () {
-                      AQHaptics.selection();
-                      t.$3();
-                    },
-                    child: DecoratedBox(
-                      decoration: BoxDecoration(
-                        color: c.surfaceRaised,
-                        borderRadius: BorderRadius.circular(AQRadius.medium),
-                        border: Border.all(color: c.hairline),
-                      ),
-                      child: ClipRRect(
-                        borderRadius: BorderRadius.circular(AQRadius.medium),
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.stretch,
-                          children: [
-                            AspectRatio(
-                              aspectRatio: 1.1,
-                              child: ExcludeSemantics(
-                                child: aqImg(t.$1, cacheWidth: 360),
-                              ),
-                            ),
-                            Padding(
-                              padding: const EdgeInsets.symmetric(
-                                horizontal: 4,
-                                vertical: AQSpacing.x2,
-                              ),
-                              child: aqLargeText(context)
-                                  ? Text(
-                                      t.$2,
-                                      textAlign: TextAlign.center,
-                                      style: AQTypography.of(
-                                        context,
-                                        AQText.labelMedium,
-                                      ),
-                                    )
-                                  : FittedBox(
-                                      fit: BoxFit.scaleDown,
-                                      child: Text(
-                                        t.$2,
-                                        maxLines: 1,
-                                        style: AQTypography.of(
-                                          context,
-                                          AQText.labelMedium,
-                                        ),
-                                      ),
-                                    ),
-                            ),
-                          ],
-                        ),
-                      ),
-                    ),
-                  ),
-                ),
-              ),
-          ],
-        );
-      },
-    );
-  }
-}
 
 /// Wide photographic banner with a title, line of copy and one pill action.
 class AQBanner extends StatelessWidget {
@@ -573,7 +487,7 @@ class AQBanner extends StatelessWidget {
   Widget build(BuildContext context) {
     final c = AQColors.of(context);
     return ClipRRect(
-      borderRadius: BorderRadius.circular(AQRadius.large),
+      borderRadius: BorderRadius.circular(AQRadius.medium),
       child: Stack(
         children: [
           Positioned.fill(
@@ -1088,207 +1002,6 @@ class _Badge extends StatelessWidget {
   );
 }
 
-// ---------------------------------------------------------------- reusable sections
-
-List<Widget> _developmentSection(BuildContext context) {
-  final f = FlowStrings.of(context);
-  void go() => context.push('/professionals');
-  return [
-    AQSectionHeader(
-      f.t('home.dev'),
-      sub: f.t('home.dev.sub'),
-      action: f.t('explore.exploreAll'),
-      onAction: go,
-    ),
-    _TileRow([
-      (
-        'assets/businesses/b1/05_Contemporary_architectural_facad.jpg',
-        f.t('pro.developers'),
-        () => context.push('/app/explore/build/results?cat=developer'),
-      ),
-      (
-        'assets/businesses/b2/05_Construction_site_with_tower_crane.jpg',
-        f.t('pro.construction'),
-        () => context.push('/app/explore/build/results?cat=construction'),
-      ),
-      (
-        'assets/businesses/b1/08_Doubleheight_atrium_architectur.jpg',
-        f.t('pro.architecture'),
-        () => context.push('/app/explore/build/results?cat=architecture'),
-      ),
-      (
-        'assets/businesses/b3/06_Styled_bedroom_interior_photography.jpg',
-        f.t('pro.interior'),
-        () => context.push('/app/explore/build/results?cat=interiorExterior'),
-      ),
-    ]),
-  ];
-}
-
-List<Widget> _maintenanceSection(BuildContext context) {
-  final f = FlowStrings.of(context);
-  void go() => context.push('/professionals');
-  return [
-    AQSectionHeader(
-      f.t('home.maint'),
-      sub: f.t('home.maint.sub'),
-      action: f.t('explore.exploreAll'),
-      onAction: go,
-    ),
-    _TileRow([
-      (
-        'assets/businesses/b4/03_Plumbing_maintenance_under_sink.jpg',
-        f.t('maint.plumber'),
-        () => context.push('/professionals?cat=maintenance'),
-      ),
-      (
-        'assets/properties/p1/02_Infinity_pool_overlooking_marina.jpg',
-        f.t('maint.pool'),
-        () => context.push('/professionals?cat=maintenance'),
-      ),
-      (
-        'assets/businesses/b4/05_Technician_servicing_air_conditi.jpg',
-        f.t('maint.ac'),
-        () => context.push('/professionals?cat=maintenance'),
-      ),
-      (
-        'assets/properties/p1/16_Contemporary_kitchen_interior_ar.jpg',
-        f.t('maint.kitchen'),
-        () => context.push('/professionals?cat=maintenance'),
-      ),
-    ]),
-  ];
-}
-
-Widget _brokerLoan(BuildContext context) {
-  final f = FlowStrings.of(context);
-  final c = AQColors.of(context);
-  Widget card(String image, String title, String body, VoidCallback onTap) =>
-      Semantics(
-        button: true,
-        focusable: true,
-        onFocus: () {},
-        label: '$title. $body',
-        excludeSemantics: true,
-      onTap: onTap,
-        child: AQPressable(
-          onTap: onTap,
-          child: ClipRRect(
-            borderRadius: BorderRadius.circular(AQRadius.medium),
-            child: Container(
-              constraints: const BoxConstraints(minHeight: 130),
-              decoration: BoxDecoration(
-                color: c.surfaceRaised,
-                border: Border.all(color: c.hairline),
-                borderRadius: BorderRadius.circular(AQRadius.medium),
-              ),
-              child: Stack(
-                children: [
-                  Positioned.fill(
-                    child: ExcludeSemantics(
-                      child: Stack(
-                        fit: StackFit.expand,
-                        children: [
-                          Opacity(
-                            opacity: c.isDark ? 0.5 : 0.8,
-                            child: aqImg(image, cacheWidth: 500),
-                          ),
-                          DecoratedBox(
-                            decoration: BoxDecoration(
-                              gradient: LinearGradient(
-                                begin: AlignmentDirectional.centerStart,
-                                end: AlignmentDirectional.centerEnd,
-                                colors: [
-                                  c.surfaceRaised,
-                                  c.surfaceRaised.withValues(alpha: 0.7),
-                                  c.surfaceRaised.withValues(alpha: 0.1),
-                                ],
-                              ),
-                            ),
-                          ),
-                        ],
-                      ),
-                    ),
-                  ),
-                  Padding(
-                    padding: const EdgeInsets.all(AQSpacing.x3 + 2),
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text(
-                          title,
-                          style: AQTypography.of(context, AQText.titleMedium),
-                        ),
-                        const SizedBox(height: 2),
-                        Text(
-                          body,
-                          style: AQTypography.of(
-                            context,
-                            AQText.bodySmall,
-                            soft: true,
-                          ),
-                        ),
-                        const SizedBox(height: AQSpacing.x3),
-                        Container(
-                          width: 36,
-                          height: 36,
-                          decoration: BoxDecoration(
-                            color: c.accent,
-                            shape: BoxShape.circle,
-                          ),
-                          child: Center(
-                            child: AQIcon(
-                              'chevron-right',
-                              size: 18,
-                              color: c.onAccent,
-                              directional: true,
-                            ),
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
-                ],
-              ),
-            ),
-          ),
-        ),
-      );
-  final broker = card(
-    'assets/location/10_Muscat_corniche_at_warm_evening.jpg',
-    f.t('home.broker'),
-    f.t('home.broker.sub'),
-    () => context.push('/broker'),
-  );
-  final loan = card(
-    'assets/properties/p5/03_Contemporary_apartment_property_.jpg',
-    f.t('home.loan'),
-    f.t('home.loan.sub'),
-    () => context.push('/calculators'),
-  );
-  return Padding(
-    padding: const EdgeInsets.only(top: AQSpacing.x6),
-    child: aqLargeText(context)
-        ? Column(
-            crossAxisAlignment: CrossAxisAlignment.stretch,
-            children: [
-              broker,
-              const SizedBox(height: AQSpacing.x3),
-              loan,
-            ],
-          )
-        : IntrinsicHeight(
-            child: Row(
-              crossAxisAlignment: CrossAxisAlignment.stretch,
-              children: [
-                Expanded(child: broker),
-                const SizedBox(width: AQSpacing.x3),
-                Expanded(child: loan),
-              ],
-            ),
-          ),
-  );
-}
 
 Widget aqPage(
   BuildContext context, {
@@ -1299,8 +1012,8 @@ Widget aqPage(
     child: Align(
       alignment: Alignment.topCenter,
       child: ConstrainedBox(
-        constraints: const BoxConstraints(
-          maxWidth: AQSpacing.maxContent + AQSpacing.gutter * 2,
+        constraints: BoxConstraints(
+          maxWidth: MediaQuery.sizeOf(context).width >= 1000 ? 960 : (MediaQuery.sizeOf(context).width >= 700 ? 760 : AQSpacing.maxContent + AQSpacing.gutter * 2),
         ),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -1331,278 +1044,76 @@ Widget aqPage(
 /// sections below stay as they were.
 /// The four primary property actions, first thing under the greeting: Buy, Rent, Sell with
 /// Aqary e-Broker and My Favorites. Each goes straight to its own journey.
-class AQHomePrimary extends StatelessWidget {
-  const AQHomePrimary({super.key});
-
-  @override
-  Widget build(BuildContext context) {
-    final f = FlowStrings.of(context);
-    Widget card(String icon, String key, String image, String path) =>
-        AQActionCard(
-          icon: icon,
-          image: image,
-          title: f.t('hp.$key'),
-          sub: f.t('hp.$key.s'),
-          onTap: () => context.push(path),
-        );
-    return Padding(
-      padding: const EdgeInsets.only(top: AQSpacing.x2),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.stretch,
-        children: [
-          Padding(
-            padding: const EdgeInsets.only(bottom: AQSpacing.x3),
-            child: Semantics(
-              header: true,
-              child: Text(
-                f.t('hp.title'),
-                style: AQTypography.of(context, AQText.headlineMedium),
-              ),
-            ),
-          ),
-          AQActionGrid(
-            cards: [
-              card(
-                'home',
-                'buy',
-                'assets/properties/p1/08_Contemporary_villa_front_facade_.jpg',
-                '/properties/categories?tx=buy',
-              ),
-              card(
-                'calendar',
-                'rent',
-                'assets/properties/p5/03_Contemporary_apartment_property_.jpg',
-                '/properties/categories?tx=rent',
-              ),
-              card(
-                'verified',
-                'sell',
-                'assets/location/09_Modern_villa_exterior_in_Seeb.jpg',
-                '/sell',
-              ),
-              card(
-                'star',
-                'fav',
-                'assets/location/10_Muscat_corniche_at_warm_evening.jpg',
-                '/saved',
-              ),
-            ],
-          ),
-        ],
-      ),
-    );
-  }
-}
-
-class AQModuleGrid extends ConsumerWidget {
-  const AQModuleGrid({super.key});
-
-  @override
-  Widget build(BuildContext context, WidgetRef ref) {
-    final interests = ref.watch(interestsProvider);
-    final f = FlowStrings.of(context);
-    final c = AQColors.of(context);
-    final large = aqLargeText(context);
-    final modules = <(String, String, String)>[
-      ('development', 'development', '/app/explore/build/results?cat=developer'),
-      (
-        'architecture',
-        'architecture',
-        '/app/explore/build/results?cat=architecture',
-      ),
-      (
-        'interior',
-        'interior',
-        '/app/explore/build/results?cat=interiorExterior',
-      ),
-      (
-        'construction',
-        'construction',
-        '/app/explore/build/results?cat=construction',
-      ),
-      ('area', 'loan', '/calculators'),
-      ('shield', 'maintenance', '/professionals?cat=maintenance'),
-    ];
-    // What the person said they are looking for comes first; the rest keep their order.
-    final wanted = [
-      for (final m in modules)
-        if (interests.any((i) => i.name == m.$2)) m,
-    ];
-    modules
-      ..removeWhere(wanted.contains)
-      ..insertAll(0, wanted);
-    Widget tile((String, String, String) m) {
-      final label = f.t('hm6.${m.$2}');
-      void open() {
-        AQHaptics.selection();
-        context.push(m.$3);
-      }
-
-      return Semantics(
-        button: true,
-        focusable: true,
-        onFocus: () {},
-        label: label,
-        excludeSemantics: true,
-        onTap: open,
-        child: AQPressable(
-          onTap: open,
-          child: Container(
-            constraints: const BoxConstraints(minHeight: 104),
-            padding: const EdgeInsets.all(AQSpacing.x3),
-            decoration: BoxDecoration(
-              color: c.surfaceRaised,
-              borderRadius: BorderRadius.circular(AQRadius.medium),
-              border: Border.all(color: c.hairline),
-            ),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Container(
-                  width: 36,
-                  height: 36,
-                  decoration: BoxDecoration(
-                    color: c.surfaceSelected,
-                    shape: BoxShape.circle,
-                  ),
-                  child: Center(child: AQIcon(m.$1, size: 18, color: c.accent)),
-                ),
-                const SizedBox(height: AQSpacing.x2),
-                Text(
-                  label,
-                  maxLines: 3,
-                  overflow: TextOverflow.ellipsis,
-                  style: AQTypography.of(context, AQText.titleSmall),
-                ),
-              ],
-            ),
-          ),
-        ),
-      );
-    }
-
-    return Padding(
-      padding: const EdgeInsets.only(top: AQSpacing.x4),
-      child: LayoutBuilder(
-        builder: (context, box) {
-          const gap = AQSpacing.x2;
-          final cols = large ? 1 : 2;
-          final w = (box.maxWidth - gap * (cols - 1)) / cols;
-          return Wrap(
-            spacing: gap,
-            runSpacing: gap,
-            children: [for (final m in modules) SizedBox(width: w, child: tile(m))],
-          );
-        },
-      ),
-    );
-  }
-}
-
 class AQHomeScreen extends ConsumerWidget {
-  /// Optional first block under the hero: the Buyer / Agent switcher for an approved agent, or
-  /// the status banner for an application that is not approved yet.
+  /// Optional first block under the header: the status banner for an application that is not approved yet.
   final Widget? topSlot;
-  const AQHomeScreen({super.key, this.topSlot});
 
-  String _greeting(FlowStrings f) {
-    final h = DateTime.now().hour;
-    return f.t(
-      h < 12
-          ? 'home.greet.morning'
-          : (h < 18 ? 'home.greet.afternoon' : 'home.greet.evening'),
-    );
-  }
+  /// Optional compact control under the header (the Shop / Work mode capsule of an approved agent).
+  final Widget? modeSwitch;
+  const AQHomeScreen({super.key, this.topSlot, this.modeSwitch});
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final f = FlowStrings.of(context);
-    final c = AQColors.of(context);
-    final tx = ref.watch(homeTxProvider);
-    final area = ref.watch(homeAreaProvider);
-    final async = ref.watch(aqAllPropertiesProvider);
-    return aqPage(
-      context,
-      hero: AQHero(
-        image: 'assets/location/11_Muscat_skyline_and_mountains.jpg',
-        eyebrow: _greeting(f),
-        title: f.t('home.lead'),
-        sub: '',
+    final first = ref.watch(buyerProfileProvider).valueOrNull?.firstName.trim() ?? '';
+    // Home reads top to bottom: who and where, search, one lead picture, the sponsored banner, the
+    // services, then featured properties and trusted professionals as rails that run to the edge.
+    return SafeArea(
+      bottom: false,
+      child: SingleChildScrollView(
+        child: Align(
+          alignment: Alignment.topCenter,
+          child: LayoutBuilder(
+            builder: (context, box) {
+              final wide = box.maxWidth >= 720;
+              final column = wide ? 880.0 : AQSpacing.maxContent + AQSpacing.gutter * 2;
+              final width = box.maxWidth < column ? box.maxWidth : column;
+              const pad = EdgeInsets.symmetric(horizontal: AQSpacing.gutter);
+              return ConstrainedBox(
+                constraints: BoxConstraints(maxWidth: column),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.stretch,
+                  children: [
+                    Padding(
+                      padding: pad,
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.stretch,
+                        children: [
+                          const SizedBox(height: AQSpacing.x1),
+                          const AQHomeHeader(),
+                          if (modeSwitch != null)
+                            Padding(
+                              padding: const EdgeInsets.only(top: AQSpacing.x1),
+                              child: Align(alignment: AlignmentDirectional.centerEnd, child: modeSwitch),
+                            ),
+                          ?topSlot,
+                          const SizedBox(height: AQSpacing.x4),
+                          AQHomeGreeting(
+                            title: first.isEmpty ? f.t('hm7.welcome') : f.t('hm7.welcomeName', {'name': first}),
+                            sub: f.t('hm7.sub'),
+                          ),
+                          const SizedBox(height: AQSpacing.x5),
+                          AQSearchEntry(hint: f.t('hm8.search')),
+                          const SizedBox(height: AQSpacing.x6),
+                          const AQHomeHero(),
+                          const SizedBox(height: AQSpacing.x4),
+                          const SponsoredBannerSlot(),
+                          AQSectionHeader(f.t('hm8.services'), sub: f.t('hm8.services.s')),
+                          const AQHomeServices(),
+                        ],
+                      ),
+                    ),
+                    AQHomeFeatured(width: width),
+                    const SizedBox(height: AQSpacing.x2),
+                    AQHomePros(width: width),
+                    const SizedBox(height: 128),
+                  ],
+                ),
+              );
+            },
+          ),
+        ),
       ),
-      children: [
-        ?topSlot,
-        const AQHomePrimary(),
-        // Sponsored content sits below the primary actions so it never pushes them out of view.
-        const SponsoredBannerSlot(),
-        const SizedBox(height: AQSpacing.x4),
-        AQSearchEntry(hint: f.t('home.search.hint')),
-        Padding(
-          padding: const EdgeInsets.only(top: AQSpacing.x5),
-          child: Semantics(
-            header: true,
-            child: Text(
-              f.t('hp.more'),
-              style: AQTypography.of(context, AQText.headlineMedium),
-            ),
-          ),
-        ),
-        const AQModuleGrid(),
-        AQSectionHeader(
-          f.t('home.browse'),
-          help: true,
-          action: f.t('home.seeAll'),
-          onAction: () => context.push('/properties/all'),
-        ),
-        _TileRow([
-          for (final k in PropCategory.values)
-            (
-              k.image,
-              f.t(k.key),
-              () => context.push('/properties?cat=${k.name}'),
-            ),
-        ]),
-        const SizedBox(height: AQSpacing.x5),
-        AQSlideSwitch(
-          labels: [f.t('home.buy'), f.t('home.rent')],
-          index: tx == TransactionType.buy ? 0 : 1,
-          onChanged: (i) => ref.read(homeTxProvider.notifier).state = i == 0
-              ? TransactionType.buy
-              : TransactionType.rent,
-        ),
-        const SizedBox(height: AQSpacing.x4),
-        async.when(
-          loading: () => const AQSkeletonBox(height: 320),
-          error: (_, _) => AQErrorBanner(
-            text: f.t('disc.loadError'),
-            action: AQTextButton(
-              label: f.t('common.retry'),
-              color: c.accent,
-              onPressed: () => ref.invalidate(aqAllPropertiesProvider),
-            ),
-          ),
-          data: (all) {
-            final items = all
-                .where(
-                  (p) =>
-                      p.transactionType == tx &&
-                      (area == null || p.area == area) &&
-                      p.verification.isVerified,
-                )
-                .toList();
-            if (items.isEmpty) return AQNoticeLine(text: f.t('disc.none'));
-            return AnimatedSwitcher(
-              duration: AQMotion.scaled(context, AQMotion.standard),
-              child: KeyedSubtree(
-                key: ValueKey('$tx$area'),
-                child: _Featured(items: items),
-              ),
-            );
-          },
-        ),
-        ..._developmentSection(context),
-        ..._maintenanceSection(context),
-        _brokerLoan(context),
-      ],
     );
   }
 }
@@ -1641,62 +1152,6 @@ class AQNoticeLine extends StatelessWidget {
 
 // ---------------------------------------------------------------- Explore
 
-class _Action extends StatelessWidget {
-  final String icon, label;
-  final VoidCallback onTap;
-  const _Action({required this.icon, required this.label, required this.onTap});
-  @override
-  Widget build(BuildContext context) {
-    final c = AQColors.of(context);
-    return Semantics(
-      button: true,
-      focusable: true,
-      onFocus: () {},
-      label: label,
-      excludeSemantics: true,
-      onTap: () {
-          AQHaptics.selection();
-          onTap();
-        },
-      child: AQPressable(
-        onTap: () {
-          AQHaptics.selection();
-          onTap();
-        },
-        child: Container(
-          constraints: const BoxConstraints(minHeight: 52),
-          padding: const EdgeInsets.symmetric(horizontal: AQSpacing.x3),
-          decoration: BoxDecoration(
-            color: c.accent,
-            borderRadius: BorderRadius.circular(AQRadius.medium),
-          ),
-          child: Row(
-            children: [
-              AQIcon(icon, size: 20, color: c.onAccent),
-              const SizedBox(width: AQSpacing.x2),
-              Expanded(
-                child: Text(
-                  label,
-                  style: AQTypography.of(
-                    context,
-                    AQText.labelMedium,
-                    color: c.onAccent,
-                  ),
-                ),
-              ),
-              AQIcon(
-                'chevron-right',
-                size: 16,
-                color: c.onAccent,
-                directional: true,
-              ),
-            ],
-          ),
-        ),
-      ),
-    );
-  }
-}
 
 // ---------------------------------------------------------------- Properties browse
 
@@ -1771,6 +1226,7 @@ class _AQPropertiesScreenState extends ConsumerState<AQPropertiesScreen> {
     final async = ref.watch(aqAllPropertiesProvider);
     final txIndex = _f.tx == null ? 0 : (_f.tx == TransactionType.buy ? 1 : 2);
     return AQViewingScaffold(
+      maxWidth: aqListMaxWidth(context) == null ? null : aqListMaxWidth(context)! + AQSpacing.gutter * 2,
       title: f.t('props.title'),
       subtitle: f.t('props.sub'),
       backLabel: f.t('common.back'),
@@ -1784,22 +1240,26 @@ class _AQPropertiesScreenState extends ConsumerState<AQPropertiesScreen> {
       children: [
         AQSearchEntry(hint: f.t('props.search')),
         const SizedBox(height: AQSpacing.x4),
-        Wrap(
-          spacing: AQSpacing.x2,
-          runSpacing: AQSpacing.x2,
-          children: [
-            AQChoicePill(
-              label: f.t('disc.all'),
-              selected: _f.category == null,
-              onTap: () => setState(() => _f.category = null),
-            ),
-            for (final k in PropCategory.values)
+        // One scrolling line of categories (a two-row cloud pushed the first listing below the fold).
+        SingleChildScrollView(
+          scrollDirection: Axis.horizontal,
+          child: Row(
+            children: [
               AQChoicePill(
-                label: f.t(k.key),
-                selected: _f.category == k,
-                onTap: () => setState(() => _f.category = k),
+                label: f.t('disc.all'),
+                selected: _f.category == null,
+                onTap: () => setState(() => _f.category = null),
               ),
-          ],
+              for (final k in PropCategory.values) ...[
+                const SizedBox(width: AQSpacing.x2),
+                AQChoicePill(
+                  label: f.t(k.key),
+                  selected: _f.category == k,
+                  onTap: () => setState(() => _f.category = k),
+                ),
+              ],
+            ],
+          ),
         ),
         const SizedBox(height: AQSpacing.x3),
         AQSlideSwitch(
@@ -1856,11 +1316,7 @@ class _AQPropertiesScreenState extends ConsumerState<AQPropertiesScreen> {
                     ],
                   )
                 else
-                  for (final p in shown)
-                    Padding(
-                      padding: const EdgeInsets.only(bottom: AQSpacing.x3),
-                      child: AQResultCard(property: p),
-                    ),
+                  AQResultGrid(children: [for (final p in shown) AQResultCard(property: p)]),
               ],
             );
           },
@@ -1870,201 +1326,19 @@ class _AQPropertiesScreenState extends ConsumerState<AQPropertiesScreen> {
   }
 }
 
-class AQResultCard extends ConsumerWidget {
+/// A property in any list (results, saved, search hits, broker and business lists). The same card as the
+/// Home rails, minus the Enquire action (lists never had one): photograph, price, name, place and facts,
+/// with Save at the start of the photograph so a compare mark can sit at the end.
+class AQResultCard extends StatelessWidget {
   final Property property;
 
-  /// Extra room at the trailing edge when something is overlaid there (e.g. a compare mark).
+  /// Kept for callers that overlay a mark at the trailing edge; the card now keeps that corner free on its own.
   final double trailingInset;
-  const AQResultCard({
-    super.key,
-    required this.property,
-    this.trailingInset = 0,
-  });
+
+  /// A short horizontal card for fixed-height places (the map strip).
+  final bool compact;
+  const AQResultCard({super.key, required this.property, this.trailingInset = 0, this.compact = false});
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
-    final c = AQColors.of(context);
-    final f = FlowStrings.of(context);
-    final p = property;
-    final saved = ref.watch(savedPropertiesProvider).contains(p.id);
-    final tx = p.transactionType == TransactionType.buy
-        ? f.t('disc.sale')
-        : f.t('disc.rent');
-    final facts = [
-      if (p.bedrooms != null)
-        '${VFmt.n(context, p.bedrooms!)} ${f.t('disc.beds')}',
-      if (p.bathrooms != null)
-        '${VFmt.n(context, p.bathrooms!)} ${f.t('home.baths')}',
-      '${VFmt.n(context, p.areaSqm.round())} m²',
-    ].join(' · ');
-    final card = Semantics(
-      button: true,
-      focusable: true,
-      onFocus: () {},
-      label: '${p.title}, ${p.locationLabel}, $tx, $facts, ${p.priceLabel}',
-      excludeSemantics: true,
-      onTap: () => context.push('/property/${p.id}'),
-      child: AQPressable(
-        onTap: () => context.push('/property/${p.id}'),
-        child: ClipRRect(
-          borderRadius: BorderRadius.circular(AQRadius.large),
-          child: DecoratedBox(
-            decoration: BoxDecoration(
-              color: c.surfaceRaised,
-              border: Border.all(color: c.hairline),
-              borderRadius: BorderRadius.circular(AQRadius.large),
-            ),
-            child: Stack(
-              children: [
-                Padding(
-                  padding: EdgeInsetsDirectional.only(
-                    start: aqLargeText(context) ? 100 : 132,
-                  ),
-                  child: ConstrainedBox(
-                    constraints: const BoxConstraints(minHeight: 132),
-                    child: Padding(
-                      padding: EdgeInsetsDirectional.fromSTEB(
-                        AQSpacing.x3,
-                        AQSpacing.x3,
-                        AQSpacing.x3 + trailingInset,
-                        AQSpacing.x3,
-                      ),
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        mainAxisAlignment: MainAxisAlignment.center,
-                        children: [
-                          Text(
-                            tx,
-                            style: AQTypography.of(
-                              context,
-                              AQText.labelSmall,
-                              color: c.accentDeep,
-                            ),
-                          ),
-                          const SizedBox(height: 2),
-                          Text(
-                            VFmt.iso(p.title),
-                            style: AQTypography.of(
-                              context,
-                              AQText.headlineSmall,
-                            ),
-                          ),
-                          const SizedBox(height: AQSpacing.x1),
-                          Row(
-                            children: [
-                              AQIcon('pin', size: 14, color: c.accent),
-                              const SizedBox(width: 4),
-                              Flexible(
-                                child: Text(
-                                  VFmt.iso(
-                                    p.locationLabel
-                                        .split(',')
-                                        .take(2)
-                                        .join(',')
-                                        .trim(),
-                                  ),
-                                  style: AQTypography.of(
-                                    context,
-                                    AQText.bodySmall,
-                                    soft: true,
-                                  ),
-                                ),
-                              ),
-                            ],
-                          ),
-                          Text(
-                            facts,
-                            style: AQTypography.of(
-                              context,
-                              AQText.bodySmall,
-                              soft: true,
-                            ),
-                          ),
-                          const SizedBox(height: AQSpacing.x1),
-                          Text(
-                            p.priceLabel,
-                            style: AQTypography.of(
-                              context,
-                              AQText.titleMedium,
-                              color: c.accentDeep,
-                            ),
-                          ),
-                        ],
-                      ),
-                    ),
-                  ),
-                ),
-                PositionedDirectional(
-                  start: 0,
-                  top: 0,
-                  bottom: 0,
-                  width: aqLargeText(context) ? 100 : 132,
-                  child: Stack(
-                    fit: StackFit.expand,
-                    children: [
-                      p.imageUrls.isEmpty
-                          ? ColoredBox(color: c.surfaceSelected)
-                          : aqImg(p.imageUrls.first, cacheWidth: 400),
-                    ],
-                  ),
-                ),
-              ],
-            ),
-          ),
-        ),
-      ),
-    );
-    return Stack(
-      children: [
-        card,
-        PositionedDirectional(
-          start: 0,
-          top: 0,
-          child: Semantics(
-            button: true,
-            focusable: true,
-            onFocus: () {},
-            selected: saved,
-            label: saved ? f.t('home.unsave') : f.t('home.save'),
-            excludeSemantics: true,
-            onTap: () {
-              final cur = ref.read(savedPropertiesProvider);
-              ref.read(savedPropertiesProvider.notifier).state = saved
-                  ? ({...cur}..remove(p.id))
-                  : {...cur, p.id};
-            },
-            child: AQPressable(
-              onTap: () {
-                AQHaptics.confirm();
-                final cur = ref.read(savedPropertiesProvider);
-                ref.read(savedPropertiesProvider.notifier).state = saved
-                    ? ({...cur}..remove(p.id))
-                    : {...cur, p.id};
-              },
-              pressedScale: 0.9,
-              child: SizedBox(
-                width: 48,
-                height: 48,
-                child: Center(
-                  child: Container(
-                    width: 34,
-                    height: 34,
-                    decoration: const BoxDecoration(
-                      color: Color(0x66000000),
-                      shape: BoxShape.circle,
-                    ),
-                    child: Icon(
-                      saved ? Icons.favorite : Icons.favorite_border,
-                      size: 18,
-                      color: saved ? const Color(0xFFE08A78) : Colors.white,
-                    ),
-                  ),
-                ),
-              ),
-            ),
-          ),
-        ),
-      ],
-    );
-  }
+  Widget build(BuildContext context) => compact ? AQCompactPropertyCard(property: property) : AQPropertyCard(property: property, showEnquire: false, saveAtStart: true, tagAtBottom: true);
 }

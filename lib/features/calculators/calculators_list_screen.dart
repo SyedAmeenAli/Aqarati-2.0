@@ -53,7 +53,7 @@ class CalculatorsListScreen extends StatelessWidget {
                 child: Container(
                   constraints: const BoxConstraints(minHeight: 76),
                   padding: const EdgeInsets.all(AQSpacing.x4),
-                  decoration: BoxDecoration(color: c.surfaceRaised, borderRadius: BorderRadius.circular(AQRadius.large), border: Border.all(color: c.hairline)),
+                  decoration: BoxDecoration(color: c.surfaceRaised, borderRadius: BorderRadius.circular(AQRadius.medium), border: Border.all(color: c.hairline)),
                   child: Row(children: [
                     Container(width: 44, height: 44, decoration: BoxDecoration(color: c.surfaceSelected, shape: BoxShape.circle), child: Center(child: AQIcon(_icon(t), size: 22, color: c.accent))),
                     const SizedBox(width: AQSpacing.x3),

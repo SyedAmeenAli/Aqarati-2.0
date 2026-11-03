@@ -291,7 +291,8 @@ void main() {
       await big(t);
       await t.pumpWidget(app(repo(), me: _buyer));
       await settle(t);
-      expect(find.text('Agent workspace only'), findsOneWidget);
+      expect(find.text('Business workspace only'), findsOneWidget);
+      expect(find.text('Register as a Business or Professional'), findsOneWidget, reason: 'a real next step, not a dead end');
       expect(find.text('Add listing'), findsNothing);
     });
 
@@ -301,7 +302,9 @@ void main() {
       await big(t);
       await t.pumpWidget(app(repo(), me: null));
       await settle(t);
-      expect(find.text('Agent workspace only'), findsOneWidget);
+      expect(find.text('Sign in to open this workspace'), findsOneWidget);
+      expect(find.text('Sign in'), findsOneWidget, reason: 'a way to sign in, not a dead end');
+      expect(find.text('Add listing'), findsNothing);
     });
 
     testWidgets(

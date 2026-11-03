@@ -1,3 +1,4 @@
+import '../../core/domain/account_models.dart' show InteriorExteriorServiceType;
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
@@ -272,8 +273,20 @@ String dbTypeImage(ProType t) => switch (t) {
 String dbProLabel(FlowStrings f, DbProfessional p) {
   final base = f.t(p.type.key);
   final s = p.serviceType;
-  if (s == null) return base;
-  return '$base · ${f.t('service.${s.name}')}';
+  final main = s == null ? base : '$base · ${f.t('service.${s.name}')}';
+  if (p.extraTypes.isEmpty) return main;
+  return '$main · ${f.t('db.also', {'s': p.extraTypes.map((t) => dbCategoryLabel(f, p, t)).join(f.ar ? '، ' : ', ')})}';
+}
+
+/// One service category of a business as the public sees it. The interior/exterior category names
+/// the side (or both) the business actually offers.
+String dbCategoryLabel(FlowStrings f, DbProfessional p, ProType t) {
+  if (t != ProType.interiorExterior) return f.t(t.key);
+  return switch (p.designService) {
+    InteriorExteriorServiceType.interior => f.t('st.svc.interior'),
+    InteriorExteriorServiceType.exterior => f.t('st.svc.exterior'),
+    _ => f.t(t.key),
+  };
 }
 
 String dbGovLabel(FlowStrings f, String gov) =>
@@ -322,10 +335,6 @@ class DbProCard extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final c = AQColors.of(context);
     final f = FlowStrings.of(context);
-    final large = aqLargeText(context);
-    // On the narrowest phones a wide photo leaves no room for "Construction" on one line.
-    final narrow = MediaQuery.sizeOf(context).width < 360;
-    final w = narrow ? 88.0 : (large ? 96.0 : 120.0);
     final projects = pro.type == ProType.developer
         ? ref.watch(dbApprovedProjectsProvider(pro.id)).valueOrNull
         : null;
@@ -343,7 +352,7 @@ class DbProCard extends ConsumerWidget {
       child: AQPressable(
         onTap: onTap ?? () => context.push('/build/pro/${pro.id}'),
         child: ClipRRect(
-          borderRadius: BorderRadius.circular(AQRadius.large),
+          borderRadius: BorderRadius.circular(AQRadius.medium),
           child: DecoratedBox(
             decoration: BoxDecoration(
               color: c.surfaceRaised,
@@ -351,14 +360,19 @@ class DbProCard extends ConsumerWidget {
                 color: selected ? c.accent : c.hairline,
                 width: selected ? 1.5 : 1,
               ),
-              borderRadius: BorderRadius.circular(AQRadius.large),
+              borderRadius: BorderRadius.circular(AQRadius.medium),
             ),
-            child: Stack(
+            // Photograph-led: the cover on top (16:9), then the name, what they do, place and rating.
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              mainAxisSize: MainAxisSize.min,
               children: [
+                if (pro.cover != null)
+                  AspectRatio(aspectRatio: 16 / 9, child: ExcludeSemantics(child: aqImg(pro.cover!, cacheWidth: 800))),
                 Padding(
-                  padding: EdgeInsetsDirectional.only(start: w),
+                  padding: EdgeInsets.zero,
                   child: ConstrainedBox(
-                    constraints: const BoxConstraints(minHeight: 128),
+                    constraints: const BoxConstraints(minHeight: 0),
                     child: Padding(
                       padding: const EdgeInsets.all(AQSpacing.x3),
                       child: Column(
@@ -431,17 +445,6 @@ class DbProCard extends ConsumerWidget {
                     ),
                   ),
                 ),
-                PositionedDirectional(
-                  start: 0,
-                  top: 0,
-                  bottom: 0,
-                  width: w,
-                  child: ExcludeSemantics(
-                    child: pro.cover == null
-                        ? ColoredBox(color: c.surfaceSelected)
-                        : aqImg(pro.cover!, cacheWidth: 400),
-                  ),
-                ),
               ],
             ),
           ),
@@ -488,27 +491,40 @@ class DbProjectCard extends StatelessWidget {
       child: AQPressable(
         onTap: onTap,
         child: Container(
-          padding: const EdgeInsets.all(AQSpacing.x3),
+          padding: EdgeInsets.zero,
           decoration: BoxDecoration(
             color: c.surfaceRaised,
-            borderRadius: BorderRadius.circular(AQRadius.large),
+            borderRadius: BorderRadius.circular(AQRadius.medium),
             border: Border.all(color: c.hairline),
           ),
-          child: Row(
+          // A project with a cover is a photograph-led card (16:9 on top); one without keeps the compact row.
+          child: ClipRRect(
+            borderRadius: BorderRadius.circular(AQRadius.medium),
+            child: Column(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            mainAxisSize: MainAxisSize.min,
+            children: [
+            if (p.cover != null)
+              AspectRatio(aspectRatio: 16 / 9, child: ExcludeSemantics(child: aqImg(p.cover!, cacheWidth: 800))),
+            Padding(
+              padding: const EdgeInsets.all(AQSpacing.x3),
+              child: Row(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Container(
-                width: 56,
-                height: 56,
-                decoration: BoxDecoration(
-                  color: c.surfaceSelected,
-                  borderRadius: BorderRadius.circular(AQRadius.medium),
-                ),
-                child: Center(
-                  child: AQIcon('development', size: 26, color: c.accent),
+              if (p.cover == null) ...[
+              ClipRRect(
+                borderRadius: BorderRadius.circular(AQRadius.medium),
+                child: SizedBox(
+                  width: 72,
+                  height: 72,
+                  child: ColoredBox(
+                    color: c.surfaceSelected,
+                    child: Center(child: AQIcon('development', size: 26, color: c.accent)),
+                  ),
                 ),
               ),
               const SizedBox(width: AQSpacing.x3),
+              ],
               Expanded(
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
@@ -554,6 +570,10 @@ class DbProjectCard extends StatelessWidget {
               ),
               if (trailing != null) trailing!,
             ],
+          ),
+            ),
+            ],
+          ),
           ),
         ),
       ),
@@ -991,3 +1011,81 @@ class DbTagRow extends StatelessWidget {
 String dbProjectsCount(BuildContext context, FlowStrings f, int n) => n == 1
     ? f.t('db.projects1')
     : f.t('db.projectsN', {'n': VFmt.n(context, n)});
+
+/// Equal-width tabs on one track with a thumb that slides to the selected one. Used for the two or
+/// three views of a page (Overview, Projects, Reviews). The content below changes with it.
+class DbSegmentedTabs extends StatelessWidget {
+  final List<String> labels;
+  final int selected;
+  final ValueChanged<int> onChanged;
+  const DbSegmentedTabs({super.key, required this.labels, required this.selected, required this.onChanged});
+
+  @override
+  Widget build(BuildContext context) {
+    final c = AQColors.of(context);
+    final n = labels.length;
+    return Container(
+      padding: const EdgeInsets.all(4),
+      decoration: BoxDecoration(
+        color: c.surfaceSelected,
+        borderRadius: BorderRadius.circular(AQRadius.medium),
+        border: Border.all(color: c.hairline),
+      ),
+      child: LayoutBuilder(
+        builder: (context, box) {
+          final w = box.maxWidth / n;
+          return Stack(
+            children: [
+              AnimatedPositionedDirectional(
+                duration: AQMotion.scaled(context, AQMotion.standard),
+                curve: Curves.easeOutCubic,
+                start: selected * w,
+                width: w,
+                top: 0,
+                bottom: 0,
+                child: DecoratedBox(
+                  decoration: BoxDecoration(color: c.accent, borderRadius: BorderRadius.circular(AQRadius.small)),
+                ),
+              ),
+              Row(
+                children: [
+                  for (var i = 0; i < n; i++)
+                    Expanded(
+                      child: Semantics(
+                        button: true,
+                        focusable: true,
+                        onFocus: () {},
+                        selected: i == selected,
+                        label: labels[i],
+                        excludeSemantics: true,
+                        onTap: () => onChanged(i),
+                        child: GestureDetector(
+                          behavior: HitTestBehavior.opaque,
+                          onTap: i == selected
+                              ? null
+                              : () {
+                                  AQHaptics.selection();
+                                  onChanged(i);
+                                },
+                          child: Container(
+                            constraints: const BoxConstraints(minHeight: 44),
+                            alignment: Alignment.center,
+                            padding: const EdgeInsets.symmetric(horizontal: AQSpacing.x2),
+                            child: AnimatedDefaultTextStyle(
+                              duration: AQMotion.scaled(context, AQMotion.fast),
+                              style: AQTypography.of(context, AQText.labelLarge, color: i == selected ? (c.isDark ? c.background : Colors.white) : c.inkSoft),
+                              child: Text(labels[i], maxLines: 1, overflow: TextOverflow.ellipsis, textAlign: TextAlign.center),
+                            ),
+                          ),
+                        ),
+                      ),
+                    ),
+                ],
+              ),
+            ],
+          );
+        },
+      ),
+    );
+  }
+}

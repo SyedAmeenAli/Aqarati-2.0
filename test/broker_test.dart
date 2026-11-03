@@ -126,7 +126,7 @@ void main() {
     await t.pumpWidget(app(demo(), start: '/broker/list'));
     await settle(t);
     expect(find.byType(AqaratiBrokerBadge), findsNWidgets(2));
-    await t.tap(find.textContaining('QA sample broker A'));
+    await t.tap(find.textContaining('Al Noor Realty'));
     await settle(t);
     expect(find.text('Call'), findsOneWidget);
   });

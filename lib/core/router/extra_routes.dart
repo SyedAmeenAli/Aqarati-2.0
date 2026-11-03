@@ -1,5 +1,7 @@
+import '../../features/account/profile_photo.dart';
 import 'package:go_router/go_router.dart';
 
+import '../../features/settings/settings_screens.dart';
 import '../../features/account/buyer_profile.dart';
 import '../../features/broker/broker_screens.dart';
 import '../../features/ebroker/ebroker_screens.dart';
@@ -76,6 +78,14 @@ List<RouteBase> extraRoutes() => [
 
 /// Customer screens hosted by the shared shell (they keep the bottom navigation).
 List<RouteBase> extraShellRoutes() => [
+  for (final name in kSettingsRoutes)
+    GoRoute(
+      path: '/app/account/settings/$name',
+      pageBuilder: (context, state) => AQRoute.forward(
+        key: state.pageKey,
+        child: settingsPageFor(name, kCustomerSettings),
+      ),
+    ),
   GoRoute(
     path: '/engagements',
     pageBuilder: (context, state) =>
@@ -92,6 +102,11 @@ List<RouteBase> extraShellRoutes() => [
     path: '/reviews',
     pageBuilder: (context, state) =>
         AQRoute.forward(key: state.pageKey, child: const MyReviewsScreen()),
+  ),
+  GoRoute(
+    path: '/app/account/photo',
+    pageBuilder: (context, state) =>
+        AQRoute.forward(key: state.pageKey, child: const ProfilePhotoScreen()),
   ),
   GoRoute(
     path: '/app/account/profile',

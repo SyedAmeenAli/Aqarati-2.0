@@ -55,3 +55,36 @@ In a preview build the four professional workspaces also show sample contact act
 ## Troubleshooting
 - Blank page on a static host: stop any server holding the output folder before `flutter build web` and check `assets/AssetManifest.bin` exists.
 - Sign-in will not accept the sample credentials: the build was made without `AQARATI_DEMO_MODE=true`.
+
+---
+
+## Update (2026-10-31): master implementation pass
+
+Local only; nothing is committed, pushed or deployed.
+
+- **Preview build command** now also bundles the Flutter engine and fallback font locally, so the page makes no request to `www.gstatic.com` or `fonts.gstatic.com`:
+
+```bash
+flutter build web --release --pwa-strategy=none --no-web-resources-cdn --dart-define=AQARATI_DEMO_MODE=true --dart-define=REVIEW_TOOLS=true --output build/web_demo
+flutter build web --release --pwa-strategy=none --no-web-resources-cdn -t lib/admin_main.dart --output build/web_admin
+```
+
+- The console is unchanged in structure: same sidebar (below 960 px a drawer), same sign-in, same modules. It was walked again at 320, 360, 390, 412, 430, 768 and 1280 px (`adm_after_*` screenshots, `j42_admin2.js`) and its tests pass with demo mode off and on.
+- The console's text is **English only**. The customer, agent and professional apps are fully bilingual; translating the console was not part of this pass.
+- The console's Analytics page (`/analytics`) counts the console's own sample records. It is separate from the role Analytics inside the agent and professional workspaces (`/agent/analytics`, `/pro/analytics`), which use deterministic local sample series.
+- Console data does not reach the apps, except the sponsored placements, as before. The sample sponsored campaigns now carry Arabic copy for Arabic customers; admin-created campaigns show exactly the text typed.
+- Demo-mode tests: `devbuild_workspace_test.dart` now builds its gated screens from a repository that has the contract's optional capabilities off, so the same assertions hold in both configurations. A separate assertion states what a demo build switches on (contact activity, engagements, portfolio) and what stays off (media, review replies).
+
+
+## Arabic and right-to-left (2026-11-01)
+
+The console is bilingual and follows the same language switch as the app.
+
+- **Switch.** A language button (English / العربية) is on the sign-in screen, the one-time code step, the sidebar and the narrow top bar. It sets the app's locale, so a choice made in Account > Language and region applies here and the reverse. It persists across reloads.
+- **How the text is translated.** The screens stay written in English. `lib/admin/admin_l10n.dart` looks each string up in `lib/admin/admin_strings_ar.dart` when the language is Arabic. A runtime collector records any string with no translation and a test fails on it.
+- **Layout.** The sidebar is on the right, headings and table columns run right to left, forms and dialogs mirror, back and chevron controls point the other way, and mobile records are cards. At 960 px and below a menu button at the right edge opens the drawer.
+- **Numbers and names.** Counts use Arabic-Indic digits; identifiers, e-mail addresses and money written as "OMR 185,000" keep theirs. Proper names (people, businesses, places) stay as written; the words around them are translated.
+- **Fonts.** IBM Plex Sans Arabic, bundled.
+- **Simulation notices are translated too.** Arabic sign-in and the one-time code still say they are simulated and protect nothing.
+- **Review status.** The Arabic is draft copy and needs a native review before launch.
+- **Tests.** `test/admin_arabic_test.dart` (every screen, interactive states, switch, geometry at 320, 390, 768 and 1280). Browser: `j95_admin.js`.

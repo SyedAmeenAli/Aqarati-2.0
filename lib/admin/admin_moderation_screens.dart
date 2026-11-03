@@ -1,4 +1,4 @@
-import 'package:flutter/material.dart';
+import 'package:flutter/material.dart' hide Text;
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
@@ -10,13 +10,16 @@ import '../core/localization/flow_strings.dart';
 import '../data/models/enums.dart';
 import '../data/models/money.dart';
 import '../features/viewing/widgets/viewing_format.dart';
+import '../features/workspace/aq_home.dart' show aqImg;
 import 'admin_auth.dart';
 import 'admin_directory.dart' show adminLog, decisionVerb;
+import 'admin_images.dart';
 import 'admin_models.dart';
 import 'admin_repository.dart';
 import 'admin_review_parts.dart';
 import 'admin_widgets.dart';
 import 'admin_ui.dart';
+import 'admin_l10n.dart';
 
 const _pageSize = 8;
 
@@ -70,11 +73,11 @@ class _ModerationQueueScreenState extends ConsumerState<ModerationQueueScreen> {
     final store = ref.watch(adminStoreProvider);
     return AdminFrame(
       section: '/moderation',
-      title: 'Listing moderation',
-      subtitle: 'Listings from agents and Aqary e-Broker submissions waiting for review.',
+      title: tr('Listing moderation'),
+      subtitle: tr('Listings from agents and Aqary e-Broker submissions waiting for review.'),
       actions: [
         AdminSecondaryButton(
-          label: 'Refresh',
+          label: tr('Refresh'),
           leadingIcon: 'refresh',
           trailingChevron: false,
           compact: true,
@@ -89,11 +92,11 @@ class _ModerationQueueScreenState extends ConsumerState<ModerationQueueScreen> {
             if (all.isEmpty) {
               return AdminNotice(
                 icon: 'home',
-                title: 'No listings are waiting',
-                body: 'Submissions from agents and e-Broker appear here.',
+                title: tr('No listings are waiting'),
+                body: tr('Submissions from agents and e-Broker appear here.'),
                 action: kUseDemoBackend && store != null
                     ? AdminSecondaryButton(
-                        label: 'Add demo records',
+                        label: tr('Add demo records'),
                         trailingChevron: false,
                         onPressed: () {
                           store.seedDemoRecords();
@@ -125,7 +128,7 @@ class _ModerationQueueScreenState extends ConsumerState<ModerationQueueScreen> {
               children: [
                 AdminSearchField(
                   controller: _search,
-                  hint: 'Search by title, owner or ID',
+                  hint: tr('Search by title, owner or ID'),
                   onChanged: (_) => _filter(() {}),
                 ),
                 const SizedBox(height: AQSpacing.x3),
@@ -162,10 +165,10 @@ class _ModerationQueueScreenState extends ConsumerState<ModerationQueueScreen> {
                   ),
                 ),
                 if (shown.isEmpty)
-                  const AdminNotice(
+                  AdminNotice(
                     icon: 'search',
-                    title: 'Nothing matches these filters',
-                    body: 'Clear a filter or change the search to see more.',
+                    title: tr('Nothing matches these filters'),
+                    body: tr('Clear a filter or change the search to see more.'),
                   )
                 else
                   AdminTable(
@@ -181,11 +184,16 @@ class _ModerationQueueScreenState extends ConsumerState<ModerationQueueScreen> {
                       for (final l in slice)
                         AdminTableRow(
                           key: l.id,
-                          semantics:
-                              '${l.title}, ${sourceLabel(l.source)}, ${moderationStatusLabel(l.status)}',
+                          semantics: tr('${l.title}, ${sourceLabel(l.source)}, ${moderationStatusLabel(l.status)}'),
                           onTap: () => context.go('/moderation/${l.id}'),
                           cells: [
-                            Column(
+                            AdminThumbCell(
+                              thumb: AdminThumb(
+                                asset: l.photos.isNotEmpty && l.photos.first.startsWith('assets/') ? l.photos.first : null,
+                                icon: 'home',
+                                size: 52,
+                              ),
+                              child: Column(
                               crossAxisAlignment: CrossAxisAlignment.start,
                               mainAxisSize: MainAxisSize.min,
                               children: [
@@ -207,6 +215,7 @@ class _ModerationQueueScreenState extends ConsumerState<ModerationQueueScreen> {
                                   ),
                                 ),
                               ],
+                            ),
                             ),
                             Text(
                               sourceLabel(l.source),
@@ -235,37 +244,7 @@ class _ModerationQueueScreenState extends ConsumerState<ModerationQueueScreen> {
                     ],
                   ),
                 if (pages > 1)
-                  Padding(
-                    padding: const EdgeInsets.only(top: AQSpacing.x4),
-                    child: Row(
-                      mainAxisAlignment: MainAxisAlignment.center,
-                      children: [
-                        AdminTextButton(
-                          label: 'Previous',
-                          color: c.accent,
-                          onPressed: page == 0
-                              ? null
-                              : () => setState(() => _page = page - 1),
-                        ),
-                        Padding(
-                          padding: const EdgeInsets.symmetric(
-                            horizontal: AQSpacing.x3,
-                          ),
-                          child: Text(
-                            'Page ${page + 1} of $pages',
-                            style: AQTypography.of(context, AQText.bodyMedium),
-                          ),
-                        ),
-                        AdminTextButton(
-                          label: 'Next',
-                          color: c.accent,
-                          onPressed: page >= pages - 1
-                              ? null
-                              : () => setState(() => _page = page + 1),
-                        ),
-                      ],
-                    ),
-                  ),
+                  AdminPager(page: page, pages: pages, onPrevious: page == 0 ? null : () => setState(() => _page = page - 1), onNext: page >= pages - 1 ? null : () => setState(() => _page = page + 1)),
               ],
             );
           },
@@ -332,17 +311,17 @@ class _ModerationDetailScreenState
           ? null
           : '${sourceLabel(async.value!.source)} · ID ${async.value!.id}',
       onBack: () => context.go('/moderation'),
-      backLabel: 'Back to moderation',
+      backLabel: tr('Back to moderation'),
       children: [
         AdminAsyncView<ListingSubmission?>(
           value: async,
           onRetry: () => ref.invalidate(moderationItemProvider(widget.id)),
           builder: (l) {
             if (l == null) {
-              return const AdminNotice(
+              return AdminNotice(
                 icon: 'info',
-                title: 'We could not find this submission',
-                body: 'It may have been removed. Go back to the list.',
+                title: tr('We could not find this submission'),
+                body: tr('It may have been removed. Go back to the list.'),
               );
             }
             final role = session?.role ?? AdminRole.auditor;
@@ -377,8 +356,7 @@ class _ModerationDetailScreenState
                       Padding(
                         padding: const EdgeInsets.only(top: AQSpacing.x4),
                         child: AQErrorBanner(
-                          text:
-                              'Missing mandatory information: ${missing.map(_missingLabel).join(', ')}.',
+                          text: tr('Missing mandatory information: ${missing.map(_missingLabel).join(", ")}.'),
                         ),
                       ),
                     adminSection(context, 'Property'),
@@ -426,9 +404,9 @@ class _ModerationDetailScreenState
                     ),
                     adminSection(context, 'Photos'),
                     if (l.photos.isEmpty)
-                      const AdminNotice(
+                      AdminNotice(
                         icon: 'alert',
-                        title: 'No photos were submitted',
+                        title: tr('No photos were submitted'),
                       )
                     else
                       Wrap(
@@ -440,13 +418,16 @@ class _ModerationDetailScreenState
                               width: 150,
                               height: 100,
                               alignment: Alignment.center,
+                              clipBehavior: Clip.antiAlias,
                               decoration: BoxDecoration(
                                 color: c.surfaceSelected,
                                 borderRadius: BorderRadius.circular(
                                   AQRadius.medium,
                                 ),
                               ),
-                              child: Text(
+                              child: p.startsWith('assets/')
+                                  ? ExcludeSemantics(child: SizedBox.expand(child: aqImg(p, cacheWidth: 480)))
+                                  : Text(
                                 p,
                                 style: AQTypography.of(
                                   context,

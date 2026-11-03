@@ -13,6 +13,7 @@ import '../../../core/domain/account_models.dart';
 import '../../../core/localization/entry_strings.dart';
 import '../../../core/localization/flow_strings.dart';
 import '../../../core/config/demo_mode.dart';
+import '../../devbuild/db_service_toggles.dart';
 import '../../entry/demo_entry.dart';
 import '../../entry/models/signup_purpose.dart';
 import '../state/signup_state.dart';
@@ -160,13 +161,11 @@ class _SignupFormScreenState extends ConsumerState<SignupFormScreen> {
             AQTextField(label: f.t(cfg.companyAddressRequired ? 'field.companyAddress' : 'field.companyAddressOptional'), controller: _companyAddress, keyboardType: TextInputType.streetAddress, valid: v.companyAddress.trim().isNotEmpty, error: err('companyAddress'), onChanged: (_) => _push()),
           ],
           if (cfg.hasServiceType)
-            AQSegmented<InteriorExteriorServiceType>(
-              label: f.t('field.serviceType'),
-              selected: st.values.serviceType,
-              error: err('serviceType'),
-              options: [for (final t in InteriorExteriorServiceType.values) (value: t, label: f.t('service.${t.name}'))],
-              onChanged: (x) => ctl.update(st.values.copyWith(serviceType: x)),
-            ),
+            Column(crossAxisAlignment: CrossAxisAlignment.stretch, children: [
+              Padding(padding: const EdgeInsets.only(bottom: AQSpacing.x2), child: Text(f.t('field.serviceType'), style: AQTypography.of(context, AQText.labelMedium, soft: true))),
+              DbServiceToggles(allowNone: false, value: st.values.serviceType, onChanged: (x) { if (x != null) ctl.update(st.values.copyWith(serviceType: x)); }),
+              if (err('serviceType') != null) Padding(padding: const EdgeInsets.only(top: AQSpacing.x1), child: Text(err('serviceType')!, style: AQTypography.of(context, AQText.bodySmall, color: AQColors.of(context).danger))),
+            ]),
           if (cfg.needsDocuments) AQErrorBanner(tone: AQBannerTone.info, text: f.t('signup.docsLater')),
         ]);
       case SignupStep.account:

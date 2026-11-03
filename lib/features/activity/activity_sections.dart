@@ -17,18 +17,21 @@ import '../viewing/screens/viewing_kit.dart' show AQViewingSkeleton;
 import '../viewing/widgets/viewing_components.dart';
 import '../viewing/widgets/viewing_scaffold.dart' show AQShellInset;
 import '../viewing/widgets/viewing_format.dart';
+import '../workspace/aq_thumb.dart';
 
 /// One record in an Activity list: a title, one line of context, its status and a way in.
 class _Row extends StatelessWidget {
   final String title, line, label;
   final Widget status;
   final String path;
+  final Widget? lead;
   const _Row({
     required this.title,
     required this.line,
     required this.status,
     required this.path,
     required this.label,
+    this.lead,
   });
   @override
   Widget build(BuildContext context) {
@@ -48,6 +51,7 @@ class _Row extends StatelessWidget {
             padding: const EdgeInsets.all(AQSpacing.x4),
             child: Row(
               children: [
+                if (lead != null) aqRowLead(lead!),
                 Expanded(
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
@@ -115,8 +119,10 @@ class SubmissionsView extends ConsumerWidget {
         ),
         data: (all) => all.isEmpty
             ? AQEmptyViewingState(
+                icon: 'development',
                 title: f.t('eb.mine.none.t'),
                 body: f.t('eb.mine.none.b'),
+                steps: [f.t('emp.sell.1'), f.t('emp.sell.2'), f.t('emp.sell.3')],
               )
             : Column(
                 children: [
@@ -125,6 +131,7 @@ class SubmissionsView extends ConsumerWidget {
                       title: VFmt.iso(s.input.title),
                       line: VFmt.iso(s.input.wilayat),
                       status: EBrokerStatusPill(s.status),
+                      lead: AQThumb(asset: propertyTypeImage(s.input.type)),
                       path: '/sell/${s.id}',
                       label:
                           '${s.input.title}, ${f.t('eb.st.${s.status.name}')}',
@@ -166,8 +173,10 @@ class RequestsView extends ConsumerWidget {
         ),
         data: (all) => all.isEmpty
             ? AQEmptyViewingState(
+                icon: 'verified',
                 title: f.t('ce.list.empty.t'),
                 body: f.t('ce.list.empty.b'),
+                steps: [f.t('emp.eng.1'), f.t('emp.eng.2'), f.t('emp.eng.3')],
               )
             : Column(
                 children: [
@@ -181,6 +190,7 @@ class RequestsView extends ConsumerWidget {
                             ? AQTone.success
                             : AQTone.neutral,
                       ),
+                      lead: AQThumb(asset: businessCoverById(e.professionalId), monogramOf: e.professionalName),
                       path: '/engagements/${e.id}',
                       label:
                           '${e.professionalName}, ${f.t('ce.ph.${e.phaseAt(now).name}')}',

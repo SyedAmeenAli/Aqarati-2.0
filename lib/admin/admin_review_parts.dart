@@ -1,4 +1,4 @@
-import 'package:flutter/material.dart';
+import 'package:flutter/material.dart' hide Text;
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../core/aq/aq_forms.dart';
@@ -10,6 +10,7 @@ import '../features/viewing/domain/viewing_presentation.dart' show AQTone;
 import 'admin_models.dart';
 import 'admin_widgets.dart';
 import 'admin_ui.dart';
+import 'admin_l10n.dart';
 
 /// The documents of one item. Opening one shows the streamed file in a watermarked viewer; a
 /// document the service cannot stream is flagged here so the reviewer knows before opening it.
@@ -21,10 +22,10 @@ class AdminDocumentList extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final c = AQColors.of(context);
     if (documents.isEmpty) {
-      return const AdminNotice(
+      return AdminNotice(
         icon: 'alert',
-        title: 'No documents were submitted',
-        body: 'Request a resubmission if documents are required for this item.',
+        title: tr('No documents were submitted'),
+        body: tr('Request a resubmission if documents are required for this item.'),
       );
     }
     return AdminPanel(
@@ -70,7 +71,7 @@ class AdminDocumentList extends ConsumerWidget {
                     ),
                   ),
                   AdminTextButton(
-                    label: 'View',
+                    label: tr('View'),
                     color: c.accent,
                     onPressed: () =>
                         showDocumentViewer(context, ref, documents[i]),
@@ -187,7 +188,7 @@ class AdminChecklist extends StatelessWidget {
           for (final i in items)
             AQCheckRow(
               value: done.contains(i.$1),
-              label: i.$2,
+              label: tr(i.$2),
               onChanged: enabled ? (v) => onChanged(i.$1, v) : (_) {},
             ),
         ],

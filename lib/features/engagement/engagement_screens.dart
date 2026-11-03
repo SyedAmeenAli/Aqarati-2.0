@@ -12,6 +12,7 @@ import '../../core/config/backend_mode.dart';
 import '../../core/localization/flow_strings.dart';
 import '../../data/api/account_api.dart' show meProvider;
 import '../devbuild/db_widgets.dart' show DbErrorCard, DbNotice;
+import '../workspace/aq_thumb.dart';
 import '../viewing/domain/viewing_presentation.dart' show AQTone;
 import '../viewing/screens/viewing_kit.dart'
     show AQViewingSectionTitle, AQViewingSkeleton;
@@ -271,6 +272,7 @@ class _Card extends StatelessWidget {
           padding: const EdgeInsets.all(AQSpacing.x4),
           child: Row(
             children: [
+              aqRowLead(AQThumb(asset: businessCoverById(e.professionalId), monogramOf: e.professionalName)),
               Expanded(
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,

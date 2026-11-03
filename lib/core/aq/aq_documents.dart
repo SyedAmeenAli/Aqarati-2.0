@@ -450,17 +450,17 @@ enum AQDocTone { quiet, neutral, good, attention }
       ),
       DocDisplay.uploading => (
         key: 'docs.state.uploading',
-        icon: 'activity',
+        icon: 'refresh',
         tone: AQDocTone.quiet,
       ),
       DocDisplay.processing => (
         key: 'docs.state.processing',
-        icon: 'activity',
+        icon: 'refresh',
         tone: AQDocTone.quiet,
       ),
       DocDisplay.underReview => (
         key: 'docs.state.review',
-        icon: 'activity',
+        icon: 'clock',
         tone: AQDocTone.neutral,
       ),
       DocDisplay.verified => (

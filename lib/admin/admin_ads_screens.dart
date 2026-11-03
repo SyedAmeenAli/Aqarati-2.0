@@ -1,6 +1,6 @@
 import 'dart:typed_data';
 
-import 'package:flutter/material.dart';
+import 'package:flutter/material.dart' hide Text;
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
@@ -16,12 +16,14 @@ import '../features/viewing/domain/viewing_presentation.dart' show AQTone;
 import '../features/viewing/widgets/viewing_format.dart';
 import 'admin_auth.dart';
 import 'admin_directory.dart' show adminLog, decisionVerb;
+import 'admin_images.dart';
 import 'admin_models.dart';
 import 'admin_repository.dart';
 import 'admin_widgets.dart';
 import 'admin_ui.dart';
+import 'admin_l10n.dart';
 
-String adStatusLabel(AdStatus s) => switch (s) {
+String adStatusLabel(AdStatus s) => tr(switch (s) {
   AdStatus.draft => 'Draft',
   AdStatus.pendingVerification => 'Waiting for review',
   AdStatus.approved => 'Live',
@@ -29,7 +31,7 @@ String adStatusLabel(AdStatus s) => switch (s) {
   AdStatus.rejected => 'Rejected',
   AdStatus.paused => 'Paused',
   AdStatus.expired => 'Expired',
-};
+});
 
 (AQTone, String) adStatusLook(AdStatus s) => switch (s) {
   AdStatus.draft => (AQTone.neutral, 'edit'),
@@ -42,16 +44,16 @@ String adStatusLabel(AdStatus s) => switch (s) {
 };
 
 String placementLabel(AdPlacement p) =>
-    p == AdPlacement.homeTop ? 'Home, top' : 'Search results';
+    tr(p == AdPlacement.homeTop ? 'Home, top' : 'Search results');
 
-String audienceLabel(AdAudience a) => switch (a) {
+String audienceLabel(AdAudience a) => tr(switch (a) {
   AdAudience.customer => 'User to Shop',
   AdAudience.agent => 'Real Estate Agent',
   AdAudience.developer => 'Development',
   AdAudience.construction => 'Construction',
   AdAudience.architecture => 'Architecture',
   AdAudience.interior => 'Interior & Exterior',
-};
+});
 
 String audiencesText(Set<AdAudience> s) => AdAudience.values
     .where(s.contains)
@@ -153,12 +155,12 @@ class _AdsListScreenState extends ConsumerState<AdsListScreen> {
     final async = ref.watch(adminAdsProvider);
     return AdminFrame(
       section: '/ads',
-      title: 'Ads & Sponsors',
-      subtitle: 'Banners shown to signed-in customers. A banner is shown only after it is approved and while its schedule is open.',
+      title: tr('Ads & Sponsors'),
+      subtitle: tr('Banners shown to signed-in customers. A banner is shown only after it is approved and while its schedule is open.'),
       actions: [
         if (role.canManageAds)
           AdminPrimaryButton(
-            label: 'New banner',
+            label: tr('New banner'),
             leadingIcon: 'plus',
             trailingChevron: false,
             compact: true,
@@ -169,12 +171,12 @@ class _AdsListScreenState extends ConsumerState<AdsListScreen> {
         if (_done != null)
           Padding(
             padding: const EdgeInsets.only(bottom: AQSpacing.x4),
-            child: AQErrorBanner(tone: AQBannerTone.success, text: _done!),
+            child: AQErrorBanner(tone: AQBannerTone.success, text: tr(_done!)),
           ),
         if (_error != null)
           Padding(
             padding: const EdgeInsets.only(bottom: AQSpacing.x4),
-            child: AQErrorBanner(text: _error!),
+            child: AQErrorBanner(text: tr(_error!)),
           ),
         AdminAsyncView<List<SponsoredAd>>(
           value: async,
@@ -182,14 +184,14 @@ class _AdsListScreenState extends ConsumerState<AdsListScreen> {
           builder: (all) {
             if (all.isEmpty) {
               return AdminNotice(
-                icon: 'star',
-                title: 'No banners yet',
+                icon: 'megaphone',
+                title: tr('No banners yet'),
                 body: role.canManageAds
                     ? 'Create the first banner. It is reviewed before customers see it.'
                     : 'No banners have been created.',
                 action: role.canManageAds
                     ? AdminPrimaryButton(
-                        label: 'New banner',
+                        label: tr('New banner'),
                         trailingChevron: false,
                         onPressed: () => context.go('/ads/new'),
                       )
@@ -213,7 +215,7 @@ class _AdsListScreenState extends ConsumerState<AdsListScreen> {
               children: [
                 AdminSearchField(
                   controller: _q,
-                  hint: 'Search sponsor, headline or destination',
+                  hint: tr('Search sponsor, headline or destination'),
                   onChanged: (_) => setState(() {}),
                 ),
                 const SizedBox(height: AQSpacing.x3),
@@ -240,10 +242,10 @@ class _AdsListScreenState extends ConsumerState<AdsListScreen> {
                     ),
                 ]),
                 if (shown.isEmpty)
-                  const AdminNotice(
+                  AdminNotice(
                     icon: 'search',
-                    title: 'No banner matches',
-                    body: 'Change the search or the filters to see the rest.',
+                    title: tr('No banner matches'),
+                    body: tr('Change the search or the filters to see the rest.'),
                   )
                 else
                   AdminTable(
@@ -259,12 +261,22 @@ class _AdsListScreenState extends ConsumerState<AdsListScreen> {
                       for (final a in shown)
                         AdminTableRow(
                           key: a.id,
-                          semantics:
-                              '${a.sponsor}, ${a.headline}, ${adStatusLabel(a.status)}',
+                          semantics: tr('${a.sponsor}, ${a.headline}, ${adStatusLabel(a.status)}'),
                           onTap: () => context.go('/ads/${a.id}/edit'),
                           actionCells: const {4},
                           cells: [
-                            Column(
+                            AdminThumbCell(
+                              thumb: a.imageBytes != null
+                                  ? ClipRRect(
+                                      borderRadius: BorderRadius.circular(AQRadius.medium),
+                                      child: SizedBox(width: 52, height: 52, child: ExcludeSemantics(child: Image.memory(a.imageBytes!, fit: BoxFit.cover, cacheWidth: 160))),
+                                    )
+                                  : AdminThumb(
+                                      asset: (a.imageRef ?? '').startsWith('assets/') ? a.imageRef : null,
+                                      icon: 'star',
+                                      size: 52,
+                                    ),
+                              child: Column(
                               crossAxisAlignment: CrossAxisAlignment.start,
                               mainAxisSize: MainAxisSize.min,
                               children: [
@@ -288,6 +300,7 @@ class _AdsListScreenState extends ConsumerState<AdsListScreen> {
                                   ),
                                 ),
                               ],
+                            ),
                             ),
                             Column(
                               crossAxisAlignment: CrossAxisAlignment.start,
@@ -329,7 +342,7 @@ class _AdsListScreenState extends ConsumerState<AdsListScreen> {
                                   if (role.canManageAds && a.canSubmit)
                                     AdminTextButton(
                                       key: ValueKey('ad-${a.id}-submit'),
-                                      label: 'Submit',
+                                      label: tr('Submit'),
                                       color: c.accent,
                                       onPressed: _busyId != null
                                           ? null
@@ -342,7 +355,7 @@ class _AdsListScreenState extends ConsumerState<AdsListScreen> {
                                   if (role.canManageAds && a.canPause)
                                     AdminTextButton(
                                       key: ValueKey('ad-${a.id}-pause'),
-                                      label: 'Pause',
+                                      label: tr('Pause'),
                                       color: c.inkSoft,
                                       onPressed: _busyId != null
                                           ? null
@@ -355,7 +368,7 @@ class _AdsListScreenState extends ConsumerState<AdsListScreen> {
                                   if (role.canManageAds && a.canResume)
                                     AdminTextButton(
                                       key: ValueKey('ad-${a.id}-resume'),
-                                      label: 'Resume',
+                                      label: tr('Resume'),
                                       color: c.accent,
                                       onPressed: _busyId != null
                                           ? null
@@ -369,7 +382,7 @@ class _AdsListScreenState extends ConsumerState<AdsListScreen> {
                                       a.status == AdStatus.approved) ...[
                                     AdminTextButton(
                                       key: ValueKey('ad-${a.id}-up'),
-                                      label: 'Move up',
+                                      label: tr('Move up'),
                                       color: c.inkSoft,
                                       onPressed: _busyId != null
                                           ? null
@@ -377,7 +390,7 @@ class _AdsListScreenState extends ConsumerState<AdsListScreen> {
                                     ),
                                     AdminTextButton(
                                       key: ValueKey('ad-${a.id}-down'),
-                                      label: 'Move down',
+                                      label: tr('Move down'),
                                       color: c.inkSoft,
                                       onPressed: _busyId != null
                                           ? null
@@ -576,12 +589,12 @@ class _AdFormScreenState extends ConsumerState<AdFormScreen> {
         section: '/ads',
         title: title,
         onBack: () => context.go('/ads'),
-        backLabel: 'Back to banners',
-        children: const [
+        backLabel: tr('Back to banners'),
+        children: [
           AdminNotice(
             icon: 'lock',
-            title: 'Not allowed',
-            body: 'Your role cannot create or edit banners.',
+            title: tr('Not allowed'),
+            body: tr('Your role cannot create or edit banners.'),
           ),
         ],
       );
@@ -592,16 +605,16 @@ class _AdFormScreenState extends ConsumerState<AdFormScreen> {
         section: '/ads',
         title: title,
         onBack: () => context.go('/ads'),
-        backLabel: 'Back to banners',
+        backLabel: tr('Back to banners'),
         children: [
           AdminAsyncView<SponsoredAd?>(
             value: async,
             onRetry: () => ref.invalidate(adminAdProvider(widget.editId!)),
             builder: (a) {
               if (a == null) {
-                return const AdminNotice(
+                return AdminNotice(
                   icon: 'info',
-                  title: 'We could not find this banner',
+                  title: tr('We could not find this banner'),
                 );
               }
               WidgetsBinding.instance.addPostFrameCallback((_) {
@@ -618,13 +631,13 @@ class _AdFormScreenState extends ConsumerState<AdFormScreen> {
     final preview = SponsoredAd(
       id: 'preview',
       sponsor: _sponsor.text.trim().isEmpty
-          ? 'Sponsor name'
+          ? tr('Sponsor name')
           : _sponsor.text.trim(),
       headline: _headline.text.trim().isEmpty
-          ? 'Headline'
+          ? tr('Headline')
           : _headline.text.trim(),
       body: _body.text.trim(),
-      cta: _cta.text.trim().isEmpty ? 'Button' : _cta.text.trim(),
+      cta: _cta.text.trim().isEmpty ? tr('Button') : _cta.text.trim(),
       destination: _destination.text.trim().isEmpty
           ? '/'
           : _destination.text.trim(),
@@ -644,7 +657,7 @@ class _AdFormScreenState extends ConsumerState<AdFormScreen> {
             padding: const EdgeInsets.only(bottom: AQSpacing.x4),
             child: AQErrorBanner(
               tone: AQBannerTone.info,
-              text: 'This banner is live. Saving changes sends it back to draft and it stops being shown until it is reviewed again.',
+              text: tr('This banner is live. Saving changes sends it back to draft and it stops being shown until it is reviewed again.'),
             ),
           ),
         if (ex != null && ex.feedback != null && ex.feedback!.isNotEmpty)
@@ -652,25 +665,25 @@ class _AdFormScreenState extends ConsumerState<AdFormScreen> {
             padding: const EdgeInsets.only(bottom: AQSpacing.x4),
             child: AQErrorBanner(
               tone: AQBannerTone.info,
-              text: 'Reviewer feedback: ${ex.feedback}',
+              text: tr('Reviewer feedback: ${ex.feedback}'),
             ),
           ),
         AdminField(
-          label: 'Sponsor name',
+          label: tr('Sponsor name'),
           controller: _sponsor,
           error: e('sponsor'),
           onChanged: (_) => setState(() {}),
         ),
         const SizedBox(height: AQSpacing.x4),
         AdminField(
-          label: 'Headline',
+          label: tr('Headline'),
           controller: _headline,
           error: e('headline'),
           onChanged: (_) => setState(() {}),
         ),
         const SizedBox(height: AQSpacing.x4),
         AdminField(
-          label: 'Short text (optional)',
+          label: tr('Short text (optional)'),
           controller: _body,
           minLines: 2,
           maxLines: 3,
@@ -680,24 +693,24 @@ class _AdFormScreenState extends ConsumerState<AdFormScreen> {
         ),
         const SizedBox(height: AQSpacing.x4),
         AdminField(
-          label: 'Button label',
+          label: tr('Button label'),
           controller: _cta,
           error: e('cta'),
           onChanged: (_) => setState(() {}),
         ),
         const SizedBox(height: AQSpacing.x4),
         AdminField(
-          label: 'Destination',
+          label: tr('Destination'),
           controller: _destination,
-          hint: 'https://… or /app/explore',
-          helper: 'A secure https address, or a path inside the app.',
+          hint: tr('https://… or /app/explore'),
+          helper: tr('A secure https address, or a path inside the app.'),
           keyboardType: TextInputType.url,
           error: e('destination'),
           onChanged: (_) => setState(() {}),
         ),
         const SizedBox(height: AQSpacing.x4),
         DbFieldFrame(
-          label: 'Placement',
+          label: tr('Placement'),
           required: true,
           child: _Choices(
             pills: [
@@ -712,7 +725,7 @@ class _AdFormScreenState extends ConsumerState<AdFormScreen> {
         ),
         const SizedBox(height: AQSpacing.x4),
         DbFieldFrame(
-          label: 'Shown on the Home of',
+          label: tr('Shown on the Home of'),
           required: true,
           error: e('audience'),
           child: _Choices(
@@ -732,7 +745,7 @@ class _AdFormScreenState extends ConsumerState<AdFormScreen> {
         ),
         const SizedBox(height: AQSpacing.x4),
         DbFieldFrame(
-          label: 'Banner image',
+          label: tr('Banner image'),
           required: true,
           child: Row(
             children: [
@@ -772,7 +785,7 @@ class _AdFormScreenState extends ConsumerState<AdFormScreen> {
           ),
         const SizedBox(height: AQSpacing.x4),
         DbFieldFrame(
-          label: 'Schedule (optional)',
+          label: tr('Schedule (optional)'),
           child: Wrap(
             spacing: AQSpacing.x2,
             runSpacing: AQSpacing.x2,
@@ -795,7 +808,7 @@ class _AdFormScreenState extends ConsumerState<AdFormScreen> {
                 ),
               if (_start != null || _end != null)
                 AdminTextButton(
-                  label: 'Clear',
+                  label: tr('Clear'),
                   color: c.inkSoft,
                   onPressed: () => setState(() => _start = _end = null),
                 ),
@@ -817,12 +830,12 @@ class _AdFormScreenState extends ConsumerState<AdFormScreen> {
         if (_error != null)
           Padding(
             padding: const EdgeInsets.only(top: AQSpacing.x4),
-            child: AQErrorBanner(text: _error!),
+            child: AQErrorBanner(text: tr(_error!)),
           ),
         if (_done != null)
           Padding(
             padding: const EdgeInsets.only(top: AQSpacing.x4),
-            child: AQErrorBanner(tone: AQBannerTone.success, text: _done!),
+            child: AQErrorBanner(tone: AQBannerTone.success, text: tr(_done!)),
           ),
         const SizedBox(height: AQSpacing.x5),
         Wrap(
@@ -830,13 +843,13 @@ class _AdFormScreenState extends ConsumerState<AdFormScreen> {
           runSpacing: AQSpacing.x3,
           children: [
             AdminSecondaryButton(
-                label: 'Save draft',
+                label: tr('Save draft'),
                 trailingChevron: false,
                 loading: _saving,
                 onPressed: _saving ? null : () => _save(submit: false),
               ),
             AdminPrimaryButton(
-                label: 'Save and send for review',
+                label: tr('Save and send for review'),
                 trailingChevron: false,
                 loading: _saving,
                 onPressed: _saving ? null : () => _save(submit: true),
@@ -905,7 +918,7 @@ class _AdFormScreenState extends ConsumerState<AdFormScreen> {
           ? 'A new banner starts as a draft. Customers see it only after it is approved.'
           : '${adStatusLabel(ex.status)} · ${placementLabel(ex.placement)}',
       onBack: () => context.go('/ads'),
-      backLabel: 'Back to banners',
+      backLabel: tr('Back to banners'),
       children: [
         LayoutBuilder(
           builder: (context, box) {

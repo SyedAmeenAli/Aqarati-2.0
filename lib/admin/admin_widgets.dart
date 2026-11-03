@@ -1,4 +1,4 @@
-import 'package:flutter/material.dart';
+import 'package:flutter/material.dart' hide Text;
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
@@ -19,10 +19,12 @@ import 'admin_auth.dart';
 import 'admin_models.dart';
 import 'admin_repository.dart';
 import 'admin_ui.dart';
+import '../core/localization/entry_strings.dart' show localeProvider;
+import 'admin_l10n.dart';
 
 // ------------------------------------------------------------------ copy for error and reason keys
 
-String adminMsg(String key) => switch (key) {
+String adminMsg(String key) => tr(switch (key) {
   'adm.err.sponsor' => 'Enter the sponsor name.',
   'adm.err.headline' => 'Enter a headline.',
   'adm.err.cta' => 'Enter the button label.',
@@ -34,9 +36,9 @@ String adminMsg(String key) => switch (key) {
   'adm.err.schedule' => 'The start date must be before the end date.',
   'adm.err.audience' => 'Choose at least one Home screen for this banner.',
   _ => key,
-};
+});
 
-String reasonLabel(ReasonCode c) => switch (c) {
+String reasonLabel(ReasonCode c) => tr(switch (c) {
   ReasonCode.docUnreadable => 'Document unreadable',
   ReasonCode.docWrongType => 'Wrong document type',
   ReasonCode.nameMismatch => 'Name does not match',
@@ -49,30 +51,30 @@ String reasonLabel(ReasonCode c) => switch (c) {
   ReasonCode.callFailed => 'Call-back failed',
   ReasonCode.incompleteSubmission => 'Incomplete submission',
   ReasonCode.other => 'Other (note required)',
-};
+});
 
-String kindLabel(ApplicantKind k) => switch (k) {
+String kindLabel(ApplicantKind k) => tr(switch (k) {
   ApplicantKind.agent => 'Real estate agent',
   ApplicantKind.developer => 'Development company',
   ApplicantKind.construction => 'Construction company',
   ApplicantKind.architecture => 'Building architecture',
   ApplicantKind.interiorExterior => 'Interior & exterior design',
-};
+});
 
-String roleLabel(AdminRole r) => switch (r) {
+String roleLabel(AdminRole r) => tr(switch (r) {
   AdminRole.reviewer => 'Reviewer',
   AdminRole.seniorReviewer => 'Senior reviewer',
   AdminRole.superAdmin => 'Super admin',
   AdminRole.auditor => 'Auditor',
-};
+});
 
-String queueStatusLabel(QueueStatus s) => switch (s) {
+String queueStatusLabel(QueueStatus s) => tr(switch (s) {
   QueueStatus.pending => 'Waiting for review',
   QueueStatus.awaitingSecondApproval => 'Awaiting second approval',
   QueueStatus.resubmissionRequired => 'Resubmission requested',
   QueueStatus.approved => 'Approved',
   QueueStatus.rejected => 'Rejected',
-};
+});
 
 (AQTone, String) queueStatusLook(QueueStatus s) => switch (s) {
   QueueStatus.pending => (AQTone.pending, 'clock'),
@@ -82,12 +84,12 @@ String queueStatusLabel(QueueStatus s) => switch (s) {
   QueueStatus.rejected => (AQTone.danger, 'close'),
 };
 
-String moderationStatusLabel(ModerationStatus s) => switch (s) {
+String moderationStatusLabel(ModerationStatus s) => tr(switch (s) {
   ModerationStatus.pending => 'Waiting for review',
   ModerationStatus.resubmissionRequired => 'Corrections requested',
   ModerationStatus.approved => 'Approved',
   ModerationStatus.rejected => 'Rejected',
-};
+});
 
 (AQTone, String) moderationStatusLook(ModerationStatus s) => switch (s) {
   ModerationStatus.pending => (AQTone.pending, 'clock'),
@@ -96,14 +98,14 @@ String moderationStatusLabel(ModerationStatus s) => switch (s) {
   ModerationStatus.rejected => (AQTone.danger, 'close'),
 };
 
-String decisionLabel(Decision d) => switch (d) {
+String decisionLabel(Decision d) => tr(switch (d) {
   Decision.approve => 'Approve',
   Decision.requestResubmission => 'Request resubmission',
   Decision.reject => 'Reject',
-};
+});
 
 String sourceLabel(ListingSource s) =>
-    s == ListingSource.eBroker ? 'Aqary e-Broker' : 'Agent submission';
+    tr(s == ListingSource.eBroker ? 'Aqary e-Broker' : 'Agent submission');
 
 /// The message for something that went wrong, in the console's own words. Session expiry is
 /// handled by the caller (it ends the session); everything else becomes plain text.
@@ -158,23 +160,23 @@ const _groups = [
   ]),
   _NavGroup('Listings', [
     _NavItem('Listing moderation', 'shield', '/moderation'),
-    _NavItem('Property listings', 'home', '/m/listings'),
+    _NavItem('Property listings', 'key', '/m/listings'),
     _NavItem('Development projects', 'development', '/m/projects'),
     _NavItem('Construction', 'construction', '/m/construction'),
     _NavItem('Architecture and design', 'architecture', '/m/design'),
   ]),
   _NavGroup('Services', [
-    _NavItem('Maintenance', 'construction', '/m/maintenance'),
+    _NavItem('Maintenance', 'wrench', '/m/maintenance'),
     _NavItem('Viewings and requests', 'calendar', '/m/viewings'),
   ]),
   _NavGroup('Marketing', [
-    _NavItem('Ads & Sponsors', 'star', '/ads'),
+    _NavItem('Ads & Sponsors', 'megaphone', '/ads'),
     _NavItem('Announcements', 'send', '/m/announcements'),
-    _NavItem('Categories and content', 'globe', '/m/content'),
+    _NavItem('Categories and content', 'grid', '/m/content'),
   ]),
   _NavGroup('Insight', [
-    _NavItem('Reports', 'alert', '/reports'),
-    _NavItem('Analytics', 'activity', '/analytics'),
+    _NavItem('Reports', 'flag', '/reports'),
+    _NavItem('Analytics', 'chart', '/analytics'),
     _NavItem('Activity log', 'clock', '/audit'),
   ]),
 ];
@@ -202,7 +204,7 @@ class _Sidebar extends ConsumerWidget {
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
             Padding(
-              padding: const EdgeInsets.fromLTRB(20, 20, 20, 12),
+              padding: const EdgeInsetsDirectional.fromSTEB(20, 20, 20, 12),
               child: Row(
                 crossAxisAlignment: CrossAxisAlignment.end,
                 children: [
@@ -210,40 +212,52 @@ class _Sidebar extends ConsumerWidget {
                   const SizedBox(width: 10),
                   Padding(
                     padding: const EdgeInsets.only(bottom: 4),
-                    child: Text('Admin', style: AQTypography.of(context, AQText.labelMedium, color: c.accentDeep)),
+                    child: Text(tr('Admin'), style: AQTypography.of(context, AQText.labelMedium, color: c.accentDeep)),
                   ),
+                  if (inDrawer) ...[
+                    const Spacer(),
+                    AdminIconButton(icon: 'close', semanticsLabel: tr('Close navigation'), onPressed: () => Navigator.of(context).maybePop()),
+                  ],
                 ],
               ),
             ),
             Divider(height: 1, thickness: 1, color: c.hairline),
             Expanded(
               child: SingleChildScrollView(
-                padding: const EdgeInsets.fromLTRB(12, 8, 12, 12),
+                padding: const EdgeInsetsDirectional.fromSTEB(12, 8, 12, 12),
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.stretch,
                   children: [
-                    for (final g in _groups) ...[
-                      if (g.title != null)
-                        Padding(
-                          padding: const EdgeInsets.fromLTRB(10, 12, 10, 4),
-                          child: Text(
-                            g.title!.toUpperCase(),
-                            style: AQTypography.of(context, AQText.labelSmall, color: c.inkFaint).copyWith(letterSpacing: 1.1),
+                    if (inDrawer)
+                      _DrawerGroups(section: section)
+                    else
+                      for (final g in _groups) ...[
+                        if (g.title != null)
+                          Padding(
+                            padding: const EdgeInsetsDirectional.fromSTEB(10, 12, 10, 4),
+                            child: Text(
+                              // Letter-case and tracking are Latin conventions; Arabic keeps its own forms.
+                              AdminLang.ar ? AdminLang.t(g.title!) : g.title!.toUpperCase(),
+                              style: AQTypography.of(context, AQText.labelSmall, color: c.inkFaint).copyWith(letterSpacing: AdminLang.ar ? 0 : 1.1),
+                            ),
                           ),
-                        ),
-                      for (final n in g.items) _SideItem(item: n, selected: section == n.route, closeDrawer: inDrawer),
-                    ],
+                        for (final n in g.items) _SideItem(item: n, selected: section == n.route, closeDrawer: inDrawer),
+                      ],
                   ],
                 ),
               ),
             ),
             Divider(height: 1, thickness: 1, color: c.hairline),
             Padding(
-              padding: const EdgeInsets.fromLTRB(12, 8, 12, 0),
+              padding: const EdgeInsetsDirectional.fromSTEB(12, 8, 12, 0),
               child: _SideItem(item: _settingsItem, selected: section == _settingsItem.route, closeDrawer: inDrawer),
             ),
+            const Padding(
+              padding: EdgeInsetsDirectional.fromSTEB(12, 4, 12, 0),
+              child: Align(alignment: AlignmentDirectional.centerStart, child: AdminLangButton()),
+            ),
             Padding(
-              padding: const EdgeInsets.fromLTRB(22, 8, 12, 14),
+              padding: const EdgeInsetsDirectional.fromSTEB(22, 8, 12, 14),
               child: Row(
                 children: [
                   Expanded(
@@ -257,7 +271,7 @@ class _Sidebar extends ConsumerWidget {
                     ),
                   ),
                   AdminTextButton(
-                    label: 'Sign out',
+                    label: tr('Sign out'),
                     color: c.accentDeep,
                     onPressed: () => ref.read(adminAuthProvider.notifier).signOut(),
                   ),
@@ -267,6 +281,78 @@ class _Sidebar extends ConsumerWidget {
           ],
         ),
       ),
+    );
+  }
+}
+
+/// The phone drawer: the same destinations, folded into sections that open one at a time. The section that
+/// holds the current page starts open; the rest are one line each, so the menu reads as a short list.
+class _DrawerGroups extends StatefulWidget {
+  final String section;
+  const _DrawerGroups({required this.section});
+  @override
+  State<_DrawerGroups> createState() => _DrawerGroupsState();
+}
+
+class _DrawerGroupsState extends State<_DrawerGroups> {
+  late String? _open = _groupOf(widget.section);
+
+  static String? _groupOf(String route) {
+    for (final g in _groups) {
+      if (g.title != null && g.items.any((i) => i.route == route)) return g.title;
+    }
+    return null;
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final c = AQColors.of(context);
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        for (final g in _groups)
+          if (g.title == null)
+            for (final n in g.items) _SideItem(item: n, selected: widget.section == n.route, closeDrawer: true)
+          else ...[
+            Semantics(
+              button: true,
+              expanded: _open == g.title,
+              label: tr(g.title!),
+              excludeSemantics: true,
+              onTap: () => setState(() => _open = _open == g.title ? null : g.title),
+              child: AQPressable(
+                onTap: () => setState(() => _open = _open == g.title ? null : g.title),
+                pressedScale: 0.99,
+                child: Container(
+                  constraints: const BoxConstraints(minHeight: 48),
+                  padding: const EdgeInsetsDirectional.fromSTEB(12, 0, 8, 0),
+                  child: Row(
+                    children: [
+                      Expanded(child: Text(tr(g.title!), style: AQTypography.of(context, AQText.titleSmall, color: _open == g.title ? c.accentDeep : c.ink))),
+                      AnimatedRotation(
+                        turns: _open == g.title ? 0.5 : 0,
+                        duration: AQMotion.scaled(context, AQMotion.fast),
+                        child: AQIcon('chevron-down', size: 18, color: c.inkSoft),
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+            ),
+            AnimatedSize(
+              duration: AQMotion.scaled(context, AQMotion.fast),
+              curve: Curves.easeOutCubic,
+              alignment: Alignment.topCenter,
+              child: _open == g.title
+                  ? Padding(
+                      padding: const EdgeInsetsDirectional.only(start: 8, bottom: 4),
+                      child: Column(crossAxisAlignment: CrossAxisAlignment.stretch, children: [for (final n in g.items) _SideItem(item: n, selected: widget.section == n.route, closeDrawer: true)]),
+                    )
+                  : const SizedBox(width: double.infinity),
+            ),
+            Divider(height: 1, thickness: 1, color: c.hairline),
+          ],
+      ],
     );
   }
 }
@@ -306,10 +392,12 @@ class AdminFrame extends ConsumerWidget {
             padding: const EdgeInsets.only(bottom: 4),
             child: Align(
               alignment: AlignmentDirectional.centerStart,
+              // A 44 px tall target, whatever the pointer.
               child: AdminTextButton(
                 label: backLabel ?? 'Back',
                 leadingIcon: 'chevron-left',
                 color: c.accentDeep,
+                compact: false,
                 onPressed: onBack,
               ),
             ),
@@ -369,43 +457,133 @@ class AdminFrame extends ConsumerWidget {
         ),
       );
     }
+    final screenW = MediaQuery.sizeOf(context).width;
+    final rail = screenW >= 600;
     return Scaffold(
       backgroundColor: c.background,
+      // A sensible width on any phone (never wider than 86% of it), with its own scrolling list.
       drawer: Drawer(
-        width: 290,
+        width: screenW * 0.86 > 320 ? 320 : screenW * 0.86,
         backgroundColor: c.surfaceRaised,
         child: _Sidebar(section: section, inDrawer: true),
       ),
+      bottomNavigationBar: rail ? null : _BottomNav(section: section),
       body: SafeArea(
+        bottom: false,
         child: Builder(
           builder: (context) => Column(
             children: [
               Container(
-                padding: const EdgeInsets.fromLTRB(8, 6, AQSpacing.gutter, 6),
+                constraints: const BoxConstraints(minHeight: 52),
+                padding: const EdgeInsetsDirectional.fromSTEB(4, 4, 8, 4),
                 decoration: BoxDecoration(
                   color: c.surfaceRaised,
                   border: Border(bottom: BorderSide(color: c.hairline)),
                 ),
                 child: Row(
                   children: [
-                    AdminIconButton(
-                      icon: 'menu',
-                      semanticsLabel: 'Open navigation',
-                      onPressed: () => Scaffold.of(context).openDrawer(),
-                    ),
-                    const SizedBox(width: 6),
-                    MasterLogo(width: 56),
+                    if (!rail)
+                      AdminIconButton(icon: 'menu', semanticsLabel: tr('Open navigation'), onPressed: () => Scaffold.of(context).openDrawer())
+                    else
+                      const SizedBox(width: 8),
+                    const SizedBox(width: 2),
+                    MasterLogo(width: 52),
                     const SizedBox(width: 8),
-                    Expanded(
-                      child: Text('Admin', style: AQTypography.of(context, AQText.labelMedium, color: c.accentDeep)),
-                    ),
+                    Expanded(child: Text(tr('Admin'), maxLines: 1, overflow: TextOverflow.ellipsis, style: AQTypography.of(context, AQText.labelLarge, color: c.accentDeep))),
+                    const AdminLangButton(),
                   ],
                 ),
               ),
-              Expanded(child: body),
+              Expanded(
+                child: rail
+                    ? Row(children: [_Rail(section: section, onMore: () => Scaffold.of(context).openDrawer()), Expanded(child: body)])
+                    : body,
+              ),
             ],
           ),
         ),
+      ),
+    );
+  }
+}
+
+/// The four destinations a phone needs most. Everything else is under More (the drawer).
+const _primaryNav = [
+  _NavItem('Overview', 'home', '/overview'),
+  _NavItem('Accounts', 'account', '/accounts'),
+  _NavItem('Property listings', 'key', '/m/listings'),
+];
+
+class _BottomNav extends StatelessWidget {
+  final String section;
+  const _BottomNav({required this.section});
+  @override
+  Widget build(BuildContext context) {
+    final c = AQColors.of(context);
+    final inPrimary = _primaryNav.any((n) => n.route == section);
+    return Container(
+      decoration: BoxDecoration(color: c.surfaceRaised, border: Border(top: BorderSide(color: c.hairline))),
+      child: SafeArea(
+        top: false,
+        child: SizedBox(
+          height: 60,
+          child: Row(children: [
+            for (final n in _primaryNav) Expanded(child: _NavButton(icon: n.icon, label: tr(n.label == 'Property listings' ? 'Listings' : n.label), selected: section == n.route, onTap: () => context.go(n.route))),
+            Expanded(child: _NavButton(icon: 'more', label: tr('More'), selected: !inPrimary, onTap: () => Scaffold.of(context).openDrawer())),
+          ]),
+        ),
+      ),
+    );
+  }
+}
+
+class _Rail extends StatelessWidget {
+  final String section;
+  final VoidCallback onMore;
+  const _Rail({required this.section, required this.onMore});
+  @override
+  Widget build(BuildContext context) {
+    final c = AQColors.of(context);
+    final inPrimary = _primaryNav.any((n) => n.route == section);
+    return Container(
+      width: 80,
+      decoration: BoxDecoration(color: c.surfaceRaised, border: BorderDirectional(end: BorderSide(color: c.hairline))),
+      child: Column(children: [
+        const SizedBox(height: 8),
+        for (final n in _primaryNav) SizedBox(height: 64, child: _NavButton(icon: n.icon, label: tr(n.label == 'Property listings' ? 'Listings' : n.label), selected: section == n.route, onTap: () => context.go(n.route))),
+        SizedBox(height: 64, child: _NavButton(icon: 'more', label: tr('More'), selected: !inPrimary, onTap: onMore)),
+      ]),
+    );
+  }
+}
+
+class _NavButton extends StatelessWidget {
+  final String icon, label;
+  final bool selected;
+  final VoidCallback onTap;
+  const _NavButton({required this.icon, required this.label, required this.selected, required this.onTap});
+  @override
+  Widget build(BuildContext context) {
+    final c = AQColors.of(context);
+    return Semantics(
+      button: true,
+      selected: selected,
+      label: label,
+      excludeSemantics: true,
+      onTap: onTap,
+      child: AQPressable(
+        onTap: onTap,
+        child: Column(mainAxisAlignment: MainAxisAlignment.center, children: [
+          AnimatedContainer(
+            duration: AQMotion.scaled(context, AQMotion.fast),
+            width: 52,
+            height: 28,
+            decoration: BoxDecoration(color: selected ? c.surfaceSelected : Colors.transparent, borderRadius: BorderRadius.circular(14)),
+            child: Center(child: AQIcon(icon, size: 20, color: selected ? c.accentDeep : c.inkSoft)),
+          ),
+          const SizedBox(height: 2),
+          Text(label, maxLines: 1, overflow: TextOverflow.ellipsis, style: AQTypography.of(context, AQText.labelSmall, color: selected ? c.accentDeep : c.inkSoft)),
+        ]),
       ),
     );
   }
@@ -438,7 +616,7 @@ class _SideItemState extends State<_SideItem> {
         focusable: true,
         onFocus: () {},
         selected: selected,
-        label: widget.item.label,
+        label: tr(widget.item.label),
         excludeSemantics: true,
         onTap: _go,
         child: MouseRegion(
@@ -523,7 +701,7 @@ Widget _rowSemantics(AdminTableRow r, Widget child) => KeyedSubtree(
     focusable: r.onTap != null,
     onFocus: r.onTap == null ? null : () {},
     onTap: r.onTap,
-    label: r.semantics,
+    label: tr(r.semantics),
     excludeSemantics: r.actionCells.isEmpty,
     child: child,
   ),
@@ -534,21 +712,53 @@ Widget _cell(AdminTableRow r, int i) =>
     ? r.cells[i]
     : ExcludeSemantics(child: r.cells[i]);
 
+/// Previous / Page X of Y / Next as one quiet bar under a table. Same two actions as before.
+class AdminPager extends StatelessWidget {
+  final int page, pages;
+  final VoidCallback? onPrevious, onNext;
+  const AdminPager({super.key, required this.page, required this.pages, required this.onPrevious, required this.onNext});
+
+  @override
+  Widget build(BuildContext context) {
+    final c = AQColors.of(context);
+    return Padding(
+      padding: const EdgeInsets.only(top: AQSpacing.x4),
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: AQSpacing.x2, vertical: AQSpacing.x1),
+        decoration: BoxDecoration(color: c.surfaceRaised, borderRadius: BorderRadius.circular(AQRadius.medium), border: Border.all(color: c.hairline)),
+        child: Row(
+          children: [
+            AdminTextButton(label: tr('Previous'), color: c.accent, onPressed: onPrevious),
+            Expanded(
+              child: Center(child: Text('Page ${page + 1} of $pages', style: AQTypography.of(context, AQText.labelMedium, soft: true))),
+            ),
+            AdminTextButton(label: tr('Next'), color: c.accent, onPressed: onNext),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
 class AdminTable extends StatelessWidget {
   final List<String> headers;
   final List<int> flex;
   final List<AdminTableRow> rows;
+
+  /// Columns of figures: header and values line up at the end edge.
+  final Set<int> endColumns;
   const AdminTable({
     super.key,
     required this.headers,
     required this.flex,
     required this.rows,
+    this.endColumns = const {},
   });
 
   @override
   Widget build(BuildContext context) {
     final c = AQColors.of(context);
-    final wide = MediaQuery.sizeOf(context).width >= 720;
+    final wide = MediaQuery.sizeOf(context).width >= 900;
     if (!wide) {
       return Column(
         children: [
@@ -570,35 +780,40 @@ class AdminTable extends StatelessWidget {
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        for (var i = 0; i < r.cells.length; i++)
+                        _cell(r, 0),
+                        if (r.cells.length > 1)
                           Padding(
-                            padding: const EdgeInsets.symmetric(vertical: 3),
-                            child: i == 0
-                                ? _cell(r, i)
-                                : Row(
-                                    crossAxisAlignment:
-                                        CrossAxisAlignment.center,
-                                    children: [
-                                      SizedBox(
-                                        width: 104,
-                                        child: Text(
-                                          headers[i],
-                                          style: AQTypography.of(
-                                            context,
-                                            AQText.bodySmall,
-                                            soft: true,
-                                          ),
-                                        ),
-                                      ),
-                                      Expanded(
-                                        child: Align(
-                                          alignment:
-                                              AlignmentDirectional.centerStart,
-                                          child: _cell(r, i),
-                                        ),
-                                      ),
-                                    ],
-                                  ),
+                            padding: const EdgeInsets.only(top: 10),
+                            // Fields sit two to a row, label over value; a cell with its own buttons
+                            // takes the full width under them.
+                            child: LayoutBuilder(
+                              builder: (context, box) {
+                                final half = (box.maxWidth - 12) / 2;
+                                Widget field(int i) => Column(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  children: [
+                                    Text(headers[i], style: AQTypography.of(context, AQText.labelSmall, color: c.inkFaint).copyWith(letterSpacing: 0.3)),
+                                    const SizedBox(height: 3),
+                                    Align(alignment: AlignmentDirectional.centerStart, child: _cell(r, i)),
+                                  ],
+                                );
+                                return Column(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  children: [
+                                    Wrap(
+                                      spacing: 12,
+                                      runSpacing: 10,
+                                      children: [
+                                        for (var i = 1; i < r.cells.length; i++)
+                                          if (!r.actionCells.contains(i)) SizedBox(width: half, child: field(i)),
+                                      ],
+                                    ),
+                                    for (var i = 1; i < r.cells.length; i++)
+                                      if (r.actionCells.contains(i)) Padding(padding: const EdgeInsets.only(top: 10), child: _cell(r, i)),
+                                  ],
+                                );
+                              },
+                            ),
                           ),
                       ],
                     ),
@@ -628,13 +843,16 @@ class AdminTable extends StatelessWidget {
                 for (var i = 0; i < headers.length; i++)
                   Expanded(
                     flex: flex[i],
-                    child: Text(
-                      headers[i],
-                      style: AQTypography.of(
-                        context,
-                        AQText.labelMedium,
-                        color: c.inkSoft,
-                      ).copyWith(fontSize: 12, letterSpacing: 0.4),
+                    child: Align(
+                      alignment: endColumns.contains(i) ? AlignmentDirectional.centerEnd : AlignmentDirectional.centerStart,
+                      child: Text(
+                        headers[i],
+                        style: AQTypography.of(
+                          context,
+                          AQText.labelMedium,
+                          color: c.inkSoft,
+                        ).copyWith(fontSize: 12, letterSpacing: 0.4),
+                      ),
                     ),
                   ),
               ],
@@ -650,17 +868,21 @@ class AdminTable extends StatelessWidget {
                   decoration: BoxDecoration(
                     border: Border(top: BorderSide(color: c.hairline)),
                   ),
-                  padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
-                  constraints: const BoxConstraints(minHeight: 48),
+                  padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+                  constraints: const BoxConstraints(minHeight: 56),
                   child: Row(
                     crossAxisAlignment: CrossAxisAlignment.center,
                     children: [
                       for (var i = 0; i < r.cells.length; i++)
                         Expanded(
                           flex: flex[i],
-                          child: Align(
-                            alignment: AlignmentDirectional.centerStart,
-                            child: _cell(r, i),
+                          // A gutter after each column, so the end of one cell's text never meets the start of the next.
+                          child: Padding(
+                            padding: const EdgeInsetsDirectional.only(end: 12),
+                            child: Align(
+                              alignment: endColumns.contains(i) ? AlignmentDirectional.centerEnd : AlignmentDirectional.centerStart,
+                              child: _cell(r, i),
+                            ),
                           ),
                         ),
                     ],
@@ -676,7 +898,7 @@ class AdminTable extends StatelessWidget {
 }
 
 Widget adminStatusPill(String label, (AQTone, String) look) =>
-    AQStatusPill(label: label, tone: look.$1, icon: look.$2, dense: true);
+    AQStatusPill(label: tr(label), tone: look.$1, icon: look.$2, dense: true);
 
 // ------------------------------------------------------------------ async + states
 
@@ -710,14 +932,14 @@ class AdminAsyncView<T> extends ConsumerWidget {
       if (e is AdminForbiddenException) {
         return AdminNotice(
           icon: 'lock',
-          title: 'Not allowed',
+          title: tr('Not allowed'),
           body: adminErrorText(e),
         );
       }
       return AQErrorBanner(
-        text: 'We could not load this. Check the connection and try again.',
+        text: tr('We could not load this. Check the connection and try again.'),
         action: AdminTextButton(
-          label: 'Try again',
+          label: tr('Try again'),
           color: c.accent,
           onPressed: onRetry,
         ),
@@ -809,7 +1031,7 @@ class AdminKeyValues extends StatelessWidget {
               child: Row(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  SizedBox(width: 148, child: Text(r.$1, style: AQTypography.of(context, AQText.bodySmall, soft: true))),
+                  SizedBox(width: (MediaQuery.sizeOf(context).width * 0.36).clamp(96.0, 148.0), child: Padding(padding: const EdgeInsetsDirectional.only(end: 8), child: Text(r.$1, style: AQTypography.of(context, AQText.bodySmall, soft: true)))),
                   Expanded(child: Text(VFmt.iso(r.$2), style: AQTypography.of(context, AQText.bodyMedium))),
                 ],
               ),
@@ -829,7 +1051,7 @@ Widget adminSection(BuildContext context, String title, {Widget? trailing}) =>
           Expanded(
             child: Semantics(
               header: true,
-              child: Text(title, style: AQTypography.of(context, AQText.titleMedium)),
+              child: Text(title, style: AQTypography.of(context, AQText.headlineSmall)),
             ),
           ),
           ?trailing,
@@ -888,7 +1110,7 @@ Future<void> showDocumentViewer(
                     ),
                     AQIconButton(
                       icon: 'close',
-                      semanticsLabel: 'Close',
+                      semanticsLabel: tr('Close'),
                       onPressed: () => Navigator.of(d).pop(),
                     ),
                   ],
@@ -943,8 +1165,8 @@ Future<void> showDocumentViewer(
                               child: Center(
                                 child: AdminNotice(
                                   icon: 'alert',
-                                  title: 'This document is not available',
-                                  body: 'The service could not stream it. It may be missing, expired or removed. Ask the applicant to resubmit it.',
+                                  title: tr('This document is not available'),
+                                  body: tr('The service could not stream it. It may be missing, expired or removed. Ask the applicant to resubmit it.'),
                                 ),
                               ),
                             ),
@@ -1050,7 +1272,7 @@ class _StepUpDialogState extends State<_StepUpDialog> {
               const SizedBox(height: AQSpacing.x4),
               AQOtpField(
                 key: _key,
-                label: 'One-time code',
+                label: tr('One-time code'),
                 state: _state,
                 enabled: _state != AQOtpState.verifying,
                 onCompleted: _submit,
@@ -1058,11 +1280,11 @@ class _StepUpDialogState extends State<_StepUpDialog> {
               if (_error != null)
                 Padding(
                   padding: const EdgeInsets.only(top: AQSpacing.x3),
-                  child: AQErrorBanner(text: _error!),
+                  child: AQErrorBanner(text: tr(_error!)),
                 ),
               const SizedBox(height: AQSpacing.x4),
               AdminSecondaryButton(
-                label: 'Cancel',
+                label: tr('Cancel'),
                 trailingChevron: false,
                 onPressed: _state == AQOtpState.verifying
                     ? null
@@ -1176,21 +1398,21 @@ class _DecisionPanelState extends ConsumerState<DecisionPanel> {
   Widget build(BuildContext context) {
     final c = AQColors.of(context);
     if (!widget.canDecide) {
-      return const AdminNotice(
+      return AdminNotice(
         icon: 'lock',
-        title: 'Read-only',
-        body: 'Your role can view this item but not decide it.',
+        title: tr('Read-only'),
+        body: tr('Your role can view this item but not decide it.'),
       );
     }
     if (!widget.open) {
       return Column(
         children: [
           if (_done != null)
-            AQErrorBanner(tone: AQBannerTone.success, text: _done!),
-          const AdminNotice(
+            AQErrorBanner(tone: AQBannerTone.success, text: tr(_done!)),
+          AdminNotice(
             icon: 'check',
-            title: 'Decided',
-            body: 'This item has been decided. Its status is shown above.',
+            title: tr('Decided'),
+            body: tr('This item has been decided. Its status is shown above.'),
           ),
         ],
       );
@@ -1226,21 +1448,21 @@ class _DecisionPanelState extends ConsumerState<DecisionPanel> {
                     padding: const EdgeInsets.only(top: AQSpacing.x3),
                     child: AQErrorBanner(
                       tone: AQBannerTone.info,
-                      text: blocked,
+                      text: tr(blocked),
                     ),
                   ),
                 if (_needsReason) ...[
                   const SizedBox(height: AQSpacing.x4),
                   DbSelectField<ReasonCode>(
-                    label: 'Reason code',
+                    label: tr('Reason code'),
                     valueLabel: _reason == null ? null : reasonLabel(_reason!),
-                    hint: 'Choose a reason',
+                    hint: tr('Choose a reason'),
                     required: true,
                     error: null,
                     onTap: () async {
                       final r = await showDbChoiceSheet<ReasonCode>(
                         context,
-                        title: 'Reason code',
+                        title: tr('Reason code'),
                         options: [
                           for (final x in widget.reasons) (x, reasonLabel(x)),
                         ],
@@ -1281,12 +1503,12 @@ class _DecisionPanelState extends ConsumerState<DecisionPanel> {
           if (_error != null)
             Padding(
               padding: const EdgeInsets.only(top: AQSpacing.x3),
-              child: AQErrorBanner(text: _error!),
+              child: AQErrorBanner(text: tr(_error!)),
             ),
           if (_done != null)
             Padding(
               padding: const EdgeInsets.only(top: AQSpacing.x3),
-              child: AQErrorBanner(tone: AQBannerTone.success, text: _done!),
+              child: AQErrorBanner(tone: AQBannerTone.success, text: tr(_done!)),
             ),
           const SizedBox(height: AQSpacing.x4),
           Align(
@@ -1319,8 +1541,7 @@ class ClaimBanner extends StatelessWidget {
       padding: const EdgeInsets.only(bottom: AQSpacing.x4),
       child: AQErrorBanner(
         tone: AQBannerTone.info,
-        text:
-            '$lockedBy is reviewing this item. You can read it, but decisions are locked until they finish or 30 minutes pass.',
+        text: tr('$lockedBy is reviewing this item. You can read it, but decisions are locked until they finish or 30 minutes pass.'),
       ),
     );
   }
@@ -1348,10 +1569,10 @@ class AdminSearchField extends StatelessWidget {
     child: AdminField(
       label: hint,
       controller: controller,
-      hint: 'Type to search',
+      hint: tr('Type to search'),
       action: TextInputAction.search,
       prefix: Padding(
-        padding: const EdgeInsets.only(left: 12),
+        padding: const EdgeInsetsDirectional.only(start: 12),
         child: AQIcon('search', size: 16, color: AQColors.of(context).inkSoft),
       ),
       onChanged: onChanged,
@@ -1366,28 +1587,33 @@ Widget adminFilterRow(
   BuildContext context,
   String label,
   List<(String, bool, VoidCallback)> pills,
-) => Padding(
-  padding: const EdgeInsets.only(top: 12),
-  child: Row(
-    crossAxisAlignment: CrossAxisAlignment.start,
-    children: [
-      SizedBox(
-        width: 72,
-        child: Padding(
-          padding: const EdgeInsets.only(top: 6),
-          child: Text(label, style: AQTypography.of(context, AQText.labelMedium, soft: true)),
-        ),
-      ),
-      Expanded(
-        child: Wrap(
-          spacing: 6,
-          runSpacing: 6,
-          children: [for (final p in pills) AdminChip(label: p.$1, selected: p.$2, onTap: p.$3)],
-        ),
-      ),
-    ],
-  ),
-);
+) {
+  final narrow = MediaQuery.sizeOf(context).width < 720;
+  return Padding(
+    padding: const EdgeInsets.only(top: 12),
+    child: narrow
+        ? Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Padding(padding: const EdgeInsets.only(bottom: 6), child: Text(tr(label), style: AQTypography.of(context, AQText.labelMedium, soft: true))),
+              _chipLine(context, pills),
+            ],
+          )
+        : Row(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              SizedBox(width: 72, child: Padding(padding: const EdgeInsets.only(top: 6), child: Text(tr(label), style: AQTypography.of(context, AQText.labelMedium, soft: true)))),
+              Expanded(child: _chipLine(context, pills)),
+            ],
+          ),
+  );
+}
+
+/// Filter chips always wrap onto as many lines as they need: on a phone no label is ever cut off.
+Widget _chipLine(BuildContext context, List<(String, bool, VoidCallback)> pills) {
+  final chips = [for (final p in pills) AdminChip(label: p.$1, selected: p.$2, onTap: p.$3)];
+  return Wrap(spacing: 6, runSpacing: 6, children: chips);
+}
 
 /// A wrapped row of choice chips, for forms.
 Widget adminChoiceRow(List<(String, bool, VoidCallback)> pills) => Wrap(
@@ -1420,4 +1646,22 @@ class _AdminDialog extends StatelessWidget {
     shape: shape,
     child: Semantics(container: true, explicitChildNodes: true, child: child),
   );
+}
+
+
+/// Switches the console (and the rest of the app) between English and Arabic. It shows the other
+/// language's own name, so it is findable whichever language is on.
+class AdminLangButton extends ConsumerWidget {
+  const AdminLangButton({super.key});
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final c = AQColors.of(context);
+    final ar = ref.watch(localeProvider).languageCode == 'ar';
+    return AdminTextButton(
+      key: const ValueKey('admin-lang'),
+      label: ar ? 'English' : 'العربية',
+      color: c.accentDeep,
+      onPressed: () => ref.read(localeProvider.notifier).state = Locale(ar ? 'en' : 'ar'),
+    );
+  }
 }

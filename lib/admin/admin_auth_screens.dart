@@ -1,4 +1,4 @@
-import 'package:flutter/material.dart';
+import 'package:flutter/material.dart' hide Text;
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../core/aq/aq_demo.dart';
@@ -12,6 +12,8 @@ import 'admin_auth.dart';
 import 'admin_models.dart';
 import 'admin_repository.dart';
 import 'admin_ui.dart';
+import 'admin_widgets.dart' show AdminLangButton;
+import 'admin_l10n.dart';
 
 class _AuthFrame extends StatelessWidget {
   final String title, subtitle;
@@ -36,6 +38,10 @@ class _AuthFrame extends StatelessWidget {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.stretch,
                 children: [
+                  const Align(
+                    alignment: AlignmentDirectional.centerEnd,
+                    child: AdminLangButton(),
+                  ),
                   Align(
                     alignment: Alignment.center,
                     child: MasterLogo(width: 96),
@@ -167,16 +173,15 @@ class _AdminLoginScreenState extends ConsumerState<AdminLoginScreen> {
   Widget build(BuildContext context) {
     final notice = ref.watch(adminAuthProvider).notice;
     return _AuthFrame(
-      title: 'Sign in',
-      subtitle:
-          'Use your admin account. You will be asked for a one-time code next.',
+      title: tr('Sign in'),
+      subtitle: tr('Use your admin account. You will be asked for a one-time code next.'),
       children: [
         if (notice == 'expired')
-          const Padding(
+          Padding(
             padding: EdgeInsets.only(bottom: AQSpacing.x4),
             child: AQErrorBanner(
               tone: AQBannerTone.info,
-              text: 'Your session ended. Sign in again to continue.',
+              text: tr('Your session ended. Sign in again to continue.'),
             ),
           ),
         AutofillGroup(
@@ -184,7 +189,7 @@ class _AdminLoginScreenState extends ConsumerState<AdminLoginScreen> {
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
               AdminField(
-                label: 'Email',
+                label: tr('Email'),
                 controller: _email,
                 keyboardType: TextInputType.emailAddress,
                 autofill: const [AutofillHints.username],
@@ -195,10 +200,10 @@ class _AdminLoginScreenState extends ConsumerState<AdminLoginScreen> {
               ),
               const SizedBox(height: AQSpacing.x4),
               AdminPasswordField(
-                label: 'Password',
+                label: tr('Password'),
                 controller: _password,
-                showLabel: 'Show password',
-                hideLabel: 'Hide password',
+                showLabel: tr('Show password'),
+                hideLabel: tr('Hide password'),
                 action: TextInputAction.done,
                 error: _tried && _password.text.isEmpty
                     ? 'Enter your password.'
@@ -211,12 +216,12 @@ class _AdminLoginScreenState extends ConsumerState<AdminLoginScreen> {
         if (_error != null)
           Padding(
             padding: const EdgeInsets.only(top: AQSpacing.x4),
-            child: AQErrorBanner(text: _error!),
+            child: AQErrorBanner(text: tr(_error!)),
           ),
         const SizedBox(height: AQSpacing.x5),
         AdminPrimaryButton(
           expand: true,
-          label: 'Continue',
+          label: tr('Continue'),
           loading: _busy,
           onPressed: _busy ? null : _submit,
         ),
@@ -234,7 +239,7 @@ class _AdminLoginScreenState extends ConsumerState<AdminLoginScreen> {
           const SizedBox(height: AQSpacing.x3),
           AdminSecondaryButton(
             expand: true,
-            label: 'Open the demo console',
+            label: tr('Open the demo console'),
             trailingChevron: false,
             onPressed: _busy ? null : _demoEnter,
           ),
@@ -276,7 +281,7 @@ class _AdminLoginScreenState extends ConsumerState<AdminLoginScreen> {
           Align(
             alignment: AlignmentDirectional.centerStart,
             child: AdminTextButton(
-              label: 'Back to AQARATI',
+              label: tr('Back to AQARATI'),
               color: AQColors.of(context).accent,
               onPressed: ref.read(adminExitProvider),
             ),
@@ -329,12 +334,12 @@ class _AdminTotpScreenState extends ConsumerState<AdminTotpScreen> {
   @override
   Widget build(BuildContext context) {
     return _AuthFrame(
-      title: 'One-time code',
-      subtitle: 'Enter the 6-digit code from your authenticator app.',
+      title: tr('One-time code'),
+      subtitle: tr('Enter the 6-digit code from your authenticator app.'),
       children: [
         AQOtpField(
           key: _key,
-          label: 'One-time code',
+          label: tr('One-time code'),
           state: _state,
           enabled: _state != AQOtpState.verifying,
           onCompleted: _submit,
@@ -342,11 +347,11 @@ class _AdminTotpScreenState extends ConsumerState<AdminTotpScreen> {
         if (_error != null)
           Padding(
             padding: const EdgeInsets.only(top: AQSpacing.x4),
-            child: AQErrorBanner(text: _error!),
+            child: AQErrorBanner(text: tr(_error!)),
           ),
         const SizedBox(height: AQSpacing.x5),
         AdminSecondaryButton(
-          label: 'Back to sign in',
+          label: tr('Back to sign in'),
           trailingChevron: false,
           onPressed: _state == AQOtpState.verifying
               ? null

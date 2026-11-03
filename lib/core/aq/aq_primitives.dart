@@ -30,6 +30,8 @@ class AQIcon extends StatelessWidget {
       width: size,
       height: size,
       colorFilter: ColorFilter.mode(c, BlendMode.srcIn),
+      // A name without a matching asset (or an asset that fails to parse) shows a neutral ring, never a blank gap.
+      errorBuilder: (_, _, _) => Icon(Icons.circle_outlined, key: const ValueKey('aq-icon-fallback'), size: size, color: c),
     );
     if (directional && rtl) icon = Transform.flip(flipX: true, child: icon);
     return ExcludeSemantics(child: icon);
@@ -456,15 +458,18 @@ class AQSurface extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final c = AQColors.of(context);
+    // Cards sit on photograph backdrops: a near-solid raised surface with a hairline reads as a card
+    // (the old translucent fill washed out against the picture).
     final (color, shadow) = switch (kind) {
-      AQSurfaceKind.secondary => (c.surface, AQElevation.none),
+      AQSurfaceKind.secondary => (c.surfaceRaised.withValues(alpha: 0.94), AQElevation.subtle),
       AQSurfaceKind.elevated => (c.surfaceRaised, AQElevation.floating),
-      AQSurfaceKind.grouped => (c.surface, AQElevation.none),
+      AQSurfaceKind.grouped => (c.surfaceRaised.withValues(alpha: 0.94), AQElevation.none),
     };
     return DecoratedBox(
       decoration: BoxDecoration(
         color: color,
         borderRadius: BorderRadius.circular(radius),
+        border: Border.all(color: c.hairline),
         boxShadow: shadow,
       ),
       child: Padding(padding: padding, child: child),

@@ -27,6 +27,7 @@ import '../viewing/screens/viewing_kit.dart'
 import '../viewing/widgets/viewing_components.dart';
 import '../viewing/widgets/viewing_format.dart';
 import '../viewing/widgets/viewing_scaffold.dart';
+import '../workspace/aq_thumb.dart';
 import 'provider_repository.dart';
 
 (AQTone, String) _statusLook(MaintenanceStatus s) => switch (s) {
@@ -483,6 +484,7 @@ class _RequestCard extends StatelessWidget {
           padding: const EdgeInsets.all(AQSpacing.x4),
           child: Row(
             children: [
+              aqRowLead(AQThumb(asset: maintenanceServiceImage(b.service), icon: 'construction')),
               Expanded(
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,

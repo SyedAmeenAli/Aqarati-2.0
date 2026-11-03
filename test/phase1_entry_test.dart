@@ -238,49 +238,29 @@ void main() {
     );
   });
 
-  group('personalised Home', () {
-    testWidgets(
-      'chosen services come first; the four primary actions never change',
-      (t) async {
-        _phone(t, h: 2800);
-        await t.pumpWidget(
-          _app(
-            '/app/home',
-            extra: [
-              interestsProvider.overrideWith(
-                (_) => {Interest.maintenance, Interest.loan},
-              ),
-            ],
-          ),
-        );
-        await _settle(t);
-        final grid = find.byType(AQModuleGrid);
-        Rect rect(String label) => t.getRect(
-          find.descendant(
-            of: grid,
-            matching: find.byWidgetPredicate(
-              (w) =>
-                  w is Semantics &&
-                  w.properties.label == label &&
-                  w.properties.button == true,
-            ),
-          ),
-        );
-        final first = rect('Loan Calculator');
-        final second = rect('Maintenance');
-        final dev = rect('Development');
-        expect(first.top, lessThanOrEqualTo(dev.top));
-        expect(second.top, lessThanOrEqualTo(dev.top));
-        expect(find.byType(AQActionCard), findsNWidgets(4));
-        for (final s in [
-          'Buy a property',
-          'Rent a property',
-          'Sell with Aqary e-Broker',
-          'My Favorites',
-        ]) {
-          expect(find.text(s), findsOneWidget, reason: s);
-        }
-      },
-    );
+  group('Home after interests', () {
+    testWidgets('Home stays a fixed six-service launcher whatever was chosen', (t) async {
+      _phone(t, h: 2800);
+      await t.pumpWidget(
+        _app(
+          '/app/home',
+          extra: [
+            interestsProvider.overrideWith((_) => {Interest.maintenance, Interest.loan}),
+          ],
+        ),
+      );
+      await _settle(t);
+      Finder service(String title) => find.byWidgetPredicate(
+        (w) => w is Semantics && (w.properties.label ?? '').startsWith('$title.') && w.properties.button == true,
+      );
+      final order = ['Properties', 'Development', 'Interior & Exterior Designer', 'Construction Company', 'Maintenance', 'Loan Calculator'];
+      for (final s in order) {
+        expect(service(s), findsOneWidget, reason: s);
+      }
+      // The saved interests do not re-order Home any more: Properties still leads.
+      expect(t.getRect(service('Properties')).top, lessThan(t.getRect(service('Maintenance')).top));
+      expect(find.byType(AQActionCard), findsNothing, reason: 'the four action cards live on the Properties page now');
+    });
   });
+
 }

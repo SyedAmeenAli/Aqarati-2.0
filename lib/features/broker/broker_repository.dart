@@ -74,17 +74,17 @@ class DemoBrokerRepository implements BrokerRepository {
 const kQaSampleBrokers = [
   AqaratiBroker(
     id: 'qa-broker-1',
-    name: 'QA sample broker A',
+    name: 'Al Noor Realty (sample)',
     area: 'Muscat',
-    about: 'Review-build sample. Not a real broker.',
+    about: 'A fictional sample profile for this preview. Not a real broker.',
     phone: '+968 9000 0101',
     propertyIds: ['p1', 'p2'],
   ),
   AqaratiBroker(
     id: 'qa-broker-2',
-    name: 'QA sample broker B',
+    name: 'Salalah Coast Realty (sample)',
     area: 'Salalah',
-    about: 'Review-build sample with no phone number and no listings.',
+    about: 'A fictional sample profile with no phone number and no listings.',
   ),
 ];
 

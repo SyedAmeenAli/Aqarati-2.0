@@ -45,7 +45,7 @@ class _SavedScreenState extends ConsumerState<SavedScreen> {
     final c = AQColors.of(context);
     final ids = ref.watch(savedPropertyIdsProvider);
     if (ids.isEmpty) {
-      return _empty(context, icon: 'star', title: f.t('saved.empty.t'), body: f.t('saved.empty.b'), cta: f.t('saved.empty.cta'), onTap: () => context.go('/app/explore'));
+      return _empty(context, icon: 'bookmark', title: f.t('saved.empty.t'), body: f.t('saved.empty.b'), cta: f.t('saved.empty.cta'), onTap: () => context.go('/app/explore'));
     }
     final async = ref.watch(aqAllPropertiesProvider);
     return async.when(
@@ -130,7 +130,7 @@ class _SavedScreenState extends ConsumerState<SavedScreen> {
         Padding(
           padding: const EdgeInsets.only(bottom: AQSpacing.x3),
           child: Container(
-            decoration: BoxDecoration(color: c.surfaceRaised, borderRadius: BorderRadius.circular(AQRadius.large), border: Border.all(color: c.hairline)),
+            decoration: BoxDecoration(color: c.surfaceRaised, borderRadius: BorderRadius.circular(AQRadius.medium), border: Border.all(color: c.hairline)),
             child: Row(children: [
               Expanded(
                 child: Semantics(

@@ -34,6 +34,8 @@ class AQViewingScaffold extends StatefulWidget {
   final bool showBack;
   final bool emotional;
   final Widget? trailing;
+  /// Content column width; tablet and desktop screens that need more room than a phone column pass a larger value.
+  final double? maxWidth;
   const AQViewingScaffold({
     super.key,
     this.title,
@@ -47,6 +49,7 @@ class AQViewingScaffold extends StatefulWidget {
     this.showBack = true,
     this.emotional = false,
     this.trailing,
+    this.maxWidth,
   });
 
   @override
@@ -75,7 +78,6 @@ class _AQViewingScaffoldState extends State<AQViewingScaffold> with SingleTicker
   Widget build(BuildContext context) {
     final c = AQColors.of(context);
     final centered = widget.emotional;
-    final large = aqLargeText(context);
     final inset = AQShellInset.of(context);
     return AnnotatedRegion<SystemUiOverlayStyle>(
       value: SystemUiOverlayStyle(
@@ -90,7 +92,7 @@ class _AQViewingScaffoldState extends State<AQViewingScaffold> with SingleTicker
           SafeArea(
             child: Center(
               child: ConstrainedBox(
-                constraints: const BoxConstraints(maxWidth: AQSpacing.maxContent + AQSpacing.gutter * 2),
+                constraints: BoxConstraints(maxWidth: widget.maxWidth ?? AQSpacing.maxContent + AQSpacing.gutter * 2),
                 child: Column(children: [
                   Padding(
                     padding: const EdgeInsets.symmetric(horizontal: AQSpacing.x4),
@@ -119,7 +121,7 @@ class _AQViewingScaffoldState extends State<AQViewingScaffold> with SingleTicker
                               begin: 0.06,
                               end: 0.55,
                               dy: 8,
-                              child: Semantics(header: true, child: Text(widget.title!, textAlign: centered ? TextAlign.center : null, style: AQTypography.of(context, centered || !large ? AQText.displaySmall : AQText.headlineLarge))),
+                              child: Semantics(header: true, child: Text(widget.title!, textAlign: centered ? TextAlign.center : null, style: AQTypography.of(context, centered ? AQText.displaySmall : AQText.headlineLarge))),
                             ),
                           if (widget.subtitle != null) ...[
                             const SizedBox(height: AQSpacing.x2),
@@ -184,18 +186,20 @@ class AQBottomActionBar extends StatelessWidget {
   final String? footnote;
   /// Stack the actions (primary on top) when the labels are long; otherwise they sit side by side.
   final bool stack;
-  const AQBottomActionBar({super.key, this.summary, required this.primary, this.secondary, this.footnote, this.stack = false});
+  /// Keep both actions on one row on narrow phones (the caller supplies short labels). Large text still stacks.
+  final bool compact;
+  const AQBottomActionBar({super.key, this.summary, required this.primary, this.secondary, this.footnote, this.stack = false, this.compact = false});
 
   @override
   Widget build(BuildContext context) {
     final c = AQColors.of(context);
     final inset = AQShellInset.of(context);
-    final stacked = stack || aqLargeText(context) || MediaQuery.sizeOf(context).width < 340;
+    final stacked = stack || aqLargeText(context) || (!compact && MediaQuery.sizeOf(context).width < 340);
     final buttons = secondary == null
         ? primary
         : stacked
             ? Column(mainAxisSize: MainAxisSize.min, crossAxisAlignment: CrossAxisAlignment.stretch, children: [primary, const SizedBox(height: AQSpacing.x2), secondary!])
-            : Row(children: [Expanded(child: secondary!), const SizedBox(width: AQSpacing.x3), Expanded(child: primary)]);
+            : Row(children: [Expanded(flex: compact ? 2 : 1, child: secondary!), SizedBox(width: compact ? AQSpacing.x2 : AQSpacing.x3), Expanded(flex: compact ? 3 : 1, child: primary)]);
     return DecoratedBox(
       decoration: BoxDecoration(
         color: c.surfaceRaised,
@@ -207,7 +211,7 @@ class AQBottomActionBar extends StatelessWidget {
         bottom: inset == 0,
         minimum: const EdgeInsets.only(bottom: AQSpacing.x2),
         child: Padding(
-          padding: EdgeInsets.fromLTRB(AQSpacing.gutter, AQSpacing.x4, AQSpacing.gutter, AQSpacing.x1 + inset),
+          padding: EdgeInsets.fromLTRB(AQSpacing.gutter, AQSpacing.x3, AQSpacing.gutter, AQSpacing.x1 + inset),
           child: Column(mainAxisSize: MainAxisSize.min, crossAxisAlignment: CrossAxisAlignment.stretch, children: [
             if (summary != null) ...[summary!, const SizedBox(height: AQSpacing.x3)],
             buttons,

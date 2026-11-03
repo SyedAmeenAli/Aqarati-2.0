@@ -183,7 +183,7 @@ class LeadCard extends StatelessWidget {
           padding: const EdgeInsets.all(AQSpacing.x3),
           decoration: BoxDecoration(
             color: c.surfaceRaised,
-            borderRadius: BorderRadius.circular(AQRadius.large),
+            borderRadius: BorderRadius.circular(AQRadius.medium),
             border: Border.all(color: c.hairline),
           ),
           child: Row(
@@ -192,8 +192,8 @@ class LeadCard extends StatelessWidget {
               ClipRRect(
                 borderRadius: BorderRadius.circular(AQRadius.medium),
                 child: SizedBox(
-                  width: 72,
-                  height: 72,
+                  width: 88,
+                  height: 88,
                   child: image == null
                       ? ColoredBox(
                           color: c.surfaceSelected,
@@ -225,7 +225,7 @@ class LeadCard extends StatelessWidget {
                       VFmt.iso(_title(f, l)),
                       maxLines: 2,
                       overflow: TextOverflow.ellipsis,
-                      style: AQTypography.of(context, AQText.titleSmall),
+                      style: AQTypography.of(context, AQText.titleMedium),
                     ),
                     Text(
                       '${VFmt.iso(name)} · $received',
@@ -821,66 +821,40 @@ class _LeadDetailScreenState extends ConsumerState<LeadDetailScreen> {
                   ),
                   const SizedBox(height: AQSpacing.x3),
                 ],
+                // The property or project this request is about: its photograph first, then its name and the way in.
                 AQSurface(
-                  padding: const EdgeInsets.all(AQSpacing.x3),
-                  child: Row(
-                    children: [
-                      ClipRRect(
-                        borderRadius: BorderRadius.circular(AQRadius.medium),
-                        child: SizedBox(
-                          width: 72,
-                          height: 72,
-                          child: image == null
-                              ? ColoredBox(
-                                  color: c.surfaceSelected,
-                                  child: Center(
-                                    child: AQIcon(
-                                      _kindIcon(l.kind),
-                                      size: 24,
-                                      color: c.accent,
-                                    ),
-                                  ),
-                                )
-                              : aqImg(image, cacheWidth: 300),
+                  padding: EdgeInsets.zero,
+                  child: ClipRRect(
+                    borderRadius: BorderRadius.circular(AQRadius.medium),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.stretch,
+                      children: [
+                        AspectRatio(
+                          aspectRatio: 16 / 9,
+                          child: ExcludeSemantics(
+                            child: image == null
+                                ? ColoredBox(color: c.surfaceSelected, child: Center(child: AQIcon(_kindIcon(l.kind), size: 32, color: c.accent)))
+                                : aqImg(image, cacheWidth: 800),
+                          ),
                         ),
-                      ),
-                      const SizedBox(width: AQSpacing.x3),
-                      Expanded(
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Text(
-                              f.t('ld.d.related'),
-                              style: AQTypography.of(
-                                context,
-                                AQText.labelSmall,
-                                color: c.accentDeep,
-                              ),
-                            ),
-                            Text(
-                              VFmt.iso(_title(f, l)),
-                              maxLines: 2,
-                              overflow: TextOverflow.ellipsis,
-                              style: AQTypography.of(
-                                context,
-                                AQText.titleSmall,
-                              ),
-                            ),
-                            if (openRoute != null)
-                              Align(
-                                alignment: AlignmentDirectional.centerStart,
-                                child: AQTextButton(
-                                  label: l.kind == LeadKind.projectEnquiry
-                                      ? f.t('ld.d.openProject')
-                                      : f.t('ld.d.openProperty'),
+                        Padding(
+                          padding: const EdgeInsets.fromLTRB(AQSpacing.x4, AQSpacing.x3, AQSpacing.x3, AQSpacing.x2),
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Text(f.t('ld.d.related'), style: AQTypography.of(context, AQText.labelSmall, color: c.accentDeep)),
+                              Text(VFmt.iso(_title(f, l)), maxLines: 2, overflow: TextOverflow.ellipsis, style: AQTypography.of(context, AQText.headlineSmall)),
+                              if (openRoute != null)
+                                AQTextButton(
+                                  label: l.kind == LeadKind.projectEnquiry ? f.t('ld.d.openProject') : f.t('ld.d.openProperty'),
                                   color: c.accent,
                                   onPressed: () => context.push(openRoute),
                                 ),
-                              ),
-                          ],
+                            ],
+                          ),
                         ),
-                      ),
-                    ],
+                      ],
+                    ),
                   ),
                 ),
                 AQViewingSectionTitle(f.t('ld.d.customer')),

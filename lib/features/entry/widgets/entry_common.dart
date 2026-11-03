@@ -14,7 +14,7 @@ class MasterLogo extends StatelessWidget {
       child: SvgPicture.asset(
         'assets/logo/aqarati_master.svg',
         width: width,
-        semanticsLabel: 'AQARATI — Your Property Journey',
+        semanticsLabel: Localizations.localeOf(context).languageCode == 'ar' ? 'عقاراتي — رحلتك العقارية' : 'AQARATI — Your Property Journey',
         // Dark mode: same master vector, brown strokes lifted to light bronze. The ivory counters
         // (tagline letters, Q tail) must become the dark page colour, not bronze, or they fill in.
         colorMapper: Theme.of(context).brightness == Brightness.dark ? const _DarkLogoColors() : null,

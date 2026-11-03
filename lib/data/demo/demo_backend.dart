@@ -191,7 +191,7 @@ class DemoAccountApi implements AccountApi {
   @override
   Future<MeSession> getMe() async {
     await Future<void>.delayed(const Duration(milliseconds: 250));
-    if (!s.signedIn) throw const ApiException(ApiErrorCode.network);
+    if (!s.signedIn) throw const ApiException(ApiErrorCode.unauthenticated);
     return _me();
   }
 
@@ -209,6 +209,7 @@ class DemoAccountApi implements AccountApi {
   @override
   Future<VerificationInfo> getVerification() async {
     await Future<void>.delayed(const Duration(milliseconds: 250));
+    if (!s.signedIn) throw const ApiException(ApiErrorCode.unauthenticated);
     final cfg = roleConfigs[s.purpose]!;
     return VerificationInfo(
       purpose: cfg.purpose,

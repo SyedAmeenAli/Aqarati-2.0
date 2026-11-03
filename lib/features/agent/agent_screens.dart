@@ -15,7 +15,7 @@ import '../../core/auth/auth_repository.dart';
 import '../../data/api/account_api.dart' show meProvider, verificationProvider;
 import '../leads/phone_launcher.dart';
 import '../role_home/role_home_model.dart'
-    show HomeWorkspace, homeWorkspaceProvider;
+    show HomeWorkspace;
 import '../search/aq_filter_sheet.dart' show AQChoicePill;
 import '../search/aq_search.dart' show AQQueryField;
 import '../viewing/domain/viewing_presentation.dart' show AQTone;
@@ -24,7 +24,12 @@ import '../viewing/widgets/viewing_format.dart';
 import '../viewing/widgets/viewing_scaffold.dart' show AQShellInset;
 import 'agent_crm.dart';
 import '../ads/ad_models.dart' show AdAudience;
+import '../role_home/role_home_model.dart' show HomeRole;
+import '../analytics/analytics_charts.dart' show KpiGrid, KpiTile;
+import '../role_home/mode_switch.dart' show switchToShop, switchToWork;
+import '../role_home/role_home_widgets.dart' show RoleWorkspaceSwitcher;
 import '../ads/sponsored_banner.dart';
+import '../analytics/analytics_screens.dart' show RoleKpiStrip;
 
 // ---------------------------------------------------------------- shared pieces
 
@@ -47,6 +52,7 @@ class _AgentPage extends StatelessWidget {
   Widget build(BuildContext context) {
     final f = FlowStrings.of(context);
     final c = AQColors.of(context);
+    final stackAction = aqLargeText(context) || MediaQuery.sizeOf(context).width < 400;
     return SafeArea(
       bottom: false,
       child: Align(
@@ -93,16 +99,18 @@ class _AgentPage extends StatelessWidget {
                             header: true,
                             child: Text(
                               title,
-                              style: AQTypography.of(context, AQText.displaySmall),
+                              style: AQTypography.of(context, AQText.headlineLarge),
                             ),
                           ),
                         ],
                       ),
                     ),
-                    if (!aqLargeText(context)) ?action,
+                    if (!stackAction) ?action,
                   ],
                 ),
-                if (aqLargeText(context) && action != null) ...[const SizedBox(height: AQSpacing.x3), action!],
+                // On a narrow phone or at large text the action sits under the title, full width of
+                // its own line, instead of squeezing the title into a column.
+                if (stackAction && action != null) ...[const SizedBox(height: AQSpacing.x3), Align(alignment: AlignmentDirectional.centerStart, child: action!)],
                 const SizedBox(height: AQSpacing.x4),
                 ...children,
               ],
@@ -277,54 +285,33 @@ class AgentDashboardScreen extends ConsumerWidget {
       for (final c in crm.contacts)
         for (final n in c.notes) (c, n),
     ]..sort((a, b) => b.$2.at.compareTo(a.$2.at));
-    Widget kpi(String key, int n, String path) => _Tap(
-      label: '${f.t(key)}: $n',
-      onTap: () => context.go(path),
-      child: AQSurface(
-        padding: const EdgeInsets.all(AQSpacing.x4),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text('$n', style: AQTypography.of(context, AQText.displaySmall)),
-            const SizedBox(height: 2),
-            Text(
-              f.t(key),
-              style: AQTypography.of(context, AQText.bodySmall, soft: true),
-            ),
-          ],
-        ),
-      ),
-    );
+    KpiTile kpi(String key, int n, String path, String icon) => KpiTile(label: f.t(key), value: '$n', icon: icon, onTap: () => context.go(path));
     return _AgentPage(
       eyebrow: f.t('ag.dash.eyebrow'),
       title: f.t('ag.dash.title'),
       children: [
+        Align(
+          alignment: AlignmentDirectional.centerEnd,
+          child: RoleWorkspaceSwitcher(
+            selected: HomeWorkspace.agent,
+            // Shop is the same account in its customer view: the choice is kept, nothing is reset.
+            onChanged: (w) => w == HomeWorkspace.buyer ? switchToShop(context, ref) : switchToWork(context, ref),
+          ),
+        ),
+        const SizedBox(height: AQSpacing.x3),
         DbDemoLine(f.t('ag.demo')),
         const SizedBox(height: AQSpacing.x4),
-        LayoutBuilder(
-          builder: (context, box) {
-            final cols = box.maxWidth >= 560 ? 4 : 2;
-            const gap = AQSpacing.x3;
-            final w = (box.maxWidth - gap * (cols - 1)) / cols;
-            return Padding(
-              padding: const EdgeInsets.only(bottom: AQSpacing.x5),
-              child: Wrap(
-                spacing: gap,
-                runSpacing: gap,
-                children: [
-                  for (final k in [
-                    kpi('ag.k.leads', fresh, '/agent/contacts'),
-                    kpi('ag.k.open', open.length, '/agent/contacts'),
-                    kpi('ag.k.viewings', ahead, '/agent/calendar'),
-                    kpi('ag.k.follow', due.length, '/agent/contacts'),
-                  ])
-                    SizedBox(width: w, child: k),
-                ],
-              ),
-            );
-          },
+        Padding(
+          padding: const EdgeInsets.only(bottom: AQSpacing.x5),
+          child: KpiGrid(tiles: [
+            kpi('ag.k.leads', fresh, '/agent/contacts', 'account'),
+            kpi('ag.k.open', open.length, '/agent/contacts', 'activity'),
+            kpi('ag.k.viewings', ahead, '/agent/calendar', 'calendar'),
+            kpi('ag.k.follow', due.length, '/agent/contacts', 'clock'),
+          ]),
         ),
         const SponsoredBannerSlot(audience: AdAudience.agent),
+        const RoleKpiStrip(role: HomeRole.agent, linkOnly: true),
         const SizedBox(height: AQSpacing.x5),
         _Section(
           title: f.t('ag.dash.today'),
@@ -497,13 +484,13 @@ class _ContactRow extends StatelessWidget {
           child: Row(
             children: [
               Container(
-                width: 44,
-                height: 44,
-                decoration: BoxDecoration(color: c.surfaceSelected, shape: BoxShape.circle),
+                width: 52,
+                height: 52,
+                decoration: BoxDecoration(color: c.surfaceSelected, shape: BoxShape.circle, border: Border.all(color: c.hairline)),
                 child: Center(
                   child: Text(
                     _initials(k.name).toUpperCase(),
-                    style: AQTypography.of(context, AQText.titleSmall, color: c.accentDeep),
+                    style: AQTypography.of(context, AQText.titleMedium, color: c.accentDeep),
                   ),
                 ),
               ),
@@ -512,7 +499,7 @@ class _ContactRow extends StatelessWidget {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Text(k.name, style: AQTypography.of(context, AQText.titleSmall)),
+                    Text(k.name, style: AQTypography.of(context, AQText.titleMedium)),
                     Text(
                       [...k.interests, if (k.location.isNotEmpty) k.location].join(' · '),
                       maxLines: 1,
@@ -524,7 +511,7 @@ class _ContactRow extends StatelessWidget {
                       follow,
                       style: AQTypography.of(
                         context,
-                        AQText.labelSmall,
+                        AQText.labelMedium,
                         color: overdue ? c.danger : c.inkSoft,
                       ),
                     ),
@@ -885,7 +872,7 @@ class _ContactState extends ConsumerState<AgentContactScreen> {
                           Text(n.text, style: AQTypography.of(context, AQText.bodyMedium)),
                           Text(
                             '${VFmt.shortDate(context, n.at)}, ${VFmt.time(context, n.at)}',
-                            style: AQTypography.of(context, AQText.labelSmall, soft: true),
+                            style: AQTypography.of(context, AQText.bodySmall, soft: true),
                           ),
                         ],
                       ),
@@ -1045,30 +1032,30 @@ class _AppointmentRow extends ConsumerWidget {
           padding: const EdgeInsets.all(AQSpacing.x3),
           child: Row(
             children: [
+              // Date first: the day and month read at a glance, with the kind of appointment underneath.
               Container(
-                width: 44,
-                height: 44,
-                decoration: BoxDecoration(color: c.surfaceSelected, shape: BoxShape.circle),
-                child: Center(
-                  child: AQIcon(
-                    a.kind == AppointmentKind.viewing ? 'eye' : (a.kind == AppointmentKind.meeting ? 'account' : 'phone'),
-                    size: 20,
-                    color: c.accent,
-                  ),
-                ),
+                width: 56,
+                padding: const EdgeInsets.symmetric(vertical: AQSpacing.x2),
+                decoration: BoxDecoration(color: c.surfaceSelected, borderRadius: BorderRadius.circular(AQRadius.small + 4), border: Border.all(color: overdue ? c.danger : c.hairline)),
+                child: Column(mainAxisSize: MainAxisSize.min, children: [
+                  Text(VFmt.dayNum(context, a.at), style: AQTypography.of(context, AQText.headlineSmall, color: overdue ? c.danger : c.accentDeep)),
+                  Text(VFmt.weekdayShort(context, a.at), style: AQTypography.of(context, AQText.bodySmall, soft: true)),
+                  const SizedBox(height: 2),
+                  AQIcon(a.kind == AppointmentKind.viewing ? 'eye' : (a.kind == AppointmentKind.meeting ? 'account' : 'phone'), size: 14, color: c.accent),
+                ]),
               ),
               const SizedBox(width: AQSpacing.x3),
               Expanded(
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Text(a.title, style: AQTypography.of(context, AQText.titleSmall)),
+                    Text(a.title, style: AQTypography.of(context, AQText.titleMedium)),
                     Text(
                       _when(context, a.at),
                       style: AQTypography.of(context, AQText.bodySmall, color: overdue ? c.danger : c.inkSoft),
                     ),
                     if (a.listingTitle != null)
-                      Text(a.listingTitle!, style: AQTypography.of(context, AQText.labelSmall, soft: true)),
+                      Text(a.listingTitle!, style: AQTypography.of(context, AQText.bodySmall, soft: true)),
                     if (aqLargeText(context)) ...[const SizedBox(height: AQSpacing.x1), pill],
                   ],
                 ),
@@ -1286,16 +1273,16 @@ class AgentMoreScreen extends ConsumerWidget {
       title: f.t('ag.more.title'),
       children: [
         group(f.t('ag.more.work'), [
+          row('activity', f.t('an.title'), () => context.push('/agent/analytics')),
+          row('user', f.t('st.bz.link'), () => context.push('/agent/settings')),
           row('agent', f.t('ag.more.profile'), () => context.push('/verification/details')),
           row('calendar-check', f.t('ag.more.requests'), () => context.push('/agent/leads')),
           row('info', f.t('ag.more.enq'), () => context.push('/workspace/enquiries')),
           row('construction', f.t('ag.more.svc'), () => context.push('/workspace/requests')),
         ]),
         group(f.t('ag.more.account'), [
-          row('home', f.t('ag.more.customer'), () {
-            ref.read(homeWorkspaceProvider.notifier).state = HomeWorkspace.buyer;
-            context.go('/app/home');
-          }, sub: f.t('ag.more.customer.s')),
+          row('user', f.t('pp.title'), () => context.push('/app/account/photo')),
+          row('home', f.t('ag.more.customer'), () => switchToShop(context, ref), sub: f.t('ag.more.customer.s')),
           row('lock', f.t('ag.more.signOut'), () async {
             await ref.read(authRepositoryProvider).signOut();
             ref.invalidate(meProvider);
