@@ -9,11 +9,14 @@ import '../../core/domain/account_models.dart';
 import '../../core/localization/flow_strings.dart';
 import '../devbuild/db_models.dart';
 import '../devbuild/db_repository.dart';
+import '../devbuild/db_service_toggles.dart';
+import '../search/aq_filter_sheet.dart' show AQChoicePill;
 import '../devbuild/db_widgets.dart' show DbNotice, DbSkeleton, dbTypeImage;
 import 'role_home_model.dart';
 import 'role_home_widgets.dart';
 import '../ads/ad_models.dart' show AdAudience;
 import '../ads/sponsored_banner.dart';
+import '../analytics/analytics_screens.dart' show RoleKpiStrip;
 
 /// Building Architecture: a quiet editorial studio page. Whitespace, fine rules, a numbered
 /// index and the real bio set as a quotation. It is a profile home: the developer's project
@@ -101,7 +104,9 @@ class ArchitectureHome extends ConsumerWidget {
                 indexItem('04', f.t('rh.arc.idx.contact'), () => context.push('/app/account/workspace/leads')),
               ]),
       ),
+      RolePortfolioStrip(accent: accent),
       const SponsoredBannerSlot(audience: AdAudience.architecture),
+      const RoleKpiStrip(role: HomeRole.architecture),
       Divider(color: c.hairline, height: AQSpacing.x6),
       RoleSection(f.t('rh.arc.practice'), action: f.t('rh.edit'), onAction: profile, accent: accent),
       org.when(
@@ -169,45 +174,11 @@ class InteriorHome extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final f = FlowStrings.of(context);
-    final c = AQColors.of(context);
     final accent = roleAccent(context, HomeRole.interiorExterior);
     final org = ref.watch(dbMyOrgProvider);
     final o = org.valueOrNull;
     final service = o?.serviceType;
     void profile() => context.push('/app/account/workspace/profile');
-
-    Widget segment(InteriorExteriorServiceType t) {
-      final on = service == t;
-      final label = f.t('service.${t.name}');
-      return Expanded(
-        child: Semantics(
-          button: true,
-          selected: on,
-          label: label,
-          hint: on ? null : f.t('rh.int.service.hint'),
-          excludeSemantics: true,
-          child: AQPressable(
-            // The model is the source of truth: another option opens the profile editor where the
-            // change is submitted for review. Nothing is switched locally.
-            onTap: on
-                ? null
-                : () {
-                    AQHaptics.selection();
-                    profile();
-                  },
-            child: AnimatedContainer(
-              duration: AQMotion.scaled(context, const Duration(milliseconds: 200)),
-              height: AQControl.tap,
-              alignment: Alignment.center,
-              decoration: BoxDecoration(color: on ? accent : Colors.transparent, borderRadius: BorderRadius.circular(AQRadius.medium - 4)),
-              child: Text(label, style: AQTypography.of(context, AQText.labelLarge, color: on ? (c.isDark ? c.background : Colors.white) : c.inkSoft)),
-            ),
-          ),
-        ),
-      );
-    }
-
-    const palette = [Color(0xFFD7BFA3), Color(0xFFEFE6D8), Color(0xFF8A8C6A), Color(0xFF8C5A3E), Color(0xFF2B2A27), Color(0xFFB9A183)];
 
     return RoleHomePage(children: [
       const RoleReveal(child: RoleHeader()),
@@ -216,7 +187,7 @@ class InteriorHome extends ConsumerWidget {
         child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
           RoleEyebrow(f.t('rh.int.eyebrow'), color: accent),
           const SizedBox(height: AQSpacing.x1),
-          Semantics(header: true, child: Text(f.t('rh.int.title'), style: AQTypography.of(context, AQText.displaySmall))),
+          Semantics(header: true, child: Text(f.t('rh.int.title'), style: AQTypography.of(context, AQText.headlineLarge))),
         ]),
       ),
       const SizedBox(height: AQSpacing.x4),
@@ -227,50 +198,145 @@ class InteriorHome extends ConsumerWidget {
           kicker: f.t('rh.int.hero.k'),
           title: f.t('rh.int.hero'),
           body: f.t('rh.int.hero.b'),
-          aspect: 1.0,
+          aspect: 1.6,
           alignment: Alignment.center,
         ),
       ),
       const SizedBox(height: AQSpacing.x3),
       RoleReveal(
         index: 3,
-        child: Semantics(
-          container: true,
-          label: f.t('rh.int.service'),
-          child: Container(
-            height: 56,
-            padding: const EdgeInsets.all(4),
-            decoration: BoxDecoration(color: c.surfaceSelected, borderRadius: BorderRadius.circular(AQRadius.medium), border: Border.all(color: c.hairline)),
-            child: org.isLoading && o == null
-                ? const DbSkeleton(height: 48)
-                : Row(children: [for (final t in InteriorExteriorServiceType.values) segment(t)]),
-          ),
-        ),
+        child: org.isLoading && o == null
+            ? const DbSkeleton(height: 112)
+            : _ServicesCard(service: service, accent: accent, onEdit: profile),
       ),
-      Padding(
-        padding: const EdgeInsets.only(top: AQSpacing.x2),
-        child: Text(f.t('rh.int.service.hint'), style: AQTypography.of(context, AQText.bodySmall, color: c.inkFaint)),
-      ),
+      RolePortfolioStrip(accent: accent),
       const SponsoredBannerSlot(audience: AdAudience.interior),
-      RoleSection(f.t('rh.int.language'), action: f.t('rh.edit'), onAction: profile, accent: accent),
-      ExcludeSemantics(
-        child: Row(children: [
-          for (final p in palette)
-            Expanded(
-              child: Container(height: 44, margin: const EdgeInsetsDirectional.only(end: 4), decoration: BoxDecoration(color: p, borderRadius: BorderRadius.circular(6))),
-            ),
-        ]),
-      ),
-      const SizedBox(height: AQSpacing.x2),
-      Text(f.t('rh.int.language.b'), style: AQTypography.of(context, AQText.bodySmall, color: c.inkFaint)),
+      const RoleKpiStrip(role: HomeRole.interiorExterior),
+      RoleSection(f.t('rh.int.language'), accent: accent),
+      const _StudioStyles(),
       RoleSection(f.t('rh.int.essentials'), action: f.t('rh.manageProfile'), onAction: profile, accent: accent),
-      RoleRow(label: f.t('rh.int.serviceType'), value: service == null ? f.t('rh.notAdded') : f.t('service.${service.name}'), onTap: profile),
+      RoleRow(label: f.t('rh.int.serviceType'), value: serviceSummary(f, service), onTap: profile),
       RoleRow(label: f.t('rh.int.bioLoc'), value: o != null && o.locationLabel.isNotEmpty ? o.locationLabel : f.t('rh.notAdded'), onTap: profile),
       RoleRow(label: f.t('rh.int.reviews'), onTap: () => context.push('/app/account/workspace/reviews')),
       RoleRow(label: f.t('rh.leads.svc'), value: f.t('rh.view'), onTap: () => context.push('/workspace/requests')),
       RoleRow(label: f.t('rh.verification'), value: f.t('rh.verification.sub'), onTap: () => context.go('/verification')),
       const SizedBox(height: AQSpacing.x4),
       DbNotice('${f.t('rh.int.showcase')}: ${f.t('rh.int.showcase.b')}', icon: 'lock'),
+    ]);
+  }
+}
+
+/// The studio's two services as the public profile has them: each is on or off, and "Interior + Exterior"
+/// is only the description of both being on. Changing them happens in the profile editor, which sends the
+/// change for review; this card always shows what is approved.
+class _ServicesCard extends StatelessWidget {
+  final InteriorExteriorServiceType? service;
+  final Color accent;
+  final VoidCallback onEdit;
+  const _ServicesCard({required this.service, required this.accent, required this.onEdit});
+
+  @override
+  Widget build(BuildContext context) {
+    final f = FlowStrings.of(context);
+    final c = AQColors.of(context);
+    final fl = serviceFlags(service);
+    Widget chip(String icon, String label, bool on) => Expanded(
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: AQSpacing.x3, vertical: AQSpacing.x3),
+        decoration: BoxDecoration(
+          color: on ? accent.withValues(alpha: 0.14) : c.surfaceRaised,
+          borderRadius: BorderRadius.circular(AQRadius.medium),
+          border: Border.all(color: on ? accent : c.hairline, width: on ? 1.5 : 1),
+        ),
+        child: Row(children: [
+          AQIcon(on ? 'check' : icon, size: 18, color: on ? accent : c.inkFaint),
+          const SizedBox(width: AQSpacing.x2),
+          Expanded(child: Text(label, style: AQTypography.of(context, AQText.labelLarge, color: on ? c.ink : c.inkSoft))),
+        ]),
+      ),
+    );
+    return Semantics(
+      container: true,
+      label: '${f.t('rh.int.service')}. ${serviceSummary(f, service)}',
+      child: Container(
+        padding: const EdgeInsets.all(AQSpacing.x4),
+        decoration: BoxDecoration(color: c.surfaceRaised, borderRadius: BorderRadius.circular(AQRadius.medium), border: Border.all(color: c.hairline)),
+        child: Column(crossAxisAlignment: CrossAxisAlignment.stretch, children: [
+          Row(children: [
+            Expanded(child: Text(f.t('rh.int.service'), style: AQTypography.of(context, AQText.titleSmall))),
+            AQTextButton(label: f.t('rh.edit'), trailingIcon: 'chevron-right', color: c.accentDeep, onPressed: onEdit),
+          ]),
+          const SizedBox(height: AQSpacing.x2),
+          Row(children: [
+            chip('interior', f.t('svc.interior.t'), fl.interior),
+            const SizedBox(width: AQSpacing.x2),
+            chip('architecture', f.t('svc.exterior.t'), fl.exterior),
+          ]),
+          const SizedBox(height: AQSpacing.x2),
+          Text(service == null ? f.t('svc.none') : f.t('svc.offered', {'v': serviceSummary(f, service)}), style: AQTypography.of(context, AQText.bodySmall, soft: true)),
+        ]),
+      ),
+    );
+  }
+}
+
+/// The studio's styles: real multi-select chips. The choice is held on this device in the preview and is
+/// shown on the profile once saved; no client moodboard is stored or implied.
+final studioStylesProvider = StateProvider<Set<String>>((ref) => {'contemporary', 'minimal'});
+
+class _StudioStyles extends ConsumerStatefulWidget {
+  const _StudioStyles();
+  @override
+  ConsumerState<_StudioStyles> createState() => _StudioStylesState();
+}
+
+class _StudioStylesState extends ConsumerState<_StudioStyles> {
+  static const _keys = ['modern', 'minimal', 'contemporary', 'traditional', 'mediterranean', 'classic', 'industrial', 'organic'];
+  bool _saved = true;
+  late Set<String> _draft;
+  @override
+  void initState() {
+    super.initState();
+    _draft = {...ref.read(studioStylesProvider)};
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final f = FlowStrings.of(context);
+    final c = AQColors.of(context);
+    return Column(crossAxisAlignment: CrossAxisAlignment.stretch, children: [
+      Text(f.t('rh.int.language.b'), style: AQTypography.of(context, AQText.bodySmall, soft: true)),
+      const SizedBox(height: AQSpacing.x3),
+      Wrap(spacing: AQSpacing.x2, runSpacing: AQSpacing.x2, children: [
+        for (final k in _keys)
+          AQChoicePill(
+            label: f.t('style.$k'),
+            selected: _draft.contains(k),
+            onTap: () => setState(() {
+              _draft.contains(k) ? _draft.remove(k) : _draft.add(k);
+              _saved = false;
+            }),
+          ),
+      ]),
+      const SizedBox(height: AQSpacing.x3),
+      Row(children: [
+        Expanded(
+          child: Text(
+            _saved ? f.t('style.saved') : f.t('style.unsaved', {'n': '${_draft.length}'}),
+            style: AQTypography.of(context, AQText.labelMedium, color: _saved ? c.success : c.accentDeep),
+          ),
+        ),
+        if (!_saved) ...[
+          AQTextButton(label: f.t('common.cancel'), color: c.inkSoft, onPressed: () => setState(() {
+                _draft = {...ref.read(studioStylesProvider)};
+                _saved = true;
+              })),
+          AQTextButton(label: f.t('style.save'), color: c.accentDeep, onPressed: () {
+            ref.read(studioStylesProvider.notifier).state = {..._draft};
+            setState(() => _saved = true);
+          }),
+        ],
+      ]),
     ]);
   }
 }

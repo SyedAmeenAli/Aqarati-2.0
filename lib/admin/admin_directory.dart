@@ -2,6 +2,7 @@ import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'admin_auth.dart';
 import 'admin_models.dart';
+import 'admin_l10n.dart' show tr;
 
 /// Accounts, reports and the activity log of the Admin Web Console demo. All of it is fictional and
 /// held in memory: there is no user directory, reporting or audit service behind the console yet, and
@@ -15,35 +16,35 @@ enum ReportKind { listing, professional, review, ad }
 
 enum ReportStatus { open, inReview, resolved, dismissed }
 
-String roleName(AcctRole r) => switch (r) {
+String roleName(AcctRole r) => tr(switch (r) {
   AcctRole.shopper => 'User to Shop',
   AcctRole.agent => 'Real Estate Agent',
   AcctRole.development => 'Development Company',
   AcctRole.construction => 'Construction Company',
   AcctRole.architecture => 'Building Architecture',
   AcctRole.interior => 'Interior & Exterior Design',
-};
+});
 
-String acctStatusName(AcctStatus s) => switch (s) {
+String acctStatusName(AcctStatus s) => tr(switch (s) {
   AcctStatus.active => 'Active',
   AcctStatus.underReview => 'Under review',
   AcctStatus.suspended => 'Suspended',
   AcctStatus.rejected => 'Not approved',
-};
+});
 
-String reportKindName(ReportKind k) => switch (k) {
+String reportKindName(ReportKind k) => tr(switch (k) {
   ReportKind.listing => 'Listing',
   ReportKind.professional => 'Professional',
   ReportKind.review => 'Review',
   ReportKind.ad => 'Sponsored ad',
-};
+});
 
-String reportStatusName(ReportStatus s) => switch (s) {
+String reportStatusName(ReportStatus s) => tr(switch (s) {
   ReportStatus.open => 'Open',
   ReportStatus.inReview => 'In review',
   ReportStatus.resolved => 'Resolved',
   ReportStatus.dismissed => 'Dismissed',
-};
+});
 
 @immutable
 class AdminAccount {
@@ -144,10 +145,10 @@ AdminDirectoryState seedDirectory(DateTime now) {
   final accounts = [
     a('U1', 'Layla Demo', AcctRole.shopper, AcctStatus.active, 'Muscat', 40),
     a('U2', 'Omar Sample', AcctRole.shopper, AcctStatus.active, 'Muscat', 22),
-    a('U3', 'Noor Imaginary', AcctRole.shopper, AcctStatus.suspended, 'Sohar', 75, note: 'Suspended after repeated complaints (fictional).'),
+    a('U3', 'Noor Imaginary', AcctRole.shopper, AcctStatus.suspended, 'Sohar', 75, note: tr('Suspended after repeated complaints (fictional).')),
     a('G1', 'Sami Agent Demo', AcctRole.agent, AcctStatus.active, 'Muscat', 120, listings: 7),
     a('G2', 'Rana Agent Example', AcctRole.agent, AcctStatus.underReview, 'Salalah', 3, listings: 0),
-    a('G3', 'Faisal Agent Test', AcctRole.agent, AcctStatus.rejected, 'Nizwa', 15, note: 'Licence document unreadable (fictional).'),
+    a('G3', 'Faisal Agent Test', AcctRole.agent, AcctStatus.rejected, 'Nizwa', 15, note: tr('Licence document unreadable (fictional).')),
     a('D1', 'Horizon Developments (demo)', AcctRole.development, AcctStatus.active, 'Muscat', 200, listings: 3),
     a('D2', 'Coastline Projects (demo)', AcctRole.development, AcctStatus.underReview, 'Sur', 5),
     a('C1', 'Gulf Builders (demo)', AcctRole.construction, AcctStatus.active, 'Muscat', 90),
@@ -155,7 +156,7 @@ AdminDirectoryState seedDirectory(DateTime now) {
     a('A1', 'Studio Nakhal (demo)', AcctRole.architecture, AcctStatus.active, 'Muscat', 60),
     a('A2', 'Arc Atelier (demo)', AcctRole.architecture, AcctStatus.underReview, 'Muscat', 6),
     a('I1', 'Maison Interiors (demo)', AcctRole.interior, AcctStatus.active, 'Muscat', 33),
-    a('I2', 'Terrace Outdoors (demo)', AcctRole.interior, AcctStatus.suspended, 'Nizwa', 48, note: 'Portfolio images reported as copied (fictional).'),
+    a('I2', 'Terrace Outdoors (demo)', AcctRole.interior, AcctStatus.suspended, 'Nizwa', 48, note: tr('Portfolio images reported as copied (fictional).')),
   ];
   final reports = [
     AdminReport(id: 'R1', subject: '4-Bedroom Villa, Al Mouj', kind: ReportKind.listing, reporter: 'A shopper', summary: 'The photos look like a different property.', status: ReportStatus.open, createdAt: d(1, 14)),
@@ -253,8 +254,8 @@ void adminLog(WidgetRef ref, String text, [String? target]) {
   ref.read(adminDirectoryProvider.notifier).record(who, text, target);
 }
 
-String decisionVerb(Decision d) => switch (d) {
+String decisionVerb(Decision d) => tr(switch (d) {
   Decision.approve => 'Approved',
   Decision.requestResubmission => 'Requested changes on',
   Decision.reject => 'Rejected',
-};
+});

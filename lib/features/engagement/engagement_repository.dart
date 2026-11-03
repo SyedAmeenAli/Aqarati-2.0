@@ -1,3 +1,4 @@
+import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../core/config/qa_faults.dart';
@@ -130,6 +131,9 @@ class DemoEngagementRepository implements EngagementRepository {
     return _items.where((e) => e.id == id).firstOrNull;
   }
 
+  /// REVIEW TOOLS ONLY: fictional engagements in several phases (see [seedActivityDemo]).
+  void seedDemo(List<ClientEngagement> items) => _items.addAll(items);
+
   /// QA only: simulates the professional's answer (or, with [awaitingMe], the professional asking first).
   void debugSet(
     String id,
@@ -154,10 +158,29 @@ class DemoEngagementRepository implements EngagementRepository {
   }
 }
 
+/// REVIEW TOOLS ONLY, and only for `?session=activity`: fictional professional engagements in
+/// several phases for visual review. Never runs in a normal build.
+void seedActivityDemo(DemoEngagementRepository repo) {
+  if (!kShowReviewTools || !kIsWeb) return;
+  if ((Uri.base.queryParameters['session'] ?? '') != 'activity') return;
+  final now = DateTime.now();
+  ClientEngagement eng(String id, String pid, String name, String type, EngagementPhase ph, int daysAgo) =>
+      ClientEngagement(id: id, professionalId: pid, professionalName: name, professionalType: type, phase: ph, requestedAt: now.subtract(Duration(days: daysAgo)), confirmedAt: ph == EngagementPhase.confirmed ? now.subtract(Duration(days: daysAgo - 1)) : null);
+  repo.seedDemo([
+    eng('en-demo1', 'demo-a1', 'Wadi Architecture', 'architecture', EngagementPhase.awaitingMe, 2),
+    eng('en-demo2', 'demo-c1', 'Sahari Contracting', 'construction', EngagementPhase.confirmed, 8),
+    eng('en-demo3', 'demo-i1', 'Dar Nuqta Interiors', 'interiorExterior', EngagementPhase.declined, 5),
+    eng('en-demo4', 'demo-d1', 'Zahra Developments', 'developer', EngagementPhase.cancelled, 4),
+  ]);
+}
+
 final engagementRepositoryProvider = Provider<EngagementRepository>(
-  (ref) => kUseDemoBackend
-      ? DemoEngagementRepository()
-      : const UnavailableEngagementRepository(),
+  (ref) {
+    if (!kUseDemoBackend) return const UnavailableEngagementRepository();
+    final repo = DemoEngagementRepository();
+    seedActivityDemo(repo);
+    return repo;
+  },
 );
 final engagementsProvider = FutureProvider.autoDispose<List<ClientEngagement>>(
   (ref) => ref.watch(engagementRepositoryProvider).list(),

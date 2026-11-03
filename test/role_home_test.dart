@@ -179,10 +179,10 @@ void main() {
 
     testWidgets('construction: every essentials cell and row opens a real destination', (t) async {
       final cases = <String, String>{
-        'IDENTITY': '/app/account/workspace/profile',
-        'PRESENCE': '/app/account/workspace/profile',
-        'DIRECTORY': '/app/explore/build/results?cat=construction',
-        'REPUTATION': '/app/account/workspace/reviews',
+        'Identity': '/app/account/workspace/profile',
+        'Presence': '/app/account/workspace/profile',
+        'Directory': '/app/explore/build/results?cat=construction',
+        'Reputation': '/app/account/workspace/reviews',
         'Commercial registration': '/verification/details',
       };
       for (final e in cases.entries) {
@@ -208,21 +208,22 @@ void main() {
         final s = state(SignupPurpose.interiorExteriorDesign, service: svc);
         await pumpHome(t, app(me(SignupPurpose.interiorExteriorDesign, GrantState.approved), s: s));
         expect(find.text('Spaces with a point of view.'), findsOneWidget);
-        final label = {InteriorExteriorServiceType.interior: 'Interior', InteriorExteriorServiceType.exterior: 'Exterior', InteriorExteriorServiceType.both: 'Both'}[svc]!;
-        final selected = find.bySemanticsLabel(label);
-        expect(selected, findsWidgets);
-        // The service-type row in the essentials shows the same model value.
-        expect(find.text(label), findsWidgets);
+        // Two independent services; "both" is only the description of both being on.
+        final label = {InteriorExteriorServiceType.interior: 'Interior Design', InteriorExteriorServiceType.exterior: 'Exterior Design', InteriorExteriorServiceType.both: 'Interior + Exterior'}[svc]!;
+        expect(find.text('Interior Design'), findsWidgets);
+        expect(find.text('Exterior Design'), findsWidgets);
+        // The services card and the essentials row show the same model value.
+        expect(find.text(label), findsWidgets, reason: svc.name);
         expect(find.text('Add project'), findsNothing);
         await t.pumpWidget(const SizedBox());
       }
     });
 
-    testWidgets('interior & exterior: choosing another service type opens the profile editor, nothing is switched locally', (t) async {
+    testWidgets('interior & exterior: editing the services opens the profile editor, nothing is switched locally', (t) async {
       final visited = <String>[];
       final s = state(SignupPurpose.interiorExteriorDesign, service: InteriorExteriorServiceType.interior);
       await pumpHome(t, app(me(SignupPurpose.interiorExteriorDesign, GrantState.approved), s: s, visited: visited));
-      await t.tap(find.text('Exterior').first, warnIfMissed: false);
+      await t.tap(find.text('Edit').first, warnIfMissed: false);
       await settle(t, 3);
       expect(visited, contains('/app/account/workspace/profile'));
     });
@@ -285,8 +286,8 @@ void main() {
         app(me(SignupPurpose.realEstateAgent, GrantState.approved), visited: visited, extra: [homeWorkspaceProvider.overrideWith((ref) => HomeWorkspace.buyer)]),
       );
       expect(find.byType(AQHomeScreen), findsOneWidget);
-      expect(find.text('Agent workspace'), findsOneWidget, reason: 'the switcher stays so the agent can return');
-      await tapText(t, 'Agent workspace');
+      expect(find.text('Work'), findsOneWidget, reason: 'the switcher stays so the agent can return');
+      await tapText(t, 'Work');
       expect(visited, contains('/agent'));
     });
 
@@ -295,7 +296,7 @@ void main() {
         await pumpHome(t, app(me(SignupPurpose.realEstateAgent, g)));
         expect(find.byType(AQHomeScreen), findsOneWidget, reason: g.name);
         expect(find.text('Work, in focus.'), findsNothing);
-        expect(find.text('Agent workspace'), findsNothing);
+        expect(find.text('Work'), findsNothing);
         expect(find.text('My listings'), findsNothing);
         expect(find.text('Your application is not approved yet'), findsOneWidget, reason: g.name);
         await t.pumpWidget(const SizedBox());
@@ -311,7 +312,7 @@ void main() {
       await t.pumpWidget(const SizedBox());
       await pumpHome(t, app(me(SignupPurpose.userToShop, null)));
       expect(find.byType(AQHomeScreen), findsOneWidget);
-      expect(find.text('Agent workspace'), findsNothing);
+      expect(find.text('Work'), findsNothing);
       expect(find.text('Add project'), findsNothing);
     });
 
@@ -393,7 +394,7 @@ void main() {
         t,
         app(me(SignupPurpose.realEstateAgent, GrantState.approved), visited: visited, extra: [homeWorkspaceProvider.overrideWith((ref) => HomeWorkspace.buyer)]),
       );
-      await t.tap(find.text('Agent workspace').first);
+      await t.tap(find.text('Work').first);
       await t.pump(const Duration(milliseconds: 50));
       expect(t.takeException(), isNull);
       await settle(t);

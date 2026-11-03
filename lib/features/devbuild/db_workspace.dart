@@ -78,7 +78,7 @@ class DbShellPage extends StatelessWidget {
                     header: true,
                     child: Text(
                       title,
-                      style: AQTypography.of(context, AQText.displaySmall),
+                      style: AQTypography.of(context, AQText.headlineLarge),
                     ),
                   ),
                 ),

@@ -31,7 +31,8 @@ class ViewingDetailScreen extends StatelessWidget {
         final pres = ViewingPresentation.of(viewing);
         final actions = [for (final a in pres.actions) if (a != ViewingAction.writeReview || viewing.reviewEligible) a];
 
-        String label(ViewingAction a) => switch (a) {
+        final compact = MediaQuery.sizeOf(context).width < 400;
+        String full(ViewingAction a) => switch (a) {
               ViewingAction.cancel => v.t('vw.action.cancel'),
               ViewingAction.reschedule => v.t('vw.action.reschedule'),
               ViewingAction.tryAnotherSlot => v.t('vw.tryOther'),
@@ -41,6 +42,7 @@ class ViewingDetailScreen extends StatelessWidget {
               ViewingAction.backToProperty => v.t('vw.backToProperty'),
               ViewingAction.viewMyViewings => v.t('vw.viewMy'),
             };
+        String label(ViewingAction a) => compact ? v.t('vw.short.${a.name}') : full(a);
         void run(ViewingAction a) => switch (a) {
               ViewingAction.cancel => context.push('/viewings/${viewing.id}/cancel'),
               ViewingAction.reschedule => context.push('/viewings/${viewing.id}/reschedule'),
@@ -66,6 +68,7 @@ class ViewingDetailScreen extends StatelessWidget {
               : AQBottomActionBar(
                   primary: actions.first == ViewingAction.cancel ? button(actions.first, primary: false) : button(actions.first, primary: true),
                   secondary: actions.length > 1 ? button(actions[1], primary: false) : null,
+                  compact: compact,
                 ),
           children: [
             property.when(

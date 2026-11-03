@@ -30,7 +30,7 @@ class VerificationIntroScreen extends ConsumerWidget {
     final me = ref.watch(meProvider);
     return me.when(
       loading: () => aqLoadingFrame(context, title: f.t('vintro.title')),
-      error: (_, _) => aqErrorFrame(context, ref, title: f.t('vintro.title'), onRetry: () => ref.invalidate(meProvider)),
+      error: (e, _) => aqErrorFrame(context, ref, title: f.t('vintro.title'), onRetry: () => ref.invalidate(meProvider), error: e),
       data: (m) {
         final cfg = m.purpose == null ? null : roleConfigs[m.purpose];
         if (cfg == null || !cfg.needsDocuments) {
@@ -94,7 +94,7 @@ class DocumentOnboardingScreen extends ConsumerWidget {
     final ver = ref.watch(verificationProvider);
     return me.when(
       loading: () => aqLoadingFrame(context, title: f.t('docs.title')),
-      error: (_, _) => aqErrorFrame(context, ref, title: f.t('docs.title'), onRetry: () => ref.invalidate(meProvider)),
+      error: (e, _) => aqErrorFrame(context, ref, title: f.t('docs.title'), onRetry: () => ref.invalidate(meProvider), error: e),
       data: (m) {
         final cfg = m.purpose == null ? null : roleConfigs[m.purpose];
         if (cfg == null || !cfg.needsDocuments) {
@@ -191,7 +191,7 @@ class _ApplicationReviewScreenState extends ConsumerState<ApplicationReviewScree
     final last4 = ref.watch(meProvider).valueOrNull?.phoneLast4;
     return ver.when(
       loading: () => aqLoadingFrame(context, title: f.t('review.title')),
-      error: (_, _) => aqErrorFrame(context, ref, title: f.t('review.title'), onRetry: () => ref.invalidate(verificationProvider)),
+      error: (e, _) => aqErrorFrame(context, ref, title: f.t('review.title'), onRetry: () => ref.invalidate(verificationProvider), error: e),
       data: (v) {
         final complete = v.documents.every((d) => d.outcome != DocumentOutcome.notSubmitted);
         return AQAuthScaffold(

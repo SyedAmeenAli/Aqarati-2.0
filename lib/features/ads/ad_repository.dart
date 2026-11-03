@@ -311,6 +311,17 @@ const kSampleCampaigns =
       ('s6', AdAudience.interior, 'Dar Fabrics (sample)', 'Linen, stone and timber samples', 'A sample materials campaign', 'Explore', '/app/explore/build/results?cat=interiorExterior', 'assets/businesses/b3/06_Styled_bedroom_interior_photography.jpg'),
     ];
 
+/// Arabic copy for the sample campaigns (id to sponsor, headline, line, button). Draft Arabic text that
+/// needs native review. Used only while a campaign still carries its original English headline.
+const kSampleCampaignsAr = <String, (String, String, String, String, String)>{
+  's1': ('واجهة المويج (نموذج)', 'Waterfront residences, now previewing', 'مساكن على الواجهة البحرية، معروضة الآن', 'حملة مطوّر تجريبية', 'عرض المنازل'),
+  's2': ('مرتفعات القرم (نموذج)', 'Pre-launch units for your clients', 'وحدات ما قبل الإطلاق لعملائك', 'مشروع تجريبي للوسطاء', 'عرض المنازل'),
+  's3': ('مواد الخليج (نموذج)', 'Bulk pricing for project developers', 'أسعار الجملة لمطوري المشاريع', 'حملة مورّد تجريبية', 'ابحث عن مقاولين'),
+  's4': ('تأجير المعدات عُمان (نموذج)', 'Cranes and plant, ready in Muscat', 'رافعات ومعدات جاهزة في مسقط', 'حملة معدات تجريبية', 'تصفّح'),
+  's5': ('ستوديو لايت (نموذج)', 'Visualisation tools for architects', 'أدوات تصوّر للمعماريين', 'حملة برمجيات تجريبية', 'اعرف المزيد'),
+  's6': ('دار الأقمشة (نموذج)', 'Linen, stone and timber samples', 'عينات الكتان والحجر والخشب', 'حملة مواد تجريبية', 'استكشف'),
+};
+
 /// Adds the sample campaigns (approved, always in schedule) and two more so the console has
 /// something to filter: one paused, one waiting for review.
 void seedSampleCampaigns(DemoAdRepository repo) {

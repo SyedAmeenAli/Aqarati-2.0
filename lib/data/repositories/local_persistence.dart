@@ -1,9 +1,12 @@
+import 'package:flutter/material.dart' show ThemeMode;
 import 'package:flutter/widgets.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 import '../../features/notifications/notifications.dart' show readNotificationsProvider;
+import '../../core/localization/entry_strings.dart' show localeProvider, themeModeProvider;
 import '../../features/onboarding/interests.dart';
+import '../../features/settings/app_settings.dart';
 import 'app_state_providers.dart';
 
 /// Keeps the two pieces of purely local, on-device state across restarts: the properties a person
@@ -19,6 +22,9 @@ class AQLocalPersistence extends ConsumerStatefulWidget {
 const kSavedIdsKey = 'aq.saved.propertyIds';
 const kRecentSearchesKey = 'aq.recent.searches';
 const kReadNotificationsKey = 'aq.notifications.read';
+const kSettingsKey = 'aq.settings';
+const kLocaleKey = 'aq.locale';
+const kThemeKey = 'aq.theme';
 
 class _AQLocalPersistenceState extends ConsumerState<AQLocalPersistence> {
   bool _loaded = false;
@@ -36,7 +42,16 @@ class _AQLocalPersistenceState extends ConsumerState<AQLocalPersistence> {
       final recent = prefs.getStringList(kRecentSearchesKey);
       final read = prefs.getStringList(kReadNotificationsKey);
       final interests = prefs.getStringList(kInterestsKey);
+      final settings = prefs.getString(kSettingsKey);
+      final lang = prefs.getString(kLocaleKey);
+      final theme = prefs.getString(kThemeKey);
       if (!mounted) return;
+      if (settings != null) ref.read(appSettingsProvider.notifier).load(AppSettings.fromJson(settings));
+      if (lang == 'ar' || lang == 'en') ref.read(localeProvider.notifier).state = Locale(lang!);
+      if (theme != null) {
+        final m = ThemeMode.values.where((x) => x.name == theme).firstOrNull;
+        if (m != null) ref.read(themeModeProvider.notifier).state = m;
+      }
       if (interests != null) {
         ref.read(interestsProvider.notifier).update((s) => {
           ...s,
@@ -68,6 +83,24 @@ class _AQLocalPersistenceState extends ConsumerState<AQLocalPersistence> {
     });
     ref.listen<List<String>>(recentSearchesProvider, (_, next) {
       if (_loaded) _save(kRecentSearchesKey, next);
+    });
+    ref.listen<AppSettings>(appSettingsProvider, (_, next) async {
+      if (!_loaded) return;
+      try {
+        (await SharedPreferences.getInstance()).setString(kSettingsKey, next.toJson());
+      } catch (_) {}
+    });
+    ref.listen<Locale>(localeProvider, (_, next) async {
+      if (!_loaded) return;
+      try {
+        (await SharedPreferences.getInstance()).setString(kLocaleKey, next.languageCode);
+      } catch (_) {}
+    });
+    ref.listen<ThemeMode>(themeModeProvider, (_, next) async {
+      if (!_loaded) return;
+      try {
+        (await SharedPreferences.getInstance()).setString(kThemeKey, next.name);
+      } catch (_) {}
     });
     ref.listen<Set<Interest>>(interestsProvider, (_, next) {
       if (_loaded) _save(kInterestsKey, [for (final i in next) i.name]);

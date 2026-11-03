@@ -1,4 +1,4 @@
-import 'package:flutter/material.dart';
+import 'package:flutter/material.dart' hide Text;
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
@@ -13,8 +13,10 @@ import 'admin_auth.dart';
 import 'admin_directory.dart';
 import 'admin_models.dart';
 import 'admin_repository.dart';
+import 'admin_images.dart';
 import 'admin_widgets.dart';
 import 'admin_ui.dart';
+import 'admin_l10n.dart';
 
 String _actor(WidgetRef ref) => ref.read(adminAuthProvider).session?.name ?? 'Admin';
 bool _canDecide(WidgetRef ref) => ref.watch(adminAuthProvider).session?.role.canDecide ?? false;
@@ -51,7 +53,7 @@ Future<bool> adminConfirm(BuildContext context, {required String title, required
         scopesRoute: true,
         namesRoute: true,
         explicitChildNodes: true,
-        label: title,
+        label: tr(title),
         child: ConstrainedBox(
         constraints: const BoxConstraints(maxWidth: 420),
         child: Padding(
@@ -70,7 +72,7 @@ Future<bool> adminConfirm(BuildContext context, {required String title, required
                   spacing: 8,
                   runSpacing: 8,
                   children: [
-                    AdminSecondaryButton(label: 'Cancel', onPressed: () => Navigator.of(d).pop(false)),
+                    AdminSecondaryButton(label: tr('Cancel'), onPressed: () => Navigator.of(d).pop(false)),
                     danger
                         ? AdminDangerButton(label: action, onPressed: () => Navigator.of(d).pop(true))
                         : AdminPrimaryButton(label: action, onPressed: () => Navigator.of(d).pop(true)),
@@ -106,7 +108,7 @@ class AdminOverviewScreen extends ConsumerWidget {
       button: true,
       focusable: true,
       onFocus: () {},
-      label: '$label: $value',
+      label: tr('$label: $value'),
       excludeSemantics: true,
       onTap: () => context.go(route),
       child: AQPressable(
@@ -115,13 +117,39 @@ class AdminOverviewScreen extends ConsumerWidget {
         child: Container(
           padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
           decoration: BoxDecoration(color: c.surfaceRaised, borderRadius: BorderRadius.circular(AdminSize.panel), border: Border.all(color: c.hairline)),
-          child: Column(
+          child: Row(
             crossAxisAlignment: CrossAxisAlignment.start,
-            mainAxisSize: MainAxisSize.min,
             children: [
-              Text(value, style: AQTypography.of(context, AQText.headlineMedium)),
-              const SizedBox(height: 2),
-              Text(label, maxLines: 2, overflow: TextOverflow.ellipsis, style: AQTypography.of(context, AQText.bodySmall, soft: true)),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Text(value, style: AQTypography.of(context, AQText.headlineLarge)),
+                    const SizedBox(height: 2),
+                    Text(label, maxLines: 2, overflow: TextOverflow.ellipsis, style: AQTypography.of(context, AQText.bodySmall, soft: true)),
+                  ],
+                ),
+              ),
+              const SizedBox(width: 8),
+              Container(
+                width: 34,
+                height: 34,
+                decoration: BoxDecoration(color: c.surfaceSelected, shape: BoxShape.circle),
+                child: Center(
+                  child: AQIcon(
+                    switch (route) {
+                      '/verification' => 'verified',
+                      '/moderation' => 'shield',
+                      '/reports' => 'flag',
+                      '/ads' => 'megaphone',
+                      _ => 'account',
+                    },
+                    size: 16,
+                    color: c.accentDeep,
+                  ),
+                ),
+              ),
             ],
           ),
         ),
@@ -132,7 +160,7 @@ class AdminOverviewScreen extends ConsumerWidget {
       button: true,
       focusable: true,
       onFocus: () {},
-      label: '$label${count == null ? '' : ': $count'}',
+      label: tr('$label${count == null ? '' : ': $count'}'),
       excludeSemantics: true,
       onTap: () => context.go(route),
       child: AQPressable(
@@ -176,14 +204,14 @@ class AdminOverviewScreen extends ConsumerWidget {
           Divider(height: 1, thickness: 1, color: c.hairline),
           queueRow('shield', 'Moderate new listing submissions', pendingListings == null ? null : '$pendingListings', '/moderation'),
           Divider(height: 1, thickness: 1, color: c.hairline),
-          queueRow('alert', 'Handle open complaints', '$openReports', '/reports'),
+          queueRow('flag', 'Handle open complaints', '$openReports', '/reports'),
         ],
       ),
     );
 
     final activity = AdminTable(
       headers: const ['When', 'Who', 'Action', 'Record'],
-      flex: const [4, 4, 4, 4],
+      flex: const [4, 5, 5, 5],
       rows: [
         for (final (i, e) in dir.audit.take(6).indexed)
           AdminTableRow(
@@ -191,9 +219,9 @@ class AdminOverviewScreen extends ConsumerWidget {
             semantics: '${e.actor}, ${e.text}, ${e.target ?? ''}',
             cells: [
               Text(_date(context, e.at), style: AQTypography.of(context, AQText.bodySmall)),
-              Text(e.actor, maxLines: 1, overflow: TextOverflow.ellipsis, style: AQTypography.of(context, AQText.bodySmall)),
-              Text(e.text, maxLines: 1, overflow: TextOverflow.ellipsis, style: AQTypography.of(context, AQText.bodySmall)),
-              Text(e.target ?? '', maxLines: 1, overflow: TextOverflow.ellipsis, style: AQTypography.of(context, AQText.bodySmall)),
+              Text(e.actor, maxLines: 3, overflow: TextOverflow.ellipsis, style: AQTypography.of(context, AQText.bodySmall)),
+              Text(e.text, maxLines: 3, overflow: TextOverflow.ellipsis, style: AQTypography.of(context, AQText.bodySmall)),
+              Text(e.target ?? '', maxLines: 3, overflow: TextOverflow.ellipsis, style: AQTypography.of(context, AQText.bodySmall)),
             ],
           ),
       ],
@@ -214,7 +242,7 @@ class AdminOverviewScreen extends ConsumerWidget {
           const SizedBox(height: 12),
           Align(
             alignment: AlignmentDirectional.centerStart,
-            child: AdminSecondaryButton(label: 'Manage placements', compact: true, onPressed: () => context.go('/ads')),
+            child: AdminSecondaryButton(label: tr('Manage placements'), compact: true, onPressed: () => context.go('/ads')),
           ),
         ],
       ),
@@ -228,7 +256,7 @@ class AdminOverviewScreen extends ConsumerWidget {
               padding: const EdgeInsets.symmetric(vertical: 5),
               child: Row(
                 children: [
-                  SizedBox(width: 150, child: Text(roleName(e.key), maxLines: 1, overflow: TextOverflow.ellipsis, style: AQTypography.of(context, AQText.bodySmall))),
+                  SizedBox(width: 176, child: Padding(padding: const EdgeInsetsDirectional.only(end: 10), child: Text(roleName(e.key), maxLines: 2, overflow: TextOverflow.ellipsis, style: AQTypography.of(context, AQText.bodySmall)))),
                   Expanded(
                     child: ClipRRect(
                       borderRadius: BorderRadius.circular(3),
@@ -245,8 +273,8 @@ class AdminOverviewScreen extends ConsumerWidget {
 
     return AdminFrame(
       section: '/overview',
-      title: 'Overview',
-      subtitle: 'What needs attention across AQARATI. Demo data only.',
+      title: tr('Overview'),
+      subtitle: tr('What needs attention across AQARATI. Demo data only.'),
       children: [
         LayoutBuilder(
           builder: (context, box) {
@@ -276,7 +304,7 @@ class AdminOverviewScreen extends ConsumerWidget {
               children: [
                 adminSection(context, 'Needs attention'),
                 queue,
-                adminSection(context, 'Recent administrative activity', trailing: AdminTextButton(label: 'Open the log', color: c.accentDeep, onPressed: () => context.go('/audit'))),
+                adminSection(context, 'Recent administrative activity', trailing: AdminTextButton(label: tr('Open the log'), color: c.accentDeep, onPressed: () => context.go('/audit'))),
                 activity,
               ],
             );
@@ -330,10 +358,10 @@ class _AccountsState extends ConsumerState<AdminAccountsScreen> {
     final shown = filterAccounts(dir.accounts, query: _q.text, role: _role, status: _status);
     return AdminFrame(
       section: '/accounts',
-      title: 'Accounts and professionals',
-      subtitle: 'Shoppers, agents, developers, builders, architects and designers.',
+      title: tr('Accounts and professionals'),
+      subtitle: tr('Shoppers, agents, developers, builders, architects and designers.'),
       children: [
-        AdminSearchField(controller: _q, hint: 'Search name, city or role', onChanged: (_) => setState(() {})),
+        AdminSearchField(controller: _q, hint: tr('Search name, city or role'), onChanged: (_) => setState(() {})),
         const SizedBox(height: AQSpacing.x3),
         adminFilterRow(context, 'Role', [
           ('All', _role == null, () => setState(() => _role = null)),
@@ -351,7 +379,7 @@ class _AccountsState extends ConsumerState<AdminAccountsScreen> {
           ),
         ),
         if (shown.isEmpty)
-          const AdminNotice(title: 'No accounts match', body: 'Change the search or the filters.')
+          AdminNotice(title: tr('No accounts match'), body: tr('Change the search or the filters.'))
         else
           AdminTable(
             headers: const ['Name', 'Role', 'Status', 'City', 'Joined'],
@@ -360,10 +388,17 @@ class _AccountsState extends ConsumerState<AdminAccountsScreen> {
               for (final a in shown)
                 AdminTableRow(
                   key: a.id,
-                  semantics: '${a.name}, ${roleName(a.role)}, ${acctStatusName(a.status)}',
+                  semantics: tr('${a.name}, ${roleName(a.role)}, ${acctStatusName(a.status)}'),
                   onTap: () => context.go('/accounts/${a.id}'),
                   cells: [
-                    Text(a.name),
+                    Builder(builder: (context) {
+                      final c = AQColors.of(context);
+                      return Row(mainAxisSize: MainAxisSize.min, children: [
+                        Container(width: 32, height: 32, decoration: BoxDecoration(color: c.surfaceSelected, shape: BoxShape.circle, border: Border.all(color: c.hairline)), child: Center(child: AQIcon('user', size: 16, color: c.accentDeep))),
+                        const SizedBox(width: 10),
+                        Flexible(child: Text(a.name, style: AQTypography.of(context, AQText.titleSmall))),
+                      ]);
+                    }),
                     Text(roleName(a.role)),
                     Align(alignment: AlignmentDirectional.centerStart, child: adminStatusPill(acctStatusName(a.status), _acctLook(a.status))),
                     Text(a.city),
@@ -387,20 +422,20 @@ class AdminAccountDetailScreen extends ConsumerWidget {
     final a = ref.read(adminDirectoryProvider.notifier).account(id);
     final can = _canDecide(ref);
     if (a == null) {
-      return AdminFrame(section: '/accounts', title: 'Account', onBack: () => context.go('/accounts'), backLabel: 'Back to accounts', children: const [AdminNotice(title: 'We could not find this account.')]);
+      return AdminFrame(section: '/accounts', title: tr('Account'), onBack: () => context.go('/accounts'), backLabel: tr('Back to accounts'), children: [AdminNotice(title: tr('We could not find this account.'))]);
     }
     final history = dir.audit.where((e) => e.target == a.name).toList();
     Future<void> change(AcctStatus s, String verb, String body) async {
-      final ok = await adminConfirm(context, title: '$verb ${a.name}?', body: body, action: verb);
+      final ok = await adminConfirm(context, title: tr('$verb ${a.name}?'), body: body, action: verb);
       if (ok) ref.read(adminDirectoryProvider.notifier).setAccountStatus(a.id, s, _actor(ref));
     }
 
     return AdminFrame(
       section: '/accounts',
       title: a.name,
-      subtitle: '${roleName(a.role)} · ${a.city}',
+      subtitle: tr('${roleName(a.role)} · ${a.city}'),
       onBack: () => context.go('/accounts'),
-      backLabel: 'Back to accounts',
+      backLabel: tr('Back to accounts'),
       actions: [adminStatusPill(acctStatusName(a.status), _acctLook(a.status))],
       children: [
         AdminKeyValues([
@@ -421,30 +456,30 @@ class AdminAccountDetailScreen extends ConsumerWidget {
                 : 'Illustrative review state only. Nothing here verifies a real business.'),
           ),
         if (!can)
-          const AdminNotice(icon: 'lock', title: 'Read-only', body: 'Your role can view accounts but not change them.')
+          AdminNotice(icon: 'lock', title: tr('Read-only'), body: tr('Your role can view accounts but not change them.'))
         else
           Wrap(
             spacing: AQSpacing.x3,
             runSpacing: AQSpacing.x3,
             children: [
               if (a.status != AcctStatus.active)
-                AdminPrimaryButton(label: 'Set active', trailingChevron: false, onPressed: () => change(AcctStatus.active, 'Set active', 'The account would be treated as active in this demo.')),
+                AdminPrimaryButton(label: tr('Set active'), trailingChevron: false, onPressed: () => change(AcctStatus.active, 'Set active', 'The account would be treated as active in this demo.')),
               if (a.status != AcctStatus.underReview)
-                AdminSecondaryButton(label: 'Mark under review', trailingChevron: false, onPressed: () => change(AcctStatus.underReview, 'Mark under review', 'The account moves back to review in this demo.')),
+                AdminSecondaryButton(label: tr('Mark under review'), trailingChevron: false, onPressed: () => change(AcctStatus.underReview, 'Mark under review', 'The account moves back to review in this demo.')),
               if (a.status != AcctStatus.suspended)
-                AdminSecondaryButton(label: 'Suspend', trailingChevron: false, onPressed: () => change(AcctStatus.suspended, 'Suspend', 'Suspending is simulated: no real account is affected.')),
+                AdminSecondaryButton(label: tr('Suspend'), trailingChevron: false, onPressed: () => change(AcctStatus.suspended, 'Suspend', 'Suspending is simulated: no real account is affected.')),
             ],
           ),
         adminSection(context, 'Activity on this account'),
         if (history.isEmpty)
-          const AdminNotice(title: 'No administrative activity yet.')
+          AdminNotice(title: tr('No administrative activity yet.'))
         else
           AdminTable(
             headers: const ['When', 'Who', 'Action'],
             flex: const [3, 3, 4],
             rows: [
               for (final (i, e) in history.indexed)
-                AdminTableRow(key: 'h$i', semantics: '${e.actor}, ${e.text}', cells: [Text(_date(context, e.at)), Text(e.actor), Text(e.text)]),
+                AdminTableRow(key: 'h$i', semantics: tr('${e.actor}, ${e.text}'), cells: [Text(_date(context, e.at)), Text(e.actor), Text(e.text)]),
             ],
           ),
         adminDemoNotice(),
@@ -484,10 +519,10 @@ class _ReportsState extends ConsumerState<AdminReportsScreen> {
     final shown = filterReports(dir.reports, query: _q.text, status: _status, kind: _kind);
     return AdminFrame(
       section: '/reports',
-      title: 'Reports and complaints',
-      subtitle: 'Illustrative reports from shoppers and businesses.',
+      title: tr('Reports and complaints'),
+      subtitle: tr('Illustrative reports from shoppers and businesses.'),
       children: [
-        AdminSearchField(controller: _q, hint: 'Search subject or summary', onChanged: (_) => setState(() {})),
+        AdminSearchField(controller: _q, hint: tr('Search subject or summary'), onChanged: (_) => setState(() {})),
         const SizedBox(height: AQSpacing.x3),
         adminFilterRow(context, 'Status', [
           ('All', _status == null, () => setState(() => _status = null)),
@@ -505,7 +540,7 @@ class _ReportsState extends ConsumerState<AdminReportsScreen> {
           ),
         ),
         if (shown.isEmpty)
-          const AdminNotice(title: 'No reports match', body: 'Change the search or the filters.')
+          AdminNotice(title: tr('No reports match'), body: tr('Change the search or the filters.'))
         else
           AdminTable(
             headers: const ['Subject', 'About', 'Status', 'Opened'],
@@ -514,10 +549,13 @@ class _ReportsState extends ConsumerState<AdminReportsScreen> {
               for (final r in shown)
                 AdminTableRow(
                   key: r.id,
-                  semantics: '${r.subject}, ${reportKindName(r.kind)}, ${reportStatusName(r.status)}',
+                  semantics: tr('${r.subject}, ${reportKindName(r.kind)}, ${reportStatusName(r.status)}'),
                   onTap: () => context.go('/reports/${r.id}'),
                   cells: [
-                    Text(r.subject),
+                    AdminThumbCell(
+                      thumb: const AdminThumb(icon: 'flag', size: 40),
+                      child: Text(r.subject, style: AQTypography.of(context, AQText.titleSmall)),
+                    ),
                     Text(reportKindName(r.kind)),
                     Align(alignment: AlignmentDirectional.centerStart, child: adminStatusPill(reportStatusName(r.status), _reportLook(r.status))),
                     Text(VFmt.shortDate(context, r.createdAt)),
@@ -551,7 +589,7 @@ class _ReportDetailState extends ConsumerState<AdminReportDetailScreen> {
     final ok = await adminConfirm(
       context,
       title: '${closing ? (s == ReportStatus.resolved ? 'Resolve' : 'Dismiss') : 'Move to ${reportStatusName(s).toLowerCase()}'} this report?',
-      body: 'This is simulated. Nothing is sent to the person who reported it.',
+      body: tr('This is simulated. Nothing is sent to the person who reported it.'),
       action: reportStatusName(s),
     );
     if (!ok) return;
@@ -565,44 +603,44 @@ class _ReportDetailState extends ConsumerState<AdminReportDetailScreen> {
     final r = ref.read(adminDirectoryProvider.notifier).report(widget.id);
     final can = _canDecide(ref);
     if (r == null) {
-      return AdminFrame(section: '/reports', title: 'Report', onBack: () => context.go('/reports'), backLabel: 'Back to reports', children: const [AdminNotice(title: 'We could not find this report.')]);
+      return AdminFrame(section: '/reports', title: tr('Report'), onBack: () => context.go('/reports'), backLabel: tr('Back to reports'), children: [AdminNotice(title: tr('We could not find this report.'))]);
     }
     return AdminFrame(
       section: '/reports',
       title: r.subject,
-      subtitle: '${reportKindName(r.kind)} · reported by ${r.reporter}',
+      subtitle: tr('${reportKindName(r.kind)} · reported by ${r.reporter}'),
       onBack: () => context.go('/reports'),
-      backLabel: 'Back to reports',
+      backLabel: tr('Back to reports'),
       actions: [adminStatusPill(reportStatusName(r.status), _reportLook(r.status))],
       children: [
         AdminKeyValues([('Opened', _date(context, r.createdAt)), ('Reported by', r.reporter), ('Summary', r.summary)]),
         adminSection(context, 'Resolution'),
         if (!can)
-          const AdminNotice(icon: 'lock', title: 'Read-only', body: 'Your role can read reports but not change them.')
+          AdminNotice(icon: 'lock', title: tr('Read-only'), body: tr('Your role can read reports but not change them.'))
         else ...[
-          AdminField(label: 'Resolution note (optional)', controller: _note, minLines: 2, maxLines: 4, action: TextInputAction.newline),
+          AdminField(label: tr('Resolution note (optional)'), controller: _note, minLines: 2, maxLines: 4, action: TextInputAction.newline),
           const SizedBox(height: AQSpacing.x3),
           Wrap(
             spacing: AQSpacing.x3,
             runSpacing: AQSpacing.x3,
             children: [
-              if (r.status == ReportStatus.open) AdminSecondaryButton(label: 'Start review', trailingChevron: false, onPressed: () => _set(r, ReportStatus.inReview)),
-              if (r.status != ReportStatus.resolved) AdminPrimaryButton(label: 'Resolve', trailingChevron: false, onPressed: () => _set(r, ReportStatus.resolved)),
-              if (r.status != ReportStatus.dismissed) AdminSecondaryButton(label: 'Dismiss', trailingChevron: false, onPressed: () => _set(r, ReportStatus.dismissed)),
-              if (r.status == ReportStatus.resolved || r.status == ReportStatus.dismissed) AdminSecondaryButton(label: 'Reopen', trailingChevron: false, onPressed: () => _set(r, ReportStatus.open)),
+              if (r.status == ReportStatus.open) AdminSecondaryButton(label: tr('Start review'), trailingChevron: false, onPressed: () => _set(r, ReportStatus.inReview)),
+              if (r.status != ReportStatus.resolved) AdminPrimaryButton(label: tr('Resolve'), trailingChevron: false, onPressed: () => _set(r, ReportStatus.resolved)),
+              if (r.status != ReportStatus.dismissed) AdminSecondaryButton(label: tr('Dismiss'), trailingChevron: false, onPressed: () => _set(r, ReportStatus.dismissed)),
+              if (r.status == ReportStatus.resolved || r.status == ReportStatus.dismissed) AdminSecondaryButton(label: tr('Reopen'), trailingChevron: false, onPressed: () => _set(r, ReportStatus.open)),
             ],
           ),
         ],
         adminSection(context, 'Notes'),
         if (r.notes.isEmpty)
-          const AdminNotice(title: 'No notes yet.')
+          AdminNotice(title: tr('No notes yet.'))
         else
           AdminTable(
             headers: const ['When', 'By', 'Note'],
             flex: const [3, 3, 6],
             rows: [
               for (final (i, n) in r.notes.indexed)
-                AdminTableRow(key: 'n$i', semantics: '${n.by}: ${n.text}', cells: [Text(_date(context, n.at)), Text(n.by), Text(n.text)]),
+                AdminTableRow(key: 'n$i', semantics: tr('${n.by}: ${n.text}'), cells: [Text(_date(context, n.at)), Text(n.by), Text(n.text)]),
             ],
           ),
         adminDemoNotice(),
@@ -620,8 +658,8 @@ class AdminAuditScreen extends ConsumerWidget {
     final dir = ref.watch(adminDirectoryProvider);
     return AdminFrame(
       section: '/audit',
-      title: 'Activity log',
-      subtitle: 'Fictional demo events. Changes you make in this session appear at the top; none of them touch a real record.',
+      title: tr('Activity log'),
+      subtitle: tr('Fictional demo events. Changes you make in this session appear at the top; none of them touch a real record.'),
       children: [
         AdminTable(
           headers: const ['When', 'Who', 'Action', 'Record'],

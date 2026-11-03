@@ -130,6 +130,9 @@ class _PropertyGalleryScreenState extends State<PropertyGalleryScreen> {
                                 child: Image.asset(
                                   images[i],
                                   fit: BoxFit.contain,
+                                  frameBuilder: (context, child, frame, sync) => sync || AQMotion.reduced(context)
+                                      ? child
+                                      : AnimatedOpacity(opacity: frame == null ? 0 : 1, duration: AQMotion.scaled(context, AQMotion.slow), curve: Curves.easeOut, child: child),
                                   errorBuilder: (context, _, _) =>
                                       _Message(f.t('gal.err')),
                                 ),

@@ -113,8 +113,6 @@ class AgentListingCard extends StatelessWidget {
     final c = AQColors.of(context);
     final f = FlowStrings.of(context);
     final l = listing;
-    final large = aqLargeText(context);
-    final photoW = large ? 100.0 : 132.0;
     final facts = [
       if (l.bedrooms != null)
         '${VFmt.n(context, l.bedrooms!)} ${f.t('disc.beds')}',
@@ -128,10 +126,10 @@ class AgentListingCard extends StatelessWidget {
         decoration: BoxDecoration(
           color: c.surfaceRaised,
           border: Border.all(color: c.hairline),
-          borderRadius: BorderRadius.circular(AQRadius.large),
+          borderRadius: BorderRadius.circular(AQRadius.medium),
         ),
         child: ClipRRect(
-          borderRadius: BorderRadius.circular(AQRadius.large),
+          borderRadius: BorderRadius.circular(AQRadius.medium),
           child: Column(
             mainAxisSize: MainAxisSize.min,
             crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -146,109 +144,43 @@ class AgentListingCard extends StatelessWidget {
       onTap: onOpen,
                 child: AQPressable(
                   onTap: onOpen,
-                  child: Stack(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.stretch,
+                    mainAxisSize: MainAxisSize.min,
                     children: [
-                      Padding(
-                        padding: EdgeInsetsDirectional.only(start: photoW),
-                        child: ConstrainedBox(
-                          constraints: const BoxConstraints(minHeight: 132),
-                          child: Padding(
-                            padding: const EdgeInsets.all(AQSpacing.x3),
-                            child: Column(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              mainAxisAlignment: MainAxisAlignment.center,
-                              children: [
-                                Text(
-                                  '${_typeLabel(f, l.type)} · ${_txLabel(f, l.transaction)}',
-                                  style: AQTypography.of(
-                                    context,
-                                    AQText.labelSmall,
-                                    color: c.accentDeep,
-                                  ),
-                                ),
-                                const SizedBox(height: 2),
-                                Text(
-                                  VFmt.iso(l.title),
-                                  maxLines: 2,
-                                  overflow: TextOverflow.ellipsis,
-                                  style: AQTypography.of(
-                                    context,
-                                    AQText.headlineSmall,
-                                  ),
-                                ),
-                                const SizedBox(height: AQSpacing.x1),
-                                Row(
-                                  children: [
-                                    AQIcon('pin', size: 14, color: c.accent),
-                                    const SizedBox(width: 4),
-                                    Flexible(
-                                      child: Text(
-                                        VFmt.iso(l.locationLabel),
-                                        maxLines: 1,
-                                        overflow: TextOverflow.ellipsis,
-                                        style: AQTypography.of(
-                                          context,
-                                          AQText.bodySmall,
-                                          soft: true,
-                                        ),
-                                      ),
-                                    ),
-                                  ],
-                                ),
-                                Text(
-                                  facts,
-                                  style: AQTypography.of(
-                                    context,
-                                    AQText.bodySmall,
-                                    soft: true,
-                                  ),
-                                ),
-                                const SizedBox(height: AQSpacing.x1),
-                                Text(
-                                  _priceLabel(l),
-                                  style: AQTypography.of(
-                                    context,
-                                    AQText.titleMedium,
-                                    color: c.accentDeep,
-                                  ),
-                                ),
-                                const SizedBox(height: AQSpacing.x2),
-                                Wrap(
-                                  spacing: AQSpacing.x2,
-                                  runSpacing: AQSpacing.x1,
-                                  children: [
-                                    ListingStatusPill(l.status),
-                                    if (l.pendingChanges)
-                                      AQStatusPill(
-                                        label: f.t('ls.card.changes'),
-                                        tone: AQTone.pending,
-                                        icon: 'clock',
-                                        dense: true,
-                                      ),
-                                  ],
-                                ),
-                              ],
-                            ),
-                          ),
+                      AspectRatio(
+                        aspectRatio: 4 / 3,
+                        child: Stack(
+                          fit: StackFit.expand,
+                          children: [
+                            l.photos.isEmpty
+                                ? ColoredBox(color: c.surfaceSelected, child: Center(child: AQIcon('home', size: 32, color: c.inkFaint)))
+                                : _photo(l.photos.first),
+                            PositionedDirectional(start: AQSpacing.x3, bottom: AQSpacing.x3, end: AQSpacing.x3, child: Wrap(spacing: AQSpacing.x2, runSpacing: AQSpacing.x1, children: [
+                              ListingStatusPill(l.status),
+                              if (l.pendingChanges) AQStatusPill(label: f.t('ls.card.changes'), tone: AQTone.pending, icon: 'clock', dense: true),
+                            ])),
+                          ],
                         ),
                       ),
-                      PositionedDirectional(
-                        start: 0,
-                        top: 0,
-                        bottom: 0,
-                        width: photoW,
-                        child: l.photos.isEmpty
-                            ? ColoredBox(
-                                color: c.surfaceSelected,
-                                child: Center(
-                                  child: AQIcon(
-                                    'home',
-                                    size: 28,
-                                    color: c.inkFaint,
-                                  ),
-                                ),
-                              )
-                            : _photo(l.photos.first),
+                      Padding(
+                        padding: const EdgeInsets.fromLTRB(AQSpacing.x4, AQSpacing.x3, AQSpacing.x4, AQSpacing.x3),
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(_priceLabel(l), maxLines: 1, overflow: TextOverflow.ellipsis, style: AQTypography.of(context, AQText.headlineSmall, color: c.accentDeep)),
+                            const SizedBox(height: 2),
+                            Text(VFmt.iso(l.title), maxLines: 2, overflow: TextOverflow.ellipsis, style: AQTypography.of(context, AQText.titleSmall)),
+                            const SizedBox(height: AQSpacing.x1),
+                            Row(children: [
+                              AQIcon('pin', size: 14, color: c.accent),
+                              const SizedBox(width: 4),
+                              Flexible(child: Text(VFmt.iso(l.locationLabel), maxLines: 1, overflow: TextOverflow.ellipsis, style: AQTypography.of(context, AQText.bodySmall, soft: true))),
+                            ]),
+                            const SizedBox(height: AQSpacing.x2),
+                            Text('${_typeLabel(f, l.type)} · ${_txLabel(f, l.transaction)}  ·  $facts', maxLines: 2, overflow: TextOverflow.ellipsis, style: AQTypography.of(context, AQText.bodySmall, soft: true)),
+                          ],
+                        ),
                       ),
                     ],
                   ),

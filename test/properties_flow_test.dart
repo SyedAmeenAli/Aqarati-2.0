@@ -6,6 +6,7 @@ import 'package:aqarati_app/features/entry/models/entry_experience.dart';
 import 'package:aqarati_app/features/entry/models/signup_purpose.dart';
 import 'package:aqarati_app/features/flow/screens/auth_screens.dart';
 import 'package:aqarati_app/core/aq/aq_forms.dart' show AQTextField;
+import 'package:aqarati_app/features/search/aq_properties_hub.dart';
 import 'package:aqarati_app/features/search/aq_property_types.dart';
 import 'package:aqarati_app/features/workspace/aq_action_card.dart';
 import 'package:aqarati_app/features/viewing/widgets/viewing_components.dart'
@@ -26,7 +27,7 @@ GoRouter _router({String start = '/'}) => GoRouter(
   routes: [
     GoRoute(
       path: '/',
-      builder: (_, _) => const Scaffold(body: AQHomeScreen()),
+      builder: (_, _) => const Scaffold(body: AQPropertiesHubScreen()),
     ),
     GoRoute(
       path: '/properties/categories',
@@ -151,41 +152,21 @@ void main() {
   });
 
   group('properties flow', () {
-    testWidgets('Home itself offers Buy, Rent, Sell and My Favorites first', (
-      t,
-    ) async {
+    testWidgets('the Properties page offers Buy, Rent, Sell and My Favorites as equal photo cards', (t) async {
       _phone(t, h: 2600);
       await t.pumpWidget(_app(_router()));
       await _settle(t);
-      final titles = [
-        'Buy a property',
-        'Rent a property',
-        'Sell with Aqary e-Broker',
-        'My Favorites',
-      ];
+      // Buy and Rent side by side; Sell is its own full-width destination below them; Favorites follows.
+      final titles = ['Buy', 'Rent', 'Sell your property with Aqary e-Broker', 'My Favorites'];
       final rects = [for (final x in titles) t.getRect(find.text(x))];
-      final search = t.getRect(find.byType(AQSearchEntry));
-      for (final r in rects) {
-        expect(r.top, lessThan(search.top), reason: 'above the search bar');
-      }
-      // two by two, each row aligned
       expect(rects[0].top, rects[1].top);
-      expect(rects[2].top, rects[3].top);
       expect(rects[2].top, greaterThan(rects[0].top));
-      // all four cards are exactly the same size
+      expect(rects[3].top, greaterThan(rects[2].top));
+      expect(find.text('Start selling'), findsOneWidget, reason: 'a clear Sell action');
       final cards = find.byType(AQActionCard);
-      expect(cards, findsNWidgets(4));
-      final sizes = [for (var i = 0; i < 4; i++) t.getSize(cards.at(i))];
-      for (final z in sizes) {
-        expect(z, sizes.first, reason: 'equal-size cards');
-      }
-      // a card shows a photo
-      expect(
-        find.descendant(of: cards.first, matching: find.byType(Image)),
-        findsWidgets,
-      );
-      // no second page of the same four actions
-      expect(find.text('Properties'), findsNothing);
+      expect(cards, findsNWidgets(3));
+      expect(t.getSize(cards.at(0)), t.getSize(cards.at(1)), reason: 'Buy and Rent are equal');
+      expect(find.descendant(of: cards.first, matching: find.byType(Image)), findsWidgets);
     });
 
     testWidgets(
@@ -195,7 +176,7 @@ void main() {
         final r = _router();
         await t.pumpWidget(_app(r));
         await _settle(t);
-        await t.tap(find.text('Buy a property'));
+        await t.tap(find.text('Buy'));
         await _settle(t);
         for (final s in [
           'Residential',
@@ -216,7 +197,7 @@ void main() {
         ]) {
           expect(find.text(s), findsOneWidget, reason: s);
         }
-        expect(find.text('Buy a property'), findsNothing);
+        expect(find.text('Buy'), findsNothing);
         await t.tap(find.text('Offices'));
         await _settle(t);
         expect(reached, '/properties/all?tx=buy&cat=commercial&types=office');
@@ -229,7 +210,7 @@ void main() {
       _phone(t);
       await t.pumpWidget(_app(_router()));
       await _settle(t);
-      await t.tap(find.text('Rent a property'));
+      await t.tap(find.text('Rent'));
       await _settle(t);
       expect(find.text('Industrial'), findsOneWidget);
       await t.tap(find.text('Residential'));
@@ -247,7 +228,7 @@ void main() {
       final r = _router();
       await t.pumpWidget(_app(r));
       await _settle(t);
-      await t.tap(find.text('Rent a property'));
+      await t.tap(find.text('Rent'));
       await _settle(t);
       await t.tap(find.text('Industrial'));
       await _settle(t);
@@ -270,7 +251,7 @@ void main() {
       final r = _router();
       await t.pumpWidget(_app(r));
       await _settle(t);
-      await t.tap(find.text('Sell with Aqary e-Broker'));
+      await t.tap(find.text('Start selling'));
       await _settle(t);
       expect(find.text('SELL'), findsOneWidget);
       r.pop();
@@ -301,7 +282,7 @@ void main() {
     }
   });
 
-  group('Home module grid', () {
+  group('Home services', () {
     Widget home() => ProviderScope(
       overrides: [
         meProvider.overrideWith(
@@ -336,57 +317,57 @@ void main() {
       ),
     );
 
-    testWidgets('six services, in order, under Explore more', (t) async {
+    Finder service(String title) => find.byWidgetPredicate(
+      (w) =>
+          w is Semantics &&
+          (w.properties.label ?? '').startsWith('$title.') &&
+          w.properties.button == true,
+    );
+
+    testWidgets('exactly six services, in order, each with its supporting line', (t) async {
       _phone(t, h: 2600);
       await t.pumpWidget(home());
       await _settle(t);
-      final order = [
-        'Development',
-        'Architecture',
-        'Interior & Exterior Designer',
-        'Construction Company',
-        'Loan Calculator',
-        'Maintenance',
-      ];
+      final order = {
+        'Properties': 'Buy, rent or sell',
+        'Development': 'Explore developer projects',
+        'Interior & Exterior Designer': 'Discover design services',
+        'Construction Company': 'Find construction professionals',
+        'Maintenance': 'Repairs and home services',
+        'Loan Calculator': 'Estimate your payments',
+      };
       final tops = <double>[];
-      final lefts = <double>[];
-      for (final s in order) {
-        final f = find.descendant(
-          of: find.byType(AQModuleGrid),
-          matching: find.byWidgetPredicate(
-            (w) =>
-                w is Semantics &&
-                w.properties.label == s &&
-                w.properties.button == true,
-          ),
+      for (final e in order.entries) {
+        final f = find.byWidgetPredicate(
+          (w) =>
+              w is Semantics &&
+              w.properties.label == '${e.key}. ${e.value}' &&
+              w.properties.button == true,
         );
-        expect(f, findsOneWidget, reason: s);
-        final r = t.getRect(f);
-        tops.add(r.top);
-        lefts.add(r.left);
+        expect(f, findsOneWidget, reason: e.key);
+        tops.add(t.getRect(f).top);
       }
-      // reading order: row by row, left to right
-      for (var i = 1; i < order.length; i++) {
-        final sameRowAfter = tops[i] == tops[i - 1] && lefts[i] > lefts[i - 1];
-        final nextRow = tops[i] > tops[i - 1];
-        expect(sameRowAfter || nextRow, isTrue, reason: order[i]);
+      expect(tops.first, lessThan(tops[1]), reason: 'Properties leads');
+      // Nothing else on Home: no recommendation feed, search block or duplicated categories.
+      for (final gone in ['Browse Properties', 'Explore more with AQARATI', 'Buy', 'My Favorites']) {
+        expect(find.text(gone), findsNothing, reason: gone);
       }
-      final more = t.getRect(find.text('Explore more with AQARATI'));
-      expect(tops.first, greaterThan(more.bottom - 1));
-      expect(
-        find.text('Properties'),
-        findsNothing,
-        reason: 'no generic Properties tile',
-      );
     });
 
-    testWidgets('each module opens its own journey', (t) async {
+    testWidgets('Home greets with a line of context', (t) async {
+      _phone(t, h: 1400);
+      await t.pumpWidget(home());
+      await _settle(t);
+      expect(find.text('Welcome back'), findsOneWidget);
+      expect(find.text('What are you looking for today?'), findsOneWidget);
+    });
+
+    testWidgets('each service opens its own journey', (t) async {
       _phone(t, h: 2600);
       final expected = {
+        'Properties': '/properties',
         'Development': '/app/explore/build/results?cat=developer',
-        'Architecture': '/app/explore/build/results?cat=architecture',
-        'Interior & Exterior Designer':
-            '/app/explore/build/results?cat=interiorExterior',
+        'Interior & Exterior Designer': '/app/explore/build/results?cat=interiorExterior',
         'Construction Company': '/app/explore/build/results?cat=construction',
         'Loan Calculator': '/calculators',
         'Maintenance': '/professionals?cat=maintenance',
@@ -394,24 +375,14 @@ void main() {
       for (final e in expected.entries) {
         await t.pumpWidget(home());
         await _settle(t);
-        await t.tap(
-          find.descendant(
-            of: find.byType(AQModuleGrid),
-            matching: find.byWidgetPredicate(
-              (w) =>
-                  w is Semantics &&
-                  w.properties.label == e.key &&
-                  w.properties.button == true,
-            ),
-          ),
-        );
+        await t.tap(service(e.key));
         await _settle(t);
         expect(find.text('AT ${e.value}'), findsOneWidget, reason: e.key);
       }
     });
 
     for (final w in [320.0, 360.0, 412.0]) {
-      testWidgets('the grid does not overflow at $w px or at 200% text', (
+      testWidgets('the six services do not overflow at $w px', (
         t,
       ) async {
         _phone(t, w: w, h: 2600);

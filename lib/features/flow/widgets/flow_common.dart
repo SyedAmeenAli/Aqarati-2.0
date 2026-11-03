@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:go_router/go_router.dart';
 import '../../../core/aq/aq_auth_scaffold.dart';
 import '../../../core/aq/aq_forms.dart';
 import '../../../core/aq/aq_primitives.dart';
@@ -27,7 +28,15 @@ class AQSkeleton extends StatelessWidget {
 /// Loading / error frames shared by verification screens.
 Widget aqLoadingFrame(BuildContext context, {String? title}) => AQAuthScaffold(showLogo: false, title: title ?? ' ', showBack: false, children: const [AQSkeleton()]);
 
-Widget aqErrorFrame(BuildContext context, WidgetRef ref, {required String title, required VoidCallback onRetry}) {
+Widget aqErrorFrame(BuildContext context, WidgetRef ref, {required String title, required VoidCallback onRetry, Object? error}) {
+  // Not being signed in is a normal navigation state, not a failure: send the person to sign in and bring them back here.
+  if (error is ApiException && error.code == ApiErrorCode.unauthenticated) {
+    final here = GoRouterState.of(context).uri.toString();
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (context.mounted) context.go('/login?next=${Uri.encodeComponent(here)}');
+    });
+    return aqLoadingFrame(context, title: title);
+  }
   final f = FlowStrings.of(context);
   return AQAuthScaffold(
     showLogo: false,

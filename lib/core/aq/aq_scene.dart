@@ -1,9 +1,8 @@
-import 'dart:ui' as ui;
-
 import 'package:flutter/rendering.dart' show ScrollDirection;
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 
+import 'aq_glass.dart';
 import 'aq_primitives.dart';
 import 'aq_tokens.dart';
 import 'aq_typography.dart';
@@ -184,6 +183,7 @@ class AQChoiceTile extends StatelessWidget {
     if (onSkip == null || skipLabel == null) return tile;
     final c = AQColors.of(context);
     return Stack(
+      fit: StackFit.passthrough,
       children: [
         tile,
         PositionedDirectional(
@@ -354,7 +354,8 @@ Future<T?> showAQSheet<T>(
   BuildContext context, {
   required WidgetBuilder builder,
   bool dismissible = true,
-  bool useRootNavigator = false,
+  // Root by default: a sheet must cover the floating tab bar, not sit under it.
+  bool useRootNavigator = true,
 }) {
   final c = AQColors.of(context);
   return showModalBottomSheet<T>(
@@ -676,9 +677,6 @@ class AQGlassNav extends StatelessWidget {
       listenable: controller,
       builder: (context, _) {
         final compact = controller.compact;
-        final tint = c.isDark
-            ? const Color(0xAA2A231D)
-            : const Color(0xB3F7EFE4);
         return SafeArea(
           minimum: const EdgeInsets.only(bottom: AQSpacing.x3),
           child: Align(
@@ -688,28 +686,21 @@ class AQGlassNav extends StatelessWidget {
               child: AnimatedContainer(
                 duration: AQMotion.scaled(context, AQMotion.standard),
                 curve: AQMotion.spring,
-                margin: const EdgeInsets.symmetric(horizontal: AQSpacing.x4),
+                margin: EdgeInsets.symmetric(horizontal: MediaQuery.sizeOf(context).width < 380 ? AQSpacing.x1 : AQSpacing.x2),
                 height: compact ? 52 : 68,
-                constraints: BoxConstraints(maxWidth: compact ? 232 : 420),
-                child: ClipRRect(
-                  borderRadius: BorderRadius.circular(
-                    compact ? 26 : AQRadius.large,
-                  ),
-                  child: BackdropFilter(
-                    filter: ui.ImageFilter.blur(sigmaX: 18, sigmaY: 18),
-                    child: DecoratedBox(
-                      decoration: BoxDecoration(
-                        color: tint,
-                        border: Border.all(color: c.hairline),
-                        borderRadius: BorderRadius.circular(
-                          compact ? 26 : AQRadius.large,
-                        ),
-                      ),
+                constraints: BoxConstraints(maxWidth: compact ? 232 : (items.length > 5 ? 500 : 420)),
+                child: AQGlass(
+                  radius: compact ? 26 : AQRadius.large,
+                  blur: 24,
+                  // Floating over photographs and dark sections, the bar must stay readable: a mostly
+                  // solid warm sheet with a hint of the content behind, not a see-through one.
+                  fill: 0.88,
+                  child: SizedBox.expand(
                       child: LayoutBuilder(
                         builder: (context, box) {
                           final w = box.maxWidth / items.length;
                           final pillColor = c.accent.withValues(
-                            alpha: c.isDark ? 0.32 : 0.24,
+                            alpha: c.isDark ? 0.34 : 0.28,
                           );
                           return Stack(
                             children: [
@@ -754,7 +745,7 @@ class AQGlassNav extends StatelessWidget {
                                           },
                                           child: Padding(
                                             padding: const EdgeInsets.symmetric(
-                                              horizontal: 4,
+                                              horizontal: 1,
                                               vertical: 5,
                                             ),
                                             child: Column(
@@ -812,7 +803,9 @@ class AQGlassNav extends StatelessWidget {
                                                                 ? c.accentDeep
                                                                 : c.inkSoft,
                                                           ).copyWith(
-                                                            fontSize: 11,
+                                                            // Five items share the bar: a hair smaller, never scaled to an unreadable size.
+                                                            fontSize: items.length > 4 ? 10.5 : 11,
+                                                            letterSpacing: -0.15,
                                                             fontWeight:
                                                                 i == index
                                                                 ? FontWeight
@@ -840,7 +833,6 @@ class AQGlassNav extends StatelessWidget {
                         },
                       ),
                     ),
-                  ),
                 ),
               ),
             ),

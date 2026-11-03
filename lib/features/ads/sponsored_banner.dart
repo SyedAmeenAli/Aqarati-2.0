@@ -57,7 +57,11 @@ class SponsoredBannerView extends StatelessWidget {
     if (ads.isEmpty) return const SizedBox.shrink();
     final c = AQColors.of(context);
     final f = FlowStrings.of(context);
-    final ad = ads[index.clamp(0, ads.length - 1)];
+    var ad = ads[index.clamp(0, ads.length - 1)];
+    final ar = kSampleCampaignsAr[ad.id];
+    if (f.ar && ar != null && ad.headline == ar.$2) {
+      ad = ad.copyWith(sponsor: ar.$1, headline: ar.$3, body: ar.$4, cta: ar.$5);
+    }
     return MediaQuery.withClampedTextScaling(
       maxScaleFactor: 1.2,
       child: Semantics(

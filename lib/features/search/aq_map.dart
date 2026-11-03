@@ -428,6 +428,8 @@ class _AQMapScreenState extends ConsumerState<AQMapScreen> {
       initialCenter: focus,
       initialZoom: kIsWeb ? 13 : 11,
       borderRadius: BorderRadius.zero,
+      // The header, filters and the strip/sheet cover the top and bottom of the map; messages sit between them.
+      overlayInsets: EdgeInsets.only(top: 250, bottom: bottomH + 190),
       onMapCreated: (m) {
         _map = m;
         _project(located);
@@ -481,7 +483,7 @@ class _AQMapScreenState extends ConsumerState<AQMapScreen> {
                 top: false,
                 child: Column(crossAxisAlignment: CrossAxisAlignment.stretch, children: [
                   ...sheetBody,
-                  if (selected == null) emptyOrLoading() else Padding(padding: const EdgeInsets.symmetric(horizontal: AQSpacing.gutter), child: AQResultCard(property: selected)),
+                  if (selected == null) emptyOrLoading() else Padding(padding: const EdgeInsets.symmetric(horizontal: AQSpacing.gutter), child: AQResultCard(property: selected, compact: true)),
                   note,
                   SizedBox(height: AQSpacing.x4 + navInset),
                 ]),
@@ -519,7 +521,7 @@ class _AQMapScreenState extends ConsumerState<AQMapScreen> {
                             controller: _pages,
                             itemCount: shown.length,
                             onPageChanged: (i) => _select(shown, shown[i], scroll: false),
-                            itemBuilder: (context, i) => Padding(padding: const EdgeInsets.symmetric(horizontal: 4), child: SingleChildScrollView(physics: const NeverScrollableScrollPhysics(), child: AQResultCard(property: shown[i]))),
+                            itemBuilder: (context, i) => Padding(padding: const EdgeInsets.symmetric(horizontal: 4), child: SingleChildScrollView(physics: const NeverScrollableScrollPhysics(), child: AQResultCard(property: shown[i], compact: true))),
                           ),
                   ),
                   note,

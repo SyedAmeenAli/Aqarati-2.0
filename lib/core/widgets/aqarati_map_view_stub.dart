@@ -7,6 +7,9 @@ Widget buildWebEmbedMap({
   required double lng,
   required double zoom,
   bool interactive = true,
+  int attempt = 0,
+  VoidCallback? onLoaded,
+  VoidCallback? onError,
 }) {
   throw UnsupportedError(
     'Web embed map is web-only; native platforms use GoogleMap directly.',

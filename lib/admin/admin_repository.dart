@@ -9,6 +9,7 @@ import '../features/ads/ad_repository.dart';
 import '../features/ebroker/ebroker_models.dart';
 import '../features/ebroker/ebroker_repository.dart';
 import 'admin_models.dart';
+import 'admin_l10n.dart';
 
 // ------------------------------------------------------------------ contracts
 
@@ -210,8 +211,8 @@ class DemoAdminStore implements AdminAuthRepository, VerificationRepository {
         transaction: TransactionType.buy,
         photos: inp.photoNames,
         documents: [
-          AdminDocument(id: 'd${++_seq}', label: 'Owner photo ID', fileName: inp.ownerIdName),
-          AdminDocument(id: 'd${++_seq}', label: 'Title deed', fileName: inp.deedDocName),
+          AdminDocument(id: 'd${++_seq}', label: tr('Owner photo ID'), fileName: inp.ownerIdName),
+          AdminDocument(id: 'd${++_seq}', label: tr('Title deed'), fileName: inp.deedDocName),
         ],
         feeDisclosureAccepted: sub.feeAcceptedAt != null,
         history: old?.history ?? const [],
@@ -352,7 +353,7 @@ class DemoAdminStore implements AdminAuthRepository, VerificationRepository {
           docs: [
             AdminDocument(
               id: 'd${++_seq}',
-              label: 'Registration certificate',
+              label: tr('Registration certificate'),
               fileName: 'removed.pdf',
               available: false,
             ),
@@ -384,7 +385,7 @@ class DemoAdminStore implements AdminAuthRepository, VerificationRepository {
       submittedAt: now.subtract(Duration(days: daysAgo)),
       priceOmr: complete ? 120000 : null,
       sizeSqm: complete ? 320 : null,
-      photos: complete ? const ['Demo photo 1', 'Demo photo 2'] : const [],
+      photos: complete ? _demoPhotos(t) : const [],
       documents: complete ? [doc('Title deed')] : const [],
       feeDisclosureAccepted: fee,
     );
@@ -788,3 +789,20 @@ final adminAdProvider = FutureProvider.autoDispose.family<SponsoredAd?, String>(
 
 /// The properties of a demo listing's type, used only to label things.
 String adminTypeKey(PropertyType t) => 'ptype.${t.name}';
+
+/// Photographs the demo submissions carry, picked by the kind of property. Real submissions carry
+/// the file names the agent chose; the moderation screens show a picture for the bundled ones.
+List<String> _demoPhotos(PropertyType t) => switch (t) {
+  PropertyType.apartment || PropertyType.penthouse => const [
+    'assets/properties/p2/06_Seaview_balcony_overlooking_coa.jpg',
+    'assets/properties/p2/08_Open_living_and_dining_apartment.jpg',
+  ],
+  PropertyType.shop || PropertyType.office || PropertyType.warehouse || PropertyType.building => const [
+    'assets/properties/p6/02_Empty_contemporary_commercial_sh.jpg',
+    'assets/properties/p6/04_Modern_commercial_building_exterior.jpg',
+  ],
+  _ => const [
+    'assets/properties/p1/08_Contemporary_villa_front_facade_.jpg',
+    'assets/properties/p1/17_Contemporary_living_room_interio.jpg',
+  ],
+};

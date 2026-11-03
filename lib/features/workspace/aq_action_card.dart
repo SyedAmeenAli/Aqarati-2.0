@@ -55,7 +55,12 @@ class AQActionCard extends StatelessWidget {
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      Row(
+                      ConstrainedBox(
+                        // Two lines are always reserved, so a one-line title never makes its card
+                        // shorter than a card whose title wraps.
+                        constraints: const BoxConstraints(minHeight: 40),
+                        child: Row(
+                        crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
                           AQIcon(icon, size: 18, color: c.accent),
                           const SizedBox(width: AQSpacing.x2),
@@ -71,6 +76,7 @@ class AQActionCard extends StatelessWidget {
                             ),
                           ),
                         ],
+                      ),
                       ),
                       const SizedBox(height: AQSpacing.x1),
                       Text(

@@ -663,16 +663,55 @@ class _ArchPainter extends CustomPainter {
 class AQEmptyViewingState extends StatelessWidget {
   final String title, body;
   final Widget? action;
-  const AQEmptyViewingState({super.key, required this.title, required this.body, this.action});
+
+  /// With an [icon] the empty state is its own kind of screen: a compact medallion in place of the
+  /// shared arch scene, and optional [steps] that say what happens next.
+  final String? icon;
+  final List<String> steps;
+  const AQEmptyViewingState({super.key, required this.title, required this.body, this.action, this.icon, this.steps = const []});
 
   @override
   Widget build(BuildContext context) {
+    final c = AQColors.of(context);
     return Column(crossAxisAlignment: CrossAxisAlignment.center, children: [
-      const AQArchScene(),
+      if (icon == null)
+        const AQArchScene()
+      else
+        Container(
+          width: 72,
+          height: 72,
+          decoration: BoxDecoration(color: c.surfaceSelected, shape: BoxShape.circle, border: Border.all(color: c.hairline)),
+          child: Center(child: AQIcon(icon!, size: 30, color: c.accent)),
+        ),
       const SizedBox(height: AQSpacing.x5),
       Semantics(header: true, child: Text(title, textAlign: TextAlign.center, style: AQTypography.of(context, AQText.headlineLarge))),
       const SizedBox(height: AQSpacing.x2),
       Text(body, textAlign: TextAlign.center, style: AQTypography.of(context, AQText.bodyMedium, soft: true)),
+      if (steps.isNotEmpty) ...[
+        const SizedBox(height: AQSpacing.x5),
+        Container(
+          width: double.infinity,
+          padding: const EdgeInsets.all(AQSpacing.x4),
+          decoration: BoxDecoration(color: c.surfaceRaised, borderRadius: BorderRadius.circular(AQRadius.medium), border: Border.all(color: c.hairline)),
+          child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+            for (var i = 0; i < steps.length; i++)
+              Padding(
+                padding: EdgeInsets.only(top: i == 0 ? 0 : AQSpacing.x3),
+                child: Row(crossAxisAlignment: CrossAxisAlignment.start, children: [
+                  Container(
+                    width: 24,
+                    height: 24,
+                    alignment: Alignment.center,
+                    decoration: BoxDecoration(color: c.surfaceSelected, shape: BoxShape.circle),
+                    child: Text('${i + 1}', style: AQTypography.of(context, AQText.labelSmall, color: c.accentDeep).copyWith(letterSpacing: 0)),
+                  ),
+                  const SizedBox(width: AQSpacing.x3),
+                  Expanded(child: Text(steps[i], style: AQTypography.of(context, AQText.bodySmall))),
+                ]),
+              ),
+          ]),
+        ),
+      ],
       if (action != null) ...[const SizedBox(height: AQSpacing.x6), action!],
     ]);
   }

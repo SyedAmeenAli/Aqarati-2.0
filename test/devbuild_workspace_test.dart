@@ -1,4 +1,5 @@
 import 'package:aqarati_app/core/aq/aq_primitives.dart';
+import 'package:aqarati_app/core/config/demo_mode.dart' show kDemoMode;
 import 'package:aqarati_app/core/domain/account_models.dart';
 import 'package:aqarati_app/data/api/account_api.dart';
 import 'package:aqarati_app/data/demo/demo_backend.dart';
@@ -56,6 +57,30 @@ class _CapRepo extends DemoDevBuildRepository {
       at: DateTime(2026, 10, 1, 9, 30),
     ),
   ];
+}
+
+/// The repository as a build without demo mode has it: the contract's optional capabilities are off,
+/// whatever flag this test run was started with. Used by the tests of the gated screens.
+class _GatedRepo extends DemoDevBuildRepository {
+  _GatedRepo(super.session) : super(lag: Duration.zero);
+  @override
+  DbCapabilities get caps => const DbCapabilities(profileEdit: true);
+  @override
+  Future<List<PortfolioItem>> myPortfolio() async => const [];
+  @override
+  Future<DbProfessional?> myOrganisation() async {
+    final o = await super.myOrganisation();
+    if (o == null) return null;
+    return DbProfessional(
+      id: o.id,
+      name: o.name,
+      type: o.type,
+      serviceType: o.serviceType,
+      locationLabel: o.locationLabel,
+      governorate: o.governorate,
+      verified: o.verified,
+    );
+  }
 }
 
 Widget _app(
@@ -335,14 +360,19 @@ void main() {
         isFalse,
       );
       final demo = DemoDevBuildRepository(() => null).caps;
+      // Without demo mode nothing the contract lacks is on. A demo build switches on only the three
+      // capabilities it can serve from its local sample data, and still never media or review replies.
       expect(
-        demo.projectMedia ||
-            demo.engagements ||
-            demo.leadEvents ||
-            demo.portfolio ||
-            demo.reviewReplies,
+        demo.projectMedia || demo.reviewReplies,
         isFalse,
       );
+      expect(
+        demo.engagements && demo.leadEvents && demo.portfolio,
+        kDemoMode,
+      );
+      if (!kDemoMode) {
+        expect(demo.engagements || demo.leadEvents || demo.portfolio, isFalse);
+      }
     });
   });
 
@@ -889,7 +919,7 @@ void main() {
       (t) async {
         await t.binding.setSurfaceSize(const Size(393, 852));
         await t.pumpWidget(
-          _app('/app/account/workspace/leads', repo: _devRepo(), me: _devMe),
+          _app('/app/account/workspace/leads', repo: _GatedRepo(() => _state(SignupPurpose.propertyDevelopmentCompany, GrantState.approved)), me: _devMe),
         );
         await _settle(t);
         expect(
@@ -939,7 +969,7 @@ void main() {
         await t.pumpWidget(
           _app(
             '/app/account/workspace/engagements',
-            repo: _devRepo(),
+            repo: _GatedRepo(() => _state(SignupPurpose.propertyDevelopmentCompany, GrantState.approved)),
             me: _devMe,
           ),
         );
@@ -949,7 +979,7 @@ void main() {
           findsOneWidget,
         );
         await t.pumpWidget(
-          _app('/workspace/engagements/e1', repo: _devRepo(), me: _devMe),
+          _app('/workspace/engagements/e1', repo: _GatedRepo(() => _state(SignupPurpose.propertyDevelopmentCompany, GrantState.approved)), me: _devMe),
         );
         await _settle(t);
         expect(
@@ -1014,9 +1044,8 @@ void main() {
       'portfolio is capability-gated: nothing invented, add is disabled and explained',
       (t) async {
         await t.binding.setSurfaceSize(const Size(393, 1000));
-        final repo = DemoDevBuildRepository(
+        final repo = _GatedRepo(
           () => _state(SignupPurpose.constructionCompany, GrantState.approved),
-          lag: Duration.zero,
         );
         await t.pumpWidget(
           _app(
@@ -1043,7 +1072,13 @@ void main() {
           _app('/app/account/workspace/reviews', repo: _devRepo(), me: _devMe),
         );
         await _settle(t);
-        expect(find.textContaining('No published reviews yet'), findsOneWidget);
+        // The preview build lists clearly marked sample reviews for the demo business; a real build has none yet.
+        if (kDemoMode) {
+          expect(find.textContaining('Sample review'), findsWidgets);
+          expect(find.text('3 reviews'), findsOneWidget, reason: 'the summary count matches the listed reviews');
+        } else {
+          expect(find.textContaining('No published reviews yet'), findsOneWidget);
+        }
         expect(find.text('Reply'), findsNothing);
       },
     );

@@ -1,3 +1,4 @@
+import '../../core/config/demo_mode.dart' show kDemoMode;
 import '../../core/domain/account_models.dart';
 import '../../data/models/business.dart';
 import '../../data/models/enums.dart';
@@ -25,6 +26,26 @@ extension ProTypeX on ProType {
 
   /// Only developers have the formal `projects` create/edit experience.
   bool get hasProjects => this == ProType.developer;
+}
+
+/// Maps the business-settings service keys (`construction`, `interior`, ...) to directory
+/// categories. Brokerage and maintenance are not part of Development & Building.
+({List<ProType> types, InteriorExteriorServiceType? design}) proTypesOfServices(Iterable<String> keys, {ProType? primary}) {
+  final types = <ProType>[];
+  void add(ProType t) {
+    if (t != primary && !types.contains(t)) types.add(t);
+  }
+
+  final ks = keys.toSet();
+  if (ks.contains('development')) add(ProType.developer);
+  if (ks.contains('construction')) add(ProType.construction);
+  if (ks.contains('architecture')) add(ProType.architecture);
+  final inter = ks.contains('interior'), exter = ks.contains('exterior');
+  if (inter || exter) add(ProType.interiorExterior);
+  final design = inter && exter
+      ? InteriorExteriorServiceType.both
+      : (inter ? InteriorExteriorServiceType.interior : (exter ? InteriorExteriorServiceType.exterior : null));
+  return (types: types, design: design);
 }
 
 ProType? proTypeOfPurpose(SignupPurpose? p) => switch (p) {
@@ -81,6 +102,13 @@ class DbProfessional {
   final String name;
   final ProType type;
   final InteriorExteriorServiceType? serviceType;
+
+  /// Additional service categories of the same business (one record, one identity). The primary
+  /// role stays in [type]; these only widen where the business is discoverable.
+  final List<ProType> extraTypes;
+
+  /// The design side (interior, exterior, both) of an additional interior/exterior service.
+  final InteriorExteriorServiceType? extraServiceType;
   final String bio;
   final String locationLabel;
   final String governorate;
@@ -101,6 +129,8 @@ class DbProfessional {
     required this.name,
     required this.type,
     this.serviceType,
+    this.extraTypes = const [],
+    this.extraServiceType,
     this.bio = '',
     required this.locationLabel,
     this.governorate = 'Muscat',
@@ -116,6 +146,12 @@ class DbProfessional {
   });
 
   String? get cover => mediaUrls.isNotEmpty ? mediaUrls.first : logoUrl;
+
+  /// Every directory category this business appears in: its primary role first, then the rest.
+  List<ProType> get allTypes => [type, ...extraTypes.where((t) => t != type)];
+
+  /// Interior/exterior side for filtering, whether it is the primary role or an additional service.
+  InteriorExteriorServiceType? get designService => serviceType ?? extraServiceType;
 
   /// Maps the shared business record into a directory entry. Brokers and maintenance
   /// providers are not part of Development & Building.
@@ -137,10 +173,24 @@ class DbProfessional {
     if (t == null) return null;
     final inter = cats.contains(BusinessCategory.interiorDesign);
     final exter = cats.contains(BusinessCategory.exteriorDesign);
+    // The other categories the same business record carries become additional services; it is
+    // still one business, listed under each.
+    final extras = <ProType>[
+      if (t != ProType.developer && cats.contains(BusinessCategory.propertyDevelopment)) ProType.developer,
+      if (t != ProType.construction && cats.contains(BusinessCategory.construction)) ProType.construction,
+      if (t != ProType.architecture && cats.contains(BusinessCategory.architecture)) ProType.architecture,
+      if (t != ProType.interiorExterior && (inter || exter)) ProType.interiorExterior,
+    ];
     return DbProfessional(
       id: b.id,
       name: b.name,
       type: t,
+      extraTypes: extras,
+      extraServiceType: t == ProType.interiorExterior || !(inter || exter)
+          ? null
+          : (inter && exter
+                ? InteriorExteriorServiceType.both
+                : (inter ? InteriorExteriorServiceType.interior : InteriorExteriorServiceType.exterior)),
       serviceType: t != ProType.interiorExterior
           ? null
           : (inter && exter
@@ -206,6 +256,42 @@ class DbProject {
 
   String get locationLabel =>
       [area, wilayat, governorate].where((e) => e.trim().isNotEmpty).join(', ');
+
+  /// The picture a project is shown with. Approved media wins. The preview build, which has no
+  /// project media, falls back to a bundled photograph of the same kind of building, picked from
+  /// the project id so the same project has the same picture on every screen. A real build shows
+  /// the type icon instead of borrowing a photograph the project does not own.
+  String? get cover => mediaUrls.isNotEmpty ? mediaUrls.first : demoCoverFor(id, propertyType);
+
+  /// The preview-build picture for a project id and type, or null in a real build.
+  static String? demoCoverFor(String id, PropertyType t) {
+    if (!kDemoMode) return null;
+    final pool = _coverPool(t);
+    return pool[id.codeUnits.fold<int>(0, (a, b) => a + b) % pool.length];
+  }
+
+  static List<String> _coverPool(PropertyType t) => switch (t) {
+    PropertyType.villa || PropertyType.house || PropertyType.townhouse => const [
+      'assets/properties/p4/03_Contemporary_villa_exterior_in_g.jpg',
+      'assets/properties/p4/14_05_Contemporary_Omani_villas_exteri.jpg',
+      'assets/properties/p4/06_Courtyard_villa_architecture_design.jpg',
+      'assets/properties/p4/18_31_Modern_Omani_villa_architectural.jpg',
+    ],
+    PropertyType.apartment || PropertyType.penthouse => const [
+      'assets/properties/p5/05_Modern_apartment_building_exterior.jpg',
+      'assets/properties/p2/02_Apartment_buildings_in_Muscat.jpg',
+      'assets/properties/p5/06_Modern_apartment_building_exteri.jpg',
+    ],
+    PropertyType.residentialLand || PropertyType.agriculturalLand || PropertyType.farm => const [
+      'assets/properties/p3/01_Aerial_view_of_residential_plot.jpg',
+      'assets/properties/p3/05_Vacant_plot_facing_distant_hills.jpg',
+    ],
+    _ => const [
+      'assets/properties/p6/04_Modern_commercial_building_exterior.jpg',
+      'assets/properties/p6/01_Commercial_strip_architectural_p.jpg',
+      'assets/businesses/b2/07_13_Finished_residential_building_ex.jpg',
+    ],
+  };
 
   DbProject copyWith({
     ProjectStatus? status,

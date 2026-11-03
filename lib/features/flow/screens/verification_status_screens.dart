@@ -40,7 +40,7 @@ class VerificationStatusScreen extends ConsumerWidget {
     final v = ref.watch(verificationProvider);
     return v.when(
       loading: () => aqLoadingFrame(context, title: f.t('ver.title')),
-      error: (_, _) => aqErrorFrame(context, ref, title: f.t('ver.title'), onRetry: () => ref.invalidate(verificationProvider)),
+      error: (e, _) => aqErrorFrame(context, ref, title: f.t('ver.title'), onRetry: () => ref.invalidate(verificationProvider), error: e),
       data: (info) {
         // Buyers have no application to verify; never show them a business-style status.
         if (!(roleConfigs[info.purpose]?.needsDocuments ?? false)) {
@@ -134,7 +134,7 @@ class ApplicationDetailsScreen extends ConsumerWidget {
     final v = ref.watch(verificationProvider);
     return v.when(
       loading: () => aqLoadingFrame(context, title: f.t('det.title')),
-      error: (_, _) => aqErrorFrame(context, ref, title: f.t('det.title'), onRetry: () => ref.invalidate(verificationProvider)),
+      error: (e, _) => aqErrorFrame(context, ref, title: f.t('det.title'), onRetry: () => ref.invalidate(verificationProvider), error: e),
       data: (info) {
         final reviewer = info.grant == GrantState.resubmissionRequired || info.grant == GrantState.rejected;
         return AQAuthScaffold(
@@ -176,7 +176,7 @@ class ResubmissionScreen extends ConsumerWidget {
     final v = ref.watch(verificationProvider);
     return v.when(
       loading: () => aqLoadingFrame(context, title: f.t('resub.title')),
-      error: (_, _) => aqErrorFrame(context, ref, title: f.t('resub.title'), onRetry: () => ref.invalidate(verificationProvider)),
+      error: (e, _) => aqErrorFrame(context, ref, title: f.t('resub.title'), onRetry: () => ref.invalidate(verificationProvider), error: e),
       data: (info) {
         var targets = ref.watch(resubmissionTargetsProvider);
         if (targets.isEmpty) {
@@ -258,7 +258,7 @@ class _ResubmitReviewScreenState extends ConsumerState<ResubmitReviewScreen> {
     final v = ref.watch(verificationProvider);
     return v.when(
       loading: () => aqLoadingFrame(context, title: f.t('rr.title')),
-      error: (_, _) => aqErrorFrame(context, ref, title: f.t('rr.title'), onRetry: () => ref.invalidate(verificationProvider)),
+      error: (e, _) => aqErrorFrame(context, ref, title: f.t('rr.title'), onRetry: () => ref.invalidate(verificationProvider), error: e),
       data: (info) {
         // Only a document the model reports as accepted is "already approved"; pending ones stay pending.
         final g = groupForReview(info.documents, targets);

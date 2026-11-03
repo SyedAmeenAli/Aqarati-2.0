@@ -7,7 +7,6 @@ import 'package:aqarati_app/features/ads/ad_repository.dart';
 import 'package:aqarati_app/features/ads/sponsored_banner.dart';
 import 'package:aqarati_app/features/entry/models/signup_purpose.dart';
 import 'package:aqarati_app/features/workspace/aq_explore.dart';
-import 'package:aqarati_app/features/workspace/aq_action_card.dart';
 import 'package:aqarati_app/features/workspace/aq_home.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
@@ -55,9 +54,7 @@ Future<void> _settle(WidgetTester t) async {
 }
 
 void main() {
-  testWidgets('Home shows one compact banner below the primary actions', (
-    t,
-  ) async {
+  testWidgets('Home shows one compact banner, above the six services', (t) async {
     await t.binding.setSurfaceSize(const Size(393, 844));
     addTearDown(() => t.binding.setSurfaceSize(null));
     final repo = DemoAdRepository(latency: Duration.zero)
@@ -68,15 +65,14 @@ void main() {
     final banner = t.getRect(find.byType(SponsoredBannerView));
     expect(banner.height, kSponsoredBannerHeight);
     expect(banner.height, inInclusiveRange(80, 100));
-    // Buy, Rent, Sell and Favorites come first; the banner never pushes them away.
-    final cards = find.byType(AQActionCard);
-    expect(cards, findsNWidgets(4));
-    final lastCardBottom = t.getRect(cards.at(3)).bottom;
-    final firstCardTop = t.getRect(cards.first).top;
-    expect(banner.top, greaterThan(lastCardBottom - 1));
-    expect(firstCardTop, lessThan(banner.top));
-    final search = t.getRect(find.byType(AQSearchEntry));
-    expect(search.top, greaterThan(banner.bottom - 1));
+    final properties = find.byWidgetPredicate(
+      (w) => w is Semantics && (w.properties.label ?? '').startsWith('Properties.') && w.properties.button == true,
+    );
+    expect(properties, findsOneWidget);
+    expect(t.getRect(properties).top, greaterThan(banner.bottom - 1), reason: 'the banner sits above the services');
+    // The premium Home pass puts one search entry under the greeting, above the banner; it opens the same search.
+    expect(find.byType(AQSearchEntry), findsOneWidget, reason: 'Home carries one search entry');
+    expect(t.getRect(find.byType(AQSearchEntry)).bottom, lessThan(banner.top + 1), reason: 'search sits above the banner');
   });
 
   for (final w in [320.0, 360.0, 390.0, 412.0, 430.0]) {
@@ -102,14 +98,14 @@ void main() {
       ..debugAdd(_ad('Two', 'Second title that is much longer than the first'));
     await t.pumpWidget(_app(const AQHomeScreen(), repo));
     await _settle(t);
-    final heroBefore = t.getTopLeft(find.textContaining('find your next'));
+    final heroBefore = t.getTopLeft(find.textContaining('looking for today'));
     expect(find.text('First title'), findsOneWidget);
     await t.pump(kAdRotation + const Duration(milliseconds: 700));
     expect(
       find.text('Second title that is much longer than the first'),
       findsOneWidget,
     );
-    expect(t.getTopLeft(find.textContaining('find your next')), heroBefore);
+    expect(t.getTopLeft(find.textContaining('looking for today')), heroBefore);
   });
 
   testWidgets('no eligible ad: no banner and no blank space', (t) async {
@@ -120,12 +116,12 @@ void main() {
     );
     await _settle(t);
     expect(find.byType(SponsoredBannerView), findsNothing);
-    final without = t.getTopLeft(find.text('Explore more with AQARATI')).dy;
+    final without = t.getTopLeft(find.text('Development')).dy;
     final repo = DemoAdRepository(latency: Duration.zero)
       ..debugAdd(_ad('Acme', 'Offer'));
     await t.pumpWidget(_app(const AQHomeScreen(), repo));
     await _settle(t);
-    final withAd = t.getTopLeft(find.text('Explore more with AQARATI')).dy;
+    final withAd = t.getTopLeft(find.text('Development')).dy;
     expect(withAd - without, greaterThan(kSponsoredBannerHeight - 1));
   });
 

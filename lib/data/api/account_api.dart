@@ -4,7 +4,7 @@ import '../../core/domain/account_models.dart';
 import '../../features/entry/models/signup_purpose.dart';
 
 /// Error codes from the documented API error mapping.
-enum ApiErrorCode { validationFailed, conflict, rateLimited, otpLimitReached, network, server }
+enum ApiErrorCode { validationFailed, conflict, rateLimited, otpLimitReached, network, server, unauthenticated }
 
 class ApiException implements Exception {
   final ApiErrorCode code;

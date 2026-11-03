@@ -36,7 +36,7 @@ Widget app(MeSession s, {String start = '/pro', bool dark = false, bool rtl = fa
           routes: [
             GoRoute(path: '/pro', builder: (_, _) => const Text('PRO HOME')),
             GoRoute(path: '/pro/more', builder: (_, _) => const ProMoreScreen()),
-            for (final p in ['/app/account/workspace/projects', '/app/account/workspace/leads', '/app/account/workspace/profile', '/app/account/workspace/portfolio', '/app/account/workspace/engagements', '/app/account/workspace'])
+            for (final p in ['/app/account/workspace/projects', '/app/account/workspace/leads', '/app/account/workspace/profile', '/app/account/workspace/portfolio', '/app/account/workspace/engagements', '/app/account/workspace', '/pro/units', '/pro/projects', '/pro/services', '/pro/analytics'])
               GoRoute(path: p, builder: (_, st) => Text('STUB ${st.uri.path}')),
           ],
         ),
@@ -61,23 +61,45 @@ void phone(WidgetTester t, {double w = 393, double h = 1400}) {
 
 void main() {
   group('navigation per role (pure)', () {
-    test('each role has five tabs and its own set of words and routes', () {
+    test('each role has six tabs, its own words and routes, and Analytics as a tab', () {
       final labels = <String>{};
       for (final r in roles.values) {
         final tabs = proTabsFor(r);
-        expect(tabs.length, 5, reason: '$r');
+        expect(tabs.length, 6, reason: '$r');
         expect(tabs.first.route, '/pro');
         expect(tabs.last.route, '/pro/more');
+        expect(tabs[4].route, '/pro/analytics', reason: '$r has Analytics as its fifth tab');
         labels.add(tabs.map((t) => t.labelKey).join('|'));
       }
       expect(labels.length, 4, reason: 'every role has its own tab set');
-      expect(proTabsFor(HomeRole.developer).map((t) => t.labelKey), contains('pn.enquiries'));
-      expect(proTabsFor(HomeRole.construction).map((t) => t.labelKey), contains('pn.requests'));
-      expect(proTabsFor(HomeRole.architecture).map((t) => t.labelKey), contains('pn.portfolio'));
-      expect(proTabsFor(HomeRole.interiorExterior).first.labelKey, 'pn.gallery');
-      expect(proTabsFor(HomeRole.architecture).first.labelKey, 'pn.studio');
+      List<String> keys(HomeRole r) => proTabsFor(r).map((t) => t.labelKey).toList();
+      expect(keys(HomeRole.developer), ['pn.overview', 'pn.projects', 'pn.units', 'pn.enquiries', 'an.title', 'pn.company']);
+      expect(keys(HomeRole.construction), ['pn.overview', 'pn.projects', 'pn.requests', 'pn.services', 'an.title', 'pn.company']);
+      expect(keys(HomeRole.architecture), ['pn.studio', 'pn.portfolio', 'pn.projects', 'pn.enquiries', 'an.title', 'pn.profile']);
+      expect(keys(HomeRole.interiorExterior), ['pn.studio', 'pn.portfolio', 'pn.services', 'pn.engagements', 'an.title', 'pn.profile']);
       expect(proTabsFor(HomeRole.buyer), isEmpty);
       expect(proTabsFor(HomeRole.agent), isEmpty);
+    });
+
+    test('on a phone each role shows four day-to-day destinations plus More, and nothing is lost', () {
+      List<String> keys(HomeRole r) => proTabsFor(r, compact: true).map((t) => t.labelKey).toList();
+      expect(keys(HomeRole.developer), ['pn.overview', 'pn.projects', 'pn.enquiries', 'pn.units', 'pn.more']);
+      expect(keys(HomeRole.construction), ['pn.overview', 'pn.projects', 'pn.requests', 'pn.services', 'pn.more']);
+      expect(keys(HomeRole.architecture), ['pn.studio', 'pn.portfolio', 'pn.projects', 'pn.enquiries', 'pn.more']);
+      expect(keys(HomeRole.interiorExterior), ['pn.studio', 'pn.portfolio', 'pn.services', 'pn.engagements', 'pn.more']);
+      for (final r in roles.values) {
+        final compact = proTabsFor(r, compact: true);
+        final full = proTabsFor(r);
+        expect(compact.length, 5);
+        expect(compact.last.route, '/pro/more');
+        // Every full destination is either a phone tab or reached under More (selected there).
+        for (final t in full) {
+          final onBar = compact.take(4).any((c) => c.route == t.route);
+          expect(onBar || proTabIndex(compact, t.route) == 4, isTrue, reason: '${r.name} ${t.labelKey} stays reachable');
+        }
+        expect(proTabIndex(compact, '/pro/analytics'), 4, reason: 'Analytics is selected under More');
+        expect(proTabIndex(compact, '/app/account/workspace/profile'), 4);
+      }
     });
 
     test('a location selects the tab it belongs to', () {
@@ -85,27 +107,40 @@ void main() {
       expect(proTabIndex(dev, '/pro'), 0);
       expect(proTabIndex(dev, '/app/account/workspace/projects'), 1);
       expect(proTabIndex(dev, '/workspace/projects/new'), 1);
-      expect(proTabIndex(dev, '/app/account/workspace/leads'), 2);
-      expect(proTabIndex(dev, '/workspace/leads/L1'), 2);
-      expect(proTabIndex(dev, '/app/account/workspace/profile'), 3);
-      expect(proTabIndex(dev, '/app/account/workspace/reviews'), 4);
-      expect(proTabIndex(dev, '/pro/more'), 4);
+      expect(proTabIndex(dev, '/pro/units'), 2);
+      expect(proTabIndex(dev, '/app/account/workspace/leads'), 3);
+      expect(proTabIndex(dev, '/workspace/leads/L1'), 3);
+      expect(proTabIndex(dev, '/pro/analytics'), 4);
+      expect(proTabIndex(dev, '/app/account/workspace/profile'), 5);
+      expect(proTabIndex(dev, '/app/account/workspace/reviews'), 5);
+      expect(proTabIndex(dev, '/pro/settings'), 5);
+      expect(proTabIndex(dev, '/pro/more'), 5);
+      final con = proTabsFor(HomeRole.construction);
+      expect(proTabIndex(con, '/pro/projects'), 1);
+      expect(proTabIndex(con, '/workspace/leads/L1'), 2);
+      expect(proTabIndex(con, '/pro/services'), 3);
+      expect(proTabIndex(con, '/app/account/workspace/portfolio'), 5);
       final arch = proTabsFor(HomeRole.architecture);
       expect(proTabIndex(arch, '/app/account/workspace/portfolio'), 1);
-      expect(proTabIndex(arch, '/app/account/workspace/engagements'), 2);
-      expect(proTabIndex(arch, '/workspace/engagements/E1'), 2);
+      expect(proTabIndex(arch, '/pro/projects'), 2);
+      expect(proTabIndex(arch, '/app/account/workspace/leads'), 3);
+      expect(proTabIndex(arch, '/workspace/engagements/E1'), 5);
+      final int = proTabsFor(HomeRole.interiorExterior);
+      expect(proTabIndex(int, '/pro/services'), 2);
+      expect(proTabIndex(int, '/app/account/workspace/engagements'), 3);
+      expect(proTabIndex(int, '/workspace/engagements/E1'), 3);
     });
   });
 
   group('professional workspace', () {
     for (final e in roles.entries) {
-      testWidgets('${e.key.name}: five role tabs and none of the customer or agent tabs', (t) async {
+      testWidgets('${e.key.name}: four role tabs plus More and none of the customer or agent tabs', (t) async {
         phone(t);
         await t.pumpWidget(app(me(e.key)));
         await settle(t);
         expect(find.text('PRO HOME'), findsOneWidget);
         const f = FlowStrings.forTest(false);
-        for (final tab in proTabsFor(e.value)) {
+        for (final tab in proTabsFor(e.value, compact: true)) {
           expect(find.text(f.t(tab.labelKey)), findsWidgets, reason: tab.labelKey);
         }
         for (final s in ['Explore', 'Activity', 'Account', 'Contacts', 'Calendar']) {
@@ -121,7 +156,7 @@ void main() {
         await t.pumpWidget(app(me(e.key)));
         await settle(t);
         const f = FlowStrings.forTest(false);
-        seen.add(proTabsFor(e.value).map((x) => f.t(x.labelKey)).join(','));
+        seen.add(proTabsFor(e.value, compact: true).map((x) => f.t(x.labelKey)).join(','));
       }
       expect(seen.length, 4);
     });
@@ -133,9 +168,12 @@ void main() {
       await t.tap(find.text('Portfolio').last);
       await settle(t);
       expect(find.text('STUB /app/account/workspace/portfolio'), findsOneWidget);
-      await t.tap(find.text('Engagements').last);
+      await t.tap(find.text('Projects').last);
       await settle(t);
-      expect(find.text('STUB /app/account/workspace/engagements'), findsOneWidget);
+      expect(find.text('STUB /pro/projects'), findsOneWidget);
+      await t.tap(find.text('Enquiries').last);
+      await settle(t);
+      expect(find.text('STUB /app/account/workspace/leads'), findsOneWidget);
     });
 
     testWidgets('a shopper, a guest-like agent and a pending business are refused', (t) async {

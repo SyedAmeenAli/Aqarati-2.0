@@ -20,6 +20,7 @@ import '../viewing/screens/viewing_kit.dart' show AQViewingSectionTitle, AQViewi
 import '../viewing/widgets/viewing_components.dart';
 import '../viewing/widgets/viewing_format.dart';
 import '../viewing/widgets/viewing_scaffold.dart';
+import '../workspace/aq_thumb.dart';
 import 'maintenance_models.dart';
 import 'maintenance_repository.dart';
 
@@ -392,6 +393,8 @@ class MaintenanceBookingsView extends ConsumerWidget {
       data: (all) {
         if (all.isEmpty) {
           return AQEmptyViewingState(
+            icon: 'construction',
+            steps: [f.t('emp.mnt.1'), f.t('emp.mnt.2'), f.t('emp.mnt.3')],
             title: f.t('mnt.my.empty.t'),
             body: f.t('mnt.my.empty.b'),
             action: AQPrimaryButton(label: f.t('mnt.my.browse'), leadingIcon: 'search', trailingChevron: false, onPressed: () => context.push('/professionals?cat=maintenance')),
@@ -442,6 +445,7 @@ class _BookingRow extends StatelessWidget {
           padding: const EdgeInsets.all(AQSpacing.x4),
           decoration: BoxDecoration(color: c.surfaceRaised, borderRadius: BorderRadius.circular(AQRadius.medium), border: Border.all(color: c.hairline)),
           child: Row(children: [
+            aqRowLead(AQThumb(asset: maintenanceServiceImage(b.service), icon: 'construction')),
             Expanded(
               child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
                 Text(VFmt.iso(b.providerName), style: AQTypography.of(context, AQText.titleSmall)),

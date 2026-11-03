@@ -12,6 +12,8 @@ import '../../data/models/enums.dart' show BusinessCategory;
 import '../../data/repositories/providers.dart';
 import '../viewing/widgets/viewing_format.dart';
 import '../viewing/widgets/viewing_scaffold.dart';
+import '../workspace/aq_cards.dart' show aqListMaxWidth;
+import '../workspace/aq_thumb.dart' show AQThumb;
 import '../workspace/aq_home.dart' show aqImg, aqAllPropertiesProvider, AQResultCard, AQSkeletonBox;
 
 final aqBusinessProvider = FutureProvider.autoDispose.family<Business?, String>((ref, id) => ref.watch(businessRepositoryProvider).getById(id));
@@ -90,16 +92,26 @@ class _Profile extends ConsumerWidget {
     final props = ref.watch(aqAllPropertiesProvider).valueOrNull?.where((p) => p.listedByBusinessId == b.id).toList() ?? const [];
     final cols = aqLargeText(context) ? 2 : 3;
     return AQViewingScaffold(
+      maxWidth: aqListMaxWidth(context) == null ? null : aqListMaxWidth(context)! + AQSpacing.gutter * 2,
       backLabel: f.t('common.back'),
       onBack: onBack,
       children: [
-        if (cover != null)
-          ClipRRect(
-            borderRadius: BorderRadius.circular(AQRadius.large),
-            child: AspectRatio(aspectRatio: 16 / 10, child: ExcludeSemantics(child: aqImg(cover, cacheWidth: 900))),
-          ),
-        const SizedBox(height: AQSpacing.x4),
-        Semantics(header: true, child: Text(VFmt.iso(b.name), style: AQTypography.of(context, AQText.displaySmall))),
+        // Cover photograph with the business mark overlapping its lower edge.
+        Stack(
+          clipBehavior: Clip.none,
+          children: [
+            ClipRRect(
+              borderRadius: BorderRadius.circular(AQRadius.large),
+              child: AspectRatio(
+                aspectRatio: MediaQuery.sizeOf(context).width >= 700 ? 2.2 : 16 / 10,
+                child: ExcludeSemantics(child: cover == null ? ColoredBox(color: c.surfaceSelected) : aqImg(cover, cacheWidth: 1000)),
+              ),
+            ),
+            PositionedDirectional(start: AQSpacing.x4, bottom: -32, child: DecoratedBox(decoration: BoxDecoration(borderRadius: BorderRadius.circular(AQRadius.medium), border: Border.all(color: c.background, width: 3)), child: AQThumb(monogramOf: b.name, size: 64))),
+          ],
+        ),
+        const SizedBox(height: AQSpacing.x10),
+        Semantics(header: true, child: Text(VFmt.iso(b.name), style: AQTypography.of(context, AQText.headlineLarge))),
         const SizedBox(height: AQSpacing.x1),
         Text(cats.join(' · '), style: AQTypography.of(context, AQText.bodyMedium, soft: true)),
         const SizedBox(height: AQSpacing.x3),
@@ -124,30 +136,33 @@ class _Profile extends ConsumerWidget {
         Text(b.description.isEmpty ? f.t('bp.noDesc') : b.description, style: AQTypography.of(context, AQText.bodyMedium)),
         _head(context, f.t('bp.services')),
         Wrap(spacing: AQSpacing.x2, runSpacing: AQSpacing.x2, children: [
-          for (final k in cats) Container(constraints: const BoxConstraints(minHeight: 40), padding: const EdgeInsets.symmetric(horizontal: AQSpacing.x4), decoration: BoxDecoration(color: c.surface, borderRadius: BorderRadius.circular(20), border: Border.all(color: c.hairline)), child: Center(widthFactor: 1, child: Text(k, style: AQTypography.of(context, AQText.labelMedium, color: c.inkSoft)))),
+          for (final k in cats) Container(constraints: const BoxConstraints(minHeight: 40), padding: const EdgeInsets.symmetric(horizontal: AQSpacing.x4), decoration: BoxDecoration(color: c.surfaceRaised, borderRadius: BorderRadius.circular(20), border: Border.all(color: c.hairline)), child: Center(widthFactor: 1, child: Text(k, style: AQTypography.of(context, AQText.labelMedium, color: c.inkSoft)))),
         ]),
         _head(context, f.t('bp.portfolio')),
         if (b.galleryUrls.isEmpty)
           Text(f.t('bp.noPortfolio'), style: AQTypography.of(context, AQText.bodyMedium, soft: true))
         else
           LayoutBuilder(builder: (context, box) {
-            const gap = AQSpacing.x2;
-            final w = (box.maxWidth - gap * (cols - 1)) / cols;
-            return Wrap(spacing: gap, runSpacing: gap, children: [
-              for (var i = 0; i < b.galleryUrls.length; i++)
-                SizedBox(
-                  width: w,
-                  height: w,
+            // The first project photograph runs the full width; the rest sit two across (three on wide screens).
+            const gap = AQSpacing.x3;
+            final cols2 = box.maxWidth >= 560 ? 3 : 2;
+            final w = (box.maxWidth - gap * (cols2 - 1)) / cols2;
+            Widget tile(int i, double width, double height) => SizedBox(
+                  width: width,
+                  height: height,
                   child: Semantics(
                     button: true,
                     focusable: true,
                     onFocus: () {},
                     label: f.t('bp.photo', {'i': VFmt.n(context, i + 1), 'n': VFmt.n(context, b.galleryUrls.length)}),
                     excludeSemantics: true,
-      onTap: () => _photo(context, b.galleryUrls[i]),
-                    child: AQPressable(onTap: () => _photo(context, b.galleryUrls[i]), child: ClipRRect(borderRadius: BorderRadius.circular(AQRadius.medium), child: aqImg(b.galleryUrls[i], cacheWidth: 360))),
+                    onTap: () => _photo(context, b.galleryUrls[i]),
+                    child: AQPressable(onTap: () => _photo(context, b.galleryUrls[i]), child: ClipRRect(borderRadius: BorderRadius.circular(AQRadius.medium), child: aqImg(b.galleryUrls[i], cacheWidth: i == 0 ? 900 : 560))),
                   ),
-                ),
+                );
+            return Wrap(spacing: gap, runSpacing: gap, children: [
+              tile(0, box.maxWidth, box.maxWidth / 1.7),
+              for (var i = 1; i < b.galleryUrls.length; i++) tile(i, w, w * 0.8),
             ]);
           }),
         if (props.isNotEmpty) ...[

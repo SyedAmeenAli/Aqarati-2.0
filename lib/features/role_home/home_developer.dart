@@ -13,6 +13,7 @@ import 'role_home_model.dart';
 import 'role_home_widgets.dart';
 import '../ads/ad_models.dart' show AdAudience;
 import '../ads/sponsored_banner.dart';
+import '../analytics/analytics_screens.dart' show RoleKpiStrip;
 
 /// Property Development: project-first and cinematic. A panoramic hero carries the two project
 /// actions, then a pipeline of the developer's OWN projects filtered by the status the server
@@ -53,8 +54,7 @@ class _DeveloperHomeState extends ConsumerState<DeveloperHome> {
           image: dbTypeImage(ProType.developer),
           kicker: f.t('rh.dev.hero.k'),
           title: f.t('rh.dev.hero'),
-          body: f.t('rh.dev.hero.b'),
-          aspect: 0.92,
+          aspect: 1.5,
           alignment: Alignment.topCenter,
           actions: [
             RolePhotoButton(label: f.t('rh.dev.add'), icon: 'plus', onTap: () => context.push('/workspace/projects/new')),
@@ -63,6 +63,7 @@ class _DeveloperHomeState extends ConsumerState<DeveloperHome> {
         ),
       ),
       const SponsoredBannerSlot(audience: AdAudience.developer),
+      const RoleKpiStrip(role: HomeRole.developer),
       RoleSection(f.t('rh.dev.pipeline'), action: f.t('pt.viewAll'), onAction: () => context.push('/app/account/workspace/projects'), accent: accent),
       projects.when(
         loading: () => const Column(children: [DbSkeleton(height: 44), SizedBox(height: AQSpacing.x3), DbSkeleton(height: 110)]),

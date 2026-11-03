@@ -1,4 +1,4 @@
-import 'package:flutter/material.dart';
+import 'package:flutter/material.dart' hide Text;
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
@@ -10,9 +10,12 @@ import '../features/viewing/widgets/viewing_format.dart';
 import 'admin_auth.dart';
 import 'admin_directory.dart';
 import 'admin_directory_screens.dart' show adminConfirm;
+import '../features/workspace/aq_home.dart' show aqImg;
+import 'admin_images.dart';
 import 'admin_models.dart';
 import 'admin_widgets.dart';
 import 'admin_ui.dart';
+import 'admin_l10n.dart';
 
 /// The platform management modules that share one list-and-detail pattern: property listings,
 /// trusted brokers, development projects, construction, architecture and design portfolios,
@@ -328,19 +331,19 @@ class _ListState extends ConsumerState<AdminModuleListScreen> {
           content: SizedBox(
             width: 420,
             child: Column(mainAxisSize: MainAxisSize.min, children: [
-              AdminField(label: 'Title', controller: title),
+              AdminField(label: tr('Title'), controller: title),
               const SizedBox(height: AQSpacing.x3),
-              AdminField(label: 'Message', controller: msg, minLines: 2, maxLines: 4),
+              AdminField(label: tr('Message'), controller: msg, minLines: 2, maxLines: 4),
               const SizedBox(height: AQSpacing.x3),
               Wrap(spacing: AQSpacing.x2, children: [
                 for (final a in const ['All customers', 'Agents', 'Professionals'])
-                  AQChoicePill(label: a, selected: audience == a, onTap: () => set(() => audience = a)),
+                  AQChoicePill(label: tr(a), selected: audience == a, onTap: () => set(() => audience = a)),
               ]),
             ]),
           ),
           actions: [
-            AdminTextButton(label: 'Cancel', color: AQColors.of(d).inkSoft, onPressed: () => Navigator.of(d).pop(false)),
-            AdminTextButton(label: 'Save draft', color: AQColors.of(d).accent, onPressed: () => Navigator.of(d).pop(true)),
+            AdminTextButton(label: tr('Cancel'), color: AQColors.of(d).inkSoft, onPressed: () => Navigator.of(d).pop(false)),
+            AdminTextButton(label: tr('Save draft'), color: AQColors.of(d).accent, onPressed: () => Navigator.of(d).pop(true)),
           ],
         ),
       ),
@@ -364,7 +367,7 @@ class _ListState extends ConsumerState<AdminModuleListScreen> {
       subtitle: def.subtitle,
       actions: [
         if (widget.modKey == ModKey.announcements && canWrite)
-          AdminPrimaryButton(label: 'New announcement', leadingIcon: 'plus', trailingChevron: false, compact: true, onPressed: _newAnnouncement),
+          AdminPrimaryButton(label: tr('New announcement'), leadingIcon: 'plus', trailingChevron: false, compact: true, onPressed: _newAnnouncement),
       ],
       children: [
         AdminSearchField(controller: _q, hint: def.searchHint, onChanged: (_) => setState(() {})),
@@ -374,7 +377,7 @@ class _ListState extends ConsumerState<AdminModuleListScreen> {
           for (final s in def.statuses) ('$s · ${all.where((r) => r.status == s).length}', _status == s, () => setState(() => _status = _status == s ? null : s)),
         ]),
         if (shown.isEmpty)
-          AdminNotice(icon: 'search', title: 'No ${def.recordNoun}s match', body: 'Change the search or the status filter.')
+          AdminNotice(icon: 'search', title: tr('No ${def.recordNoun}s match'), body: tr('Change the search or the status filter.'))
         else
           AdminTable(
             headers: const ['Record', 'Detail', 'Status'],
@@ -383,10 +386,10 @@ class _ListState extends ConsumerState<AdminModuleListScreen> {
               for (final r in shown)
                 AdminTableRow(
                   key: r.id,
-                  semantics: '${r.title}, ${r.subtitle}, ${r.status}',
+                  semantics: tr('${r.title}, ${r.subtitle}, ${r.status}'),
                   onTap: () => context.go('${def.route}/${r.id}'),
                   cells: [
-                    Text(r.title, style: AQTypography.of(context, AQText.titleSmall)),
+                    _recordLead(context, widget.modKey, r),
                     Text(r.subtitle, style: AQTypography.of(context, AQText.bodyMedium, soft: true)),
                     Align(alignment: AlignmentDirectional.centerStart, child: adminStatusPill(r.status, def.look[r.status] ?? _off)),
                   ],
@@ -397,6 +400,16 @@ class _ListState extends ConsumerState<AdminModuleListScreen> {
       ],
     );
   }
+}
+
+/// The first cell of a record row: its picture (or a monogram for a person) beside its title.
+/// Categories, announcements and viewings of services keep a plain title where a picture would mean nothing.
+Widget _recordLead(BuildContext context, ModKey key, ModRecord r) {
+  final title = Text(r.title, style: AQTypography.of(context, AQText.titleSmall));
+  final img = adminModImage(key, r.id);
+  if (img != null) return AdminThumbCell(thumb: AdminThumb(asset: img, size: 52), child: title);
+  if (key == ModKey.brokers) return AdminThumbCell(thumb: AdminThumb(icon: 'agent', size: 52), child: title);
+  return title;
 }
 
 class AdminModuleDetailScreen extends ConsumerWidget {
@@ -412,7 +425,7 @@ class AdminModuleDetailScreen extends ConsumerWidget {
     final r = ref.read(adminModulesProvider.notifier).record(modKey, id);
     final can = ref.watch(adminAuthProvider).session?.role.canDecide ?? false;
     if (r == null) {
-      return AdminFrame(section: def.route, title: def.title, onBack: () => context.go(def.route), backLabel: 'Back to ${def.title.toLowerCase()}', children: const [AdminNotice(title: 'We could not find this record.')]);
+      return AdminFrame(section: def.route, title: def.title, onBack: () => context.go(def.route), backLabel: tr('Back to ${def.title.toLowerCase()}'), children: [AdminNotice(title: tr('We could not find this record.'))]);
     }
     final history = dir.audit.where((e) => e.target == r.title && e.text.startsWith(def.title)).toList();
     final actions = def.actions[r.status] ?? const <ModAction>[];
@@ -421,15 +434,23 @@ class AdminModuleDetailScreen extends ConsumerWidget {
       title: r.title,
       subtitle: r.subtitle,
       onBack: () => context.go(def.route),
-      backLabel: 'Back to ${def.title.toLowerCase()}',
+      backLabel: tr('Back to ${def.title.toLowerCase()}'),
       actions: [adminStatusPill(r.status, def.look[r.status] ?? _off)],
       children: [
+        if (adminModImage(modKey, r.id) case final img?)
+          Padding(
+            padding: const EdgeInsets.only(bottom: AQSpacing.x3),
+            child: ClipRRect(
+              borderRadius: BorderRadius.circular(AQRadius.large),
+              child: SizedBox(height: 160, width: double.infinity, child: ExcludeSemantics(child: aqImg(img, cacheWidth: 900))),
+            ),
+          ),
         AdminKeyValues([('Status', r.status), ...r.fields]),
         adminSection(context, 'Actions'),
         if (!can)
-          const AdminNotice(icon: 'lock', title: 'Read-only', body: 'Your role can view these records but not change them.')
+          AdminNotice(icon: 'lock', title: tr('Read-only'), body: tr('Your role can view these records but not change them.'))
         else if (actions.isEmpty)
-          const AdminNotice(title: 'Nothing to do here', body: 'This record is in a final state in the demo.')
+          AdminNotice(title: tr('Nothing to do here'), body: tr('This record is in a final state in the demo.'))
         else
           Wrap(
             spacing: AQSpacing.x3,
@@ -443,14 +464,14 @@ class AdminModuleDetailScreen extends ConsumerWidget {
           ),
         adminSection(context, 'Activity on this record'),
         if (history.isEmpty)
-          const AdminNotice(title: 'No administrative activity yet.')
+          AdminNotice(title: tr('No administrative activity yet.'))
         else
           AdminTable(
             headers: const ['When', 'Who', 'Action'],
             flex: const [3, 3, 4],
             rows: [
               for (final (i, e) in history.indexed)
-                AdminTableRow(key: 'h$i', semantics: '${e.actor}, ${e.text}', cells: [Text('${VFmt.shortDate(context, e.at)}, ${VFmt.time(context, e.at)}'), Text(e.actor), Text(e.text)]),
+                AdminTableRow(key: 'h$i', semantics: tr('${e.actor}, ${e.text}'), cells: [Text('${VFmt.shortDate(context, e.at)}, ${VFmt.time(context, e.at)}'), Text(e.actor), Text(e.text)]),
             ],
           ),
         adminDemoNotice(),
@@ -459,7 +480,7 @@ class AdminModuleDetailScreen extends ConsumerWidget {
   }
 
   Future<void> _go(BuildContext context, WidgetRef ref, ModRecord r, ModAction a) async {
-    final ok = await adminConfirm(context, title: '${a.label}: ${r.title}?', body: a.warning, action: a.label);
+    final ok = await adminConfirm(context, title: tr('${a.label}: ${r.title}?'), body: a.warning, action: a.label);
     if (ok) ref.read(adminModulesProvider.notifier).setStatus(modKey, r.id, a.target, _actor(ref));
   }
 }
@@ -474,12 +495,14 @@ class AdminAnalyticsScreen extends ConsumerWidget {
     final mods = ref.watch(adminModulesProvider);
     final dir = ref.watch(adminDirectoryProvider);
     int n(ModKey k, String s) => (mods[k] ?? const []).where((r) => r.status == s).length;
+    final phone = MediaQuery.sizeOf(context).width < 640;
+    final tileWidth = phone ? (MediaQuery.sizeOf(context).width - AQSpacing.gutter * 2 - AQSpacing.x3) / 2 : 240.0;
     Widget tile(String label, String value, {bool sample = false}) => SizedBox(
-      width: 240,
+      width: tileWidth,
       child: AdminPanel(
-        padding: const EdgeInsets.all(AQSpacing.x4),
+        padding: EdgeInsets.all(phone ? AQSpacing.x3 : AQSpacing.x4),
         child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-          Text(value, style: AQTypography.of(context, AQText.displaySmall)),
+          Text(value, style: AQTypography.of(context, phone ? AQText.headlineMedium : AQText.displaySmall)),
           Text(label, style: AQTypography.of(context, AQText.bodySmall, soft: true)),
           if (sample) Text('Sample figure', style: AQTypography.of(context, AQText.labelSmall, color: c.accentDeep)),
         ]),
@@ -488,8 +511,8 @@ class AdminAnalyticsScreen extends ConsumerWidget {
     const weeks = [38, 44, 41, 52, 57, 63, 71];
     return AdminFrame(
       section: '/analytics',
-      title: 'Analytics',
-      subtitle: 'Counts come from the records in this demo. Anything marked Sample figure is invented and measures nothing.',
+      title: tr('Analytics'),
+      subtitle: tr('Counts come from the records in this demo. Anything marked Sample figure is invented and measures nothing.'),
       children: [
         adminSection(context, 'From the demo records'),
         Wrap(spacing: AQSpacing.x3, runSpacing: AQSpacing.x3, children: [
@@ -538,8 +561,8 @@ class AdminSettingsScreen extends ConsumerWidget {
     final s = ref.watch(adminAuthProvider).session;
     return AdminFrame(
       section: '/settings',
-      title: 'Profile and settings',
-      subtitle: 'Your demo admin profile.',
+      title: tr('Profile and settings'),
+      subtitle: tr('Your demo admin profile.'),
       children: [
         AdminKeyValues([
           ('Name', s?.name ?? '-'),
@@ -551,7 +574,7 @@ class AdminSettingsScreen extends ConsumerWidget {
         ]),
         adminSection(context, 'Session'),
         AdminSecondaryButton(
-            label: 'Sign out',
+            label: tr('Sign out'),
             trailingChevron: false,
             onPressed: () => ref.read(adminAuthProvider.notifier).signOut(),
           ),

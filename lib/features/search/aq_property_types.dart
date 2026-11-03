@@ -42,7 +42,7 @@ class AQCategoryStepScreen extends StatelessWidget {
           image: 'assets/properties/p1/08_Contemporary_villa_front_facade_.jpg',
           title: f.t('hubcat.${t.name}'),
           sub: f.t('hubcat.sub'),
-          onBack: () => aqBack(context, '/app/home'),
+          onBack: () => aqBack(context, '/properties'),
         ),
         children: [
           LayoutBuilder(

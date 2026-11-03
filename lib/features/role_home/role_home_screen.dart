@@ -6,6 +6,7 @@ import '../../core/aq/aq_tokens.dart';
 import '../../data/api/account_api.dart' show meProvider;
 import '../devbuild/db_widgets.dart' show DbSkeleton;
 import '../workspace/aq_home.dart' show AQHomeScreen;
+import 'mode_switch.dart';
 import 'role_home_model.dart';
 import 'role_home_widgets.dart';
 
@@ -52,7 +53,7 @@ class RoleHomeScreen extends ConsumerWidget {
       );
     }
     final Widget home = switch (r.role) {
-      HomeRole.buyer => AQHomeScreen(topSlot: _buyerTop(ref, r)),
+      HomeRole.buyer => AQHomeScreen(topSlot: _buyerTop(ref, r), modeSwitch: r.canSwitch ? Builder(builder: (context) => RoleWorkspaceSwitcher(selected: HomeWorkspace.buyer, onChanged: (w) => w == HomeWorkspace.agent ? switchToWork(context, ref) : null)) : null),
       // An approved agent works in the agent workspace, which has its own navigation.
       HomeRole.agent => const _GoToWorkspace('/agent'),
       // Business accounts work in their own workspace, which has its own navigation.
@@ -76,12 +77,7 @@ class RoleHomeScreen extends ConsumerWidget {
   }
 
   Widget? _buyerTop(WidgetRef ref, HomeResolution r) {
-    if (r.canSwitch) {
-      return Padding(
-        padding: const EdgeInsets.only(top: AQSpacing.x3, bottom: AQSpacing.x4),
-        child: RoleWorkspaceSwitcher(selected: HomeWorkspace.buyer, onChanged: (w) => ref.read(homeWorkspaceProvider.notifier).state = w),
-      );
-    }
+    if (r.canSwitch) return null;
     if (r.hasPendingApplication) {
       return Padding(padding: const EdgeInsets.only(top: AQSpacing.x3), child: RoleReveal(child: RoleStatusBanner(grant: r.pendingGrant!, stage: r.pendingStage)));
     }

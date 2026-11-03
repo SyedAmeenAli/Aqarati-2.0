@@ -1,6 +1,6 @@
 {
   "$schema": "https://openapi.vercel.sh/vercel.json",
   "installCommand": "git clone https://github.com/flutter/flutter.git --depth 1 -b 3.47.4 flutter-sdk && ./flutter-sdk/bin/flutter --version && ./flutter-sdk/bin/flutter precache --web && ./flutter-sdk/bin/flutter pub get",
-  "buildCommand": "./flutter-sdk/bin/flutter build web --release --pwa-strategy=none --dart-define=AQARATI_DEMO_MODE=${AQARATI_DEMO_MODE:-false}",
+  "buildCommand": "./flutter-sdk/bin/flutter build web --release --pwa-strategy=none --no-web-resources-cdn --dart-define=AQARATI_DEMO_MODE=${AQARATI_DEMO_MODE:-false}",
   "outputDirectory": "build/web"
 }

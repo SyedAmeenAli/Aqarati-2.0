@@ -13,6 +13,10 @@ import 'extra_routes.dart';
 import '../../features/saved/saved_screen.dart';
 import '../../features/search/aq_map.dart';
 import '../../features/search/aq_property_types.dart';
+import '../../features/search/aq_properties_hub.dart';
+import '../../features/settings/business_settings_screen.dart' show ProBusinessSettingsScreen;
+import '../../features/settings/settings_screens.dart' show kSettingsRoutes, kProSettings, settingsPageFor;
+import '../../features/analytics/analytics_screens.dart' show ProAnalyticsScreen;
 import '../../features/search/aq_search.dart';
 import '../../features/entry/screens/onboarding_entry_screen.dart';
 import '../../features/entry/models/signup_purpose.dart';
@@ -43,7 +47,9 @@ import '../../features/devbuild/db_routes.dart';
 import '../../admin/admin_host.dart';
 import '../../features/agent/agent_routes.dart';
 import '../../features/pro/pro_shell.dart';
+import '../../features/pro/pro_tab_screens.dart';
 import '../../features/agent/agent_shell.dart';
+import '../../features/role_home/mode_switch.dart' show ShopGate, WorkGate;
 
 final appRouter = GoRouter(
   initialLocation: '/entry',
@@ -54,6 +60,9 @@ final appRouter = GoRouter(
       pageBuilder: (context, state) =>
           AQRoute.fade(key: state.pageKey, child: const AdminConsoleHost()),
     ),
+    // Shop and Work open the customer app or the workspace by what the signed-in account is, never the welcome screen.
+    GoRoute(path: '/shop', pageBuilder: (context, state) => AQRoute.fade(key: state.pageKey, child: const ShopGate())),
+    GoRoute(path: '/work', pageBuilder: (context, state) => AQRoute.fade(key: state.pageKey, child: const WorkGate())),
     GoRoute(
       path: '/entry',
       pageBuilder: (context, state) =>
@@ -93,7 +102,7 @@ final appRouter = GoRouter(
     GoRoute(
       path: '/login',
       pageBuilder: (context, state) =>
-          brandPage(key: state.pageKey, child: LoginScreen(experience: state.uri.queryParameters['as'])),
+          brandPage(key: state.pageKey, child: LoginScreen(experience: state.uri.queryParameters['as'], next: state.uri.queryParameters['next'])),
     ),
     GoRoute(
       path: '/forgot-password',
@@ -205,6 +214,15 @@ final appRouter = GoRouter(
         child: const WorkspaceActivationScreen(),
       ),
     ),
+    // A property page is full screen: its own pinned Enquire / Book viewing bar is the only bottom
+    // element, so nothing stacks over the gallery or the end of the page.
+    GoRoute(
+      path: '/property/:id',
+      pageBuilder: (context, state) => AQRoute.forward(
+        key: state.pageKey,
+        child: PropertyDetailScreen(propertyId: state.pathParameters['id']!),
+      ),
+    ),
     ShellRoute(
       builder: (context, state, child) => AQAppShell(child: child),
       routes: [
@@ -231,15 +249,15 @@ final appRouter = GoRouter(
         // Customer browsing screens live inside the shell so the bottom navigation stays put.
     GoRoute(
       path: '/properties',
-      // There is no separate Properties hub: Buy, Rent, Sell and My Favorites live on Home.
-      redirect: (context, state) {
-        final q = state.uri.queryParameters;
-        final plain = q['cat'] == null && q['tx'] == null && q['types'] == null;
-        return plain ? '/app/home' : null;
-      },
+      // Plain `/properties` is the Properties landing page (Buy, Rent, Sell, My Favorites); with a
+      // category, transaction or type it is the results list.
       pageBuilder: (context, state) => AQRoute.forward(
         key: state.pageKey,
-        child: AQPropertiesScreen(
+        child: (state.uri.queryParameters['cat'] == null &&
+                state.uri.queryParameters['tx'] == null &&
+                state.uri.queryParameters['types'] == null)
+            ? const AQPropertiesHubScreen()
+            : AQPropertiesScreen(
           category: state.uri.queryParameters['cat'],
           tx: state.uri.queryParameters['tx'],
           types: state.uri.queryParameters['types'],
@@ -278,13 +296,6 @@ final appRouter = GoRouter(
       path: '/saved',
       pageBuilder: (context, state) =>
           AQRoute.forward(key: state.pageKey, child: const SavedScreen()),
-    ),
-    GoRoute(
-      path: '/property/:id',
-      pageBuilder: (context, state) => AQRoute.forward(
-        key: state.pageKey,
-        child: PropertyDetailScreen(propertyId: state.pathParameters['id']!),
-      ),
     ),
     GoRoute(
       path: '/professionals',
@@ -365,6 +376,39 @@ final appRouter = GoRouter(
           path: '/pro',
           pageBuilder: (context, state) =>
               AQRoute.tab(key: state.pageKey, child: const ProHomeScreen()),
+        ),
+        GoRoute(
+          path: '/pro/settings',
+          pageBuilder: (context, state) =>
+              AQRoute.forward(key: state.pageKey, child: const ProBusinessSettingsScreen()),
+        ),
+        for (final name in kSettingsRoutes)
+          GoRoute(
+            path: '/pro/settings/p/$name',
+            pageBuilder: (context, state) => AQRoute.forward(
+              key: state.pageKey,
+              child: settingsPageFor(name, kProSettings),
+            ),
+          ),
+        GoRoute(
+          path: '/pro/analytics',
+          pageBuilder: (context, state) =>
+              AQRoute.tab(key: state.pageKey, child: const ProAnalyticsScreen()),
+        ),
+        GoRoute(
+          path: '/pro/units',
+          pageBuilder: (context, state) =>
+              AQRoute.tab(key: state.pageKey, child: const ProUnitsScreen()),
+        ),
+        GoRoute(
+          path: '/pro/projects',
+          pageBuilder: (context, state) =>
+              AQRoute.tab(key: state.pageKey, child: const ProProjectsScreen()),
+        ),
+        GoRoute(
+          path: '/pro/services',
+          pageBuilder: (context, state) =>
+              AQRoute.tab(key: state.pageKey, child: const ProServicesScreen()),
         ),
         GoRoute(
           path: '/pro/more',

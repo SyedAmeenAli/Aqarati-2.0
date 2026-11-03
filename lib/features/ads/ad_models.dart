@@ -89,16 +89,20 @@ class SponsoredAd {
   bool get canResume => status == AdStatus.paused;
 
   SponsoredAd copyWith({
+    String? sponsor,
+    String? headline,
+    String? body,
+    String? cta,
     AdStatus? status,
     int? order,
     String? feedback,
     DateTime? updatedAt,
   }) => SponsoredAd(
     id: id,
-    sponsor: sponsor,
-    headline: headline,
-    body: body,
-    cta: cta,
+    sponsor: sponsor ?? this.sponsor,
+    headline: headline ?? this.headline,
+    body: body ?? this.body,
+    cta: cta ?? this.cta,
     destination: destination,
     imageRef: imageRef,
     imageBytes: imageBytes,

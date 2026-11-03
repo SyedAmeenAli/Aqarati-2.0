@@ -1,5 +1,5 @@
 import 'package:aqarati_app/core/aq/aq_help.dart';
-import 'package:aqarati_app/features/workspace/aq_home.dart';
+import 'package:aqarati_app/features/search/aq_properties_hub.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -25,12 +25,12 @@ Future<void> _settle(WidgetTester t) async {
 }
 
 void main() {
-  testWidgets('the ? on Home opens the explainer and closing returns to Home', (
+  testWidgets('the ? on Properties opens the explainer and closing returns to Properties', (
     t,
   ) async {
     await t.binding.setSurfaceSize(const Size(393, 852));
     addTearDown(() => t.binding.setSurfaceSize(null));
-    await t.pumpWidget(_app(const AQHomeScreen()));
+    await t.pumpWidget(_app(const AQPropertiesHubScreen()));
     await _settle(t);
     expect(find.byType(AQHelpButton), findsOneWidget);
     await t.ensureVisible(find.byType(AQHelpButton));
@@ -45,7 +45,7 @@ void main() {
     await t.tap(find.text('Got it'));
     await _settle(t);
     expect(find.text('Real estate on AQARATI'), findsNothing);
-    expect(find.byType(AQHomeScreen), findsOneWidget);
+    expect(find.byType(AQPropertiesHubScreen), findsOneWidget);
     expect(find.text('Browse Properties'), findsOneWidget);
   });
 
@@ -53,7 +53,7 @@ void main() {
     final h = t.ensureSemantics();
     await t.binding.setSurfaceSize(const Size(393, 852));
     addTearDown(() => t.binding.setSurfaceSize(null));
-    await t.pumpWidget(_app(const AQHomeScreen()));
+    await t.pumpWidget(_app(const AQPropertiesHubScreen()));
     await _settle(t);
     expect(
       find.bySemanticsLabel('Help: what does real estate mean here?'),
@@ -65,7 +65,7 @@ void main() {
   testWidgets('Arabic and RTL: opens, reads and closes', (t) async {
     await t.binding.setSurfaceSize(const Size(360, 740));
     addTearDown(() => t.binding.setSurfaceSize(null));
-    await t.pumpWidget(_app(const AQHomeScreen(), rtl: true));
+    await t.pumpWidget(_app(const AQPropertiesHubScreen(), rtl: true));
     await _settle(t);
     // The six-module grid pushes the Browse Properties header (and its ?) below the first screen.
     await t.ensureVisible(find.byType(AQHelpButton));

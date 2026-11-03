@@ -26,7 +26,7 @@ void main() {
     for (final p in [
       '/app/home', '/app/explore', '/app/activity', '/app/account',
       '/properties/categories', '/properties/types', '/properties/all',
-      '/saved', '/property/:id', '/professionals', '/business/:id',
+      '/saved', '/professionals', '/business/:id',
       '/calculators', '/notifications', '/map', '/search', '/search/start',
     ]) {
       expect(shell.contains("path: '$p',"), isTrue, reason: p);
@@ -41,6 +41,9 @@ void main() {
       expect(extraStandalone.contains("path: '$p',"), isTrue, reason: p);
       expect(extraShell.contains("path: '$p',"), isFalse, reason: p);
     }
+    // A property page is full screen: its pinned Enquire / Book viewing bar is the only bottom element.
+    expect(router.contains("path: '/property/:id',"), isTrue);
+    expect(shell.contains("path: '/property/:id',"), isFalse);
     for (final p in ['/property/:id/viewing', '/login', '/entry', '/agent/listings']) {
       expect(shell.contains("path: '$p',"), isFalse, reason: p);
     }

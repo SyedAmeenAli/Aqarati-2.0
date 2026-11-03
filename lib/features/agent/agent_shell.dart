@@ -14,17 +14,19 @@ import '../viewing/widgets/viewing_scaffold.dart' show AQShellInset;
 
 const _agentTabs = [
   '/agent',
-  '/agent/contacts',
   '/agent/listings',
+  '/agent/contacts',
   '/agent/calendar',
+  '/agent/analytics',
   '/agent/more',
 ];
-const _agentIcons = ['home', 'account', 'development', 'calendar', 'more'];
+const _agentIcons = ['home', 'development', 'account', 'calendar', 'chart', 'more'];
 const _agentKeys = [
   'ag.nav.dashboard',
-  'ag.nav.contacts',
   'ag.nav.listings',
+  'ag.nav.contacts',
   'ag.nav.calendar',
+  'an.title',
   'ag.nav.more',
 ];
 
@@ -32,13 +34,14 @@ const _agentKeys = [
 /// reached from More, so they keep More selected.
 int agentTabFor(String path) {
   if (path == '/agent') return 0;
-  if (path.startsWith('/agent/contacts')) return 1;
-  if (path.startsWith('/agent/listings')) return 2;
+  if (path.startsWith('/agent/listings')) return 1;
+  if (path.startsWith('/agent/contacts')) return 2;
   if (path.startsWith('/agent/calendar')) return 3;
-  return 4;
+  if (path.startsWith('/agent/analytics')) return 4;
+  return 5;
 }
 
-/// The Real Estate Agent workspace frame. It is NOT the customer shell: its own five
+/// The Real Estate Agent workspace frame. It is NOT the customer shell: its own six
 /// destinations, a bottom bar on phones and a side rail on wide screens, and only an approved
 /// agent gets past the guard.
 class AgentShell extends ConsumerStatefulWidget {
@@ -61,15 +64,19 @@ class _AgentShellState extends ConsumerState<AgentShell> {
     final f = FlowStrings.of(context);
     final c = AQColors.of(context);
     final path = GoRouterState.of(context).uri.path;
-    final index = agentTabFor(path);
-    final wide = MediaQuery.sizeOf(context).width >= 900;
+    final wide = MediaQuery.sizeOf(context).width >= kWorkspaceRailFrom;
+    // Phones: Dashboard, Listings, Contacts, Calendar and More (Analytics lives in More). The rail
+    // shows all six. `slots` maps a bar position to the destination it opens.
+    final slots = wide ? const [0, 1, 2, 3, 4, 5] : const [0, 1, 2, 3, 5];
+    final full = agentTabFor(path);
+    final index = wide ? full : (full >= 4 ? 4 : full);
     final items = [
-      for (var i = 0; i < _agentTabs.length; i++)
-        AQNavItem(_agentIcons[i], f.t(_agentKeys[i])),
+      for (final i in slots) AQNavItem(_agentIcons[i], f.t(i == 5 ? 'ag.nav.more' : _agentKeys[i])),
     ];
     void go(int i) {
       _nav.setCompact(false);
-      if (i != index || path != _agentTabs[i]) context.go(_agentTabs[i]);
+      final route = _agentTabs[slots[i]];
+      if (i != index || path != route) context.go(route);
     }
 
     // Only an approved agent gets the agent navigation; anyone else sees the explanation alone.
@@ -83,31 +90,40 @@ class _AgentShellState extends ConsumerState<AgentShell> {
     if (!allowed) return body;
     return Scaffold(
       backgroundColor: c.background,
+      // The rail is painted after the content (and placed at the start edge): the page's own
+      // navigator blocks the semantics of whatever is painted before it, which would hide the
+      // rail from screen readers and the keyboard.
       body: wide
-          ? Row(
+          ? Stack(
+              fit: StackFit.expand,
               children: [
-                WorkspaceSideRail(items: items, index: index, onSelected: go),
-                Expanded(
+                PositionedDirectional(
+                  start: kWorkspaceRailWidth,
+                  end: 0,
+                  top: 0,
+                  bottom: 0,
                   child: Stack(
                     fit: StackFit.expand,
                     children: [
-                      const AQBackdrop(
-                        asset: 'assets/entry/oman_terrace_2k.jpg',
-                        quiet: true,
-                      ),
+                      // Operational pages sit on a clean warm surface; photography is kept for where it means something.
+                      ColoredBox(color: AQColors.of(context).background),
                       AQShellInset(height: 0, child: body),
                     ],
                   ),
+                ),
+                PositionedDirectional(
+                  start: 0,
+                  top: 0,
+                  bottom: 0,
+                  width: kWorkspaceRailWidth,
+                  child: WorkspaceSideRail(items: items, index: index, onSelected: go),
                 ),
               ],
             )
           : Stack(
               fit: StackFit.expand,
               children: [
-                const AQBackdrop(
-                  asset: 'assets/entry/oman_terrace_2k.jpg',
-                  quiet: true,
-                ),
+                ColoredBox(color: AQColors.of(context).background),
                 AQShellInset(
                   height: 84 + MediaQuery.paddingOf(context).bottom,
                   child: NotificationListener<ScrollNotification>(
@@ -132,6 +148,12 @@ class _AgentShellState extends ConsumerState<AgentShell> {
   }
 }
 
+/// From this width a business workspace shows the full side rail instead of the phone bar.
+const double kWorkspaceRailFrom = 700;
+
+/// Width of the side rail the business workspaces show on wide screens.
+const double kWorkspaceRailWidth = 232;
+
 class WorkspaceSideRail extends StatelessWidget {
   final List<AQNavItem> items;
   final int index;
@@ -145,10 +167,10 @@ class WorkspaceSideRail extends StatelessWidget {
   Widget build(BuildContext context) {
     final c = AQColors.of(context);
     return Container(
-      width: 232,
+      width: kWorkspaceRailWidth,
       decoration: BoxDecoration(
         color: c.surfaceRaised,
-        border: Border(right: BorderSide(color: c.hairline)),
+        border: BorderDirectional(end: BorderSide(color: c.hairline)),
       ),
       child: SafeArea(
         child: Padding(

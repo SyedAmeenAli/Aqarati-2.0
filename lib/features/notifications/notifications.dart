@@ -189,12 +189,22 @@ class _Row extends StatelessWidget {
             border: Border.all(color: unread ? c.accent.withValues(alpha: 0.5) : c.hairline),
           ),
           child: Row(children: [
-            AnimatedContainer(duration: AQMotion.scaled(context, AQMotion.fast), width: 10, height: 10, decoration: BoxDecoration(shape: BoxShape.circle, color: unread ? c.accent : Colors.transparent, border: Border.all(color: unread ? c.accent : c.hairline))),
+            // The kind of update as an icon; unread carries a small accent dot on it, read is quieter.
+            Stack(clipBehavior: Clip.none, children: [
+              AnimatedContainer(
+                duration: AQMotion.scaled(context, AQMotion.fast),
+                width: 44,
+                height: 44,
+                decoration: BoxDecoration(shape: BoxShape.circle, color: unread ? c.surfaceRaised : c.surfaceSelected, border: Border.all(color: unread ? c.accent.withValues(alpha: 0.5) : c.hairline)),
+                child: Center(child: AQIcon(switch (n.kind) { NotificationKind.viewing => 'calendar-check', NotificationKind.maintenance => 'wrench', NotificationKind.verification => 'verified' }, size: 20, color: unread ? c.accentDeep : c.inkSoft)),
+              ),
+              if (unread) PositionedDirectional(end: -1, top: -1, child: Container(width: 12, height: 12, decoration: BoxDecoration(color: c.accent, shape: BoxShape.circle, border: Border.all(color: c.surfaceSelected, width: 2)))),
+            ]),
             const SizedBox(width: AQSpacing.x3),
             Expanded(
               child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-                Text(title, style: AQTypography.of(context, AQText.titleSmall).copyWith(fontWeight: unread ? FontWeight.w700 : FontWeight.w500)),
-                if (sub.isNotEmpty) Text(sub, style: AQTypography.of(context, AQText.bodySmall, soft: true)),
+                Text(title, style: AQTypography.of(context, AQText.titleMedium).copyWith(fontWeight: unread ? FontWeight.w700 : FontWeight.w500)),
+                if (sub.isNotEmpty) Padding(padding: const EdgeInsets.only(top: 2), child: Text(sub, style: AQTypography.of(context, AQText.bodySmall, soft: true))),
               ]),
             ),
             AQIcon('chevron-right', size: 18, color: c.inkSoft, directional: true),

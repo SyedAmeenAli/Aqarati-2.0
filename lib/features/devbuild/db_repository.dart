@@ -8,6 +8,7 @@ import '../../data/datasources/mock_business_data.dart';
 import '../../data/demo/demo_backend.dart';
 import '../../data/demo/demo_providers.dart';
 import '../../data/models/enums.dart';
+import '../settings/business_settings_screen.dart' show businessProfileProvider;
 import 'db_models.dart';
 
 enum DbSort { relevance, rating, name }
@@ -172,7 +173,11 @@ class DemoDevBuildRepository implements DevBuildRepository {
   DemoDevBuildRepository(
     this._session, {
     this.lag = const Duration(milliseconds: 220),
+    this.ownServices,
   });
+
+  /// The signed-in business's additional-service keys (business settings), read at call time.
+  final Set<String> Function()? ownServices;
 
   /// Simulated network latency. Tests pass [Duration.zero] to stay out of fake-async timers.
   final Duration lag;
@@ -188,7 +193,9 @@ class DemoDevBuildRepository implements DevBuildRepository {
     return '+968 9${d.substring(0, 3)} ${d.substring(3)}';
   }
 
-  static final List<DbProfessional> _roster = [
+  static final List<DbProfessional> _roster = [for (final p in _rawRoster) _withExtras(p)];
+
+  static final List<DbProfessional> _rawRoster = [
     for (final b in mockBusinesses)
       if (DbProfessional.fromBusiness(b) case final p?)
         if (p.verified) _withDemoContact(p),
@@ -246,11 +253,46 @@ class DemoDevBuildRepository implements DevBuildRepository {
     ),
   ];
 
+  /// Additional service categories of fixture businesses. One record each: a construction company
+  /// that also designs interiors stays one business and is listed under both categories.
+  static const _additional = <String, ({List<String> services})>{
+    'demo-c1': (services: ['interior']),
+    'demo-d1': (services: ['construction']),
+  };
+
+  static DbProfessional _withExtras(DbProfessional p) {
+    final a = _additional[p.id];
+    if (a == null) return p;
+    final m = proTypesOfServices(a.services, primary: p.type);
+    return DbProfessional(
+      id: p.id,
+      name: p.name,
+      type: p.type,
+      serviceType: p.serviceType,
+      extraTypes: m.types,
+      extraServiceType: p.type == ProType.interiorExterior ? null : m.design,
+      bio: p.bio,
+      locationLabel: p.locationLabel,
+      governorate: p.governorate,
+      latitude: p.latitude,
+      longitude: p.longitude,
+      logoUrl: p.logoUrl,
+      mediaUrls: p.mediaUrls,
+      verified: p.verified,
+      rating: p.rating,
+      reviewCount: p.reviewCount,
+      phone: p.phone,
+      whatsapp: p.whatsapp,
+    );
+  }
+
   static DbProfessional _withDemoContact(DbProfessional p) => DbProfessional(
     id: p.id,
     name: p.name,
     type: p.type,
     serviceType: p.serviceType,
+    extraTypes: p.extraTypes,
+    extraServiceType: p.extraServiceType,
     bio: p.bio,
     locationLabel: p.locationLabel,
     governorate: p.governorate,
@@ -323,6 +365,13 @@ class DemoDevBuildRepository implements DevBuildRepository {
     ),
   ];
 
+  /// Fictional sample reviews for the demo business, said to be samples in their text.
+  static final List<DbReview> _demoOwnReviews = [
+    DbReview(id: 'me-r1', rating: 5, body: 'Sample review: clear brief, thoughtful concept and a calm handover. Demo data.', author: 'Verified client (sample)', at: DateTime(2026, 10, 12)),
+    DbReview(id: 'me-r2', rating: 5, body: 'Sample review: the studio listened and delivered on time. Demo data.', author: 'Verified client (sample)', at: DateTime(2026, 9, 21)),
+    DbReview(id: 'me-r3', rating: 4, body: 'Sample review: good communication, one revision round. Demo data.', author: 'Verified client (sample)', at: DateTime(2026, 8, 3)),
+  ];
+
   static final Map<String, List<DbReview>> _reviews = {
     'b2': [
       DbReview(
@@ -375,7 +424,7 @@ class DemoDevBuildRepository implements DevBuildRepository {
 
   List<PortfolioItem> _seedPortfolio(ProType t) => [
     for (final (i, img) in _demoPortfolio(t).indexed)
-      PortfolioItem(id: 'pf${++_pfSeq}', title: 'Sample work ${i + 1}', note: 'Sample entry', image: img),
+      PortfolioItem(id: 'pf${++_pfSeq}', title: _portfolioInfo[img]?.$1 ?? 'Project ${i + 1}', note: _portfolioInfo[img]?.$2 ?? 'Demo project', image: img),
   ];
 
   @override
@@ -440,7 +489,7 @@ class DemoDevBuildRepository implements DevBuildRepository {
     final rows = [
       for (final p in _roster)
         if (p.verified &&
-            (q.type == null || p.type == q.type) &&
+            (q.type == null || p.allTypes.contains(q.type)) &&
             (q.governorate == null || p.governorate == q.governorate) &&
             _matchesText(
               p,
@@ -448,10 +497,12 @@ class DemoDevBuildRepository implements DevBuildRepository {
               _approved.where((x) => x.orgId == p.id).toList(),
             ))
           if (q.serviceType == null ||
-              p.serviceType == q.serviceType ||
-              p.serviceType == InteriorExteriorServiceType.both)
-            // Developers appear only with at least one approved project that matches.
+              p.designService == q.serviceType ||
+              p.designService == InteriorExteriorServiceType.both)
+            // Developers appear only with at least one approved project that matches (in the
+            // developer category; an additional service of another business is not gated).
             if (p.type != ProType.developer ||
+                (q.type != null && q.type != ProType.developer) ||
                 _approved.any(
                   (x) =>
                       x.orgId == p.id &&
@@ -500,6 +551,7 @@ class DemoDevBuildRepository implements DevBuildRepository {
   @override
   Future<List<DbReview>> publishedReviews(String orgId) async {
     await _lag();
+    if (orgId == 'me' && kDemoMode) return _demoOwnReviews;
     return _reviews[orgId] ?? const [];
   }
 
@@ -515,17 +567,35 @@ class DemoDevBuildRepository implements DevBuildRepository {
     final type = proTypeOfPurpose(s?.purpose);
     if (s == null || type == null || s.grant != GrantState.approved)
       return null;
+    final extra = proTypesOfServices(ownServices?.call() ?? const {}, primary: type);
     return DbProfessional(
       id: 'me',
       name: s.businessName ?? '',
       type: type,
       serviceType: type == ProType.interiorExterior ? s.serviceType : null,
+      extraTypes: extra.types,
+      extraServiceType: type == ProType.interiorExterior ? null : extra.design,
       locationLabel: '',
       governorate: '',
       verified: true,
       mediaUrls: kDemoMode ? _demoPortfolio(type) : const [],
     );
   }
+
+  /// Names and short descriptions for the bundled demo portfolio pictures, so one project reads the same
+  /// on the Studio, the portfolio page and the public profile. All are fictional demo projects.
+  static const _portfolioInfo = <String, (String, String)>{
+    'assets/businesses/b1/05_Contemporary_architectural_facad.jpg': ('Al Hail Residence', 'Architecture · Sandstone family home, Seeb. Demo project.'),
+    'assets/businesses/b1/06_Courtyard_architectural_design_c.jpg': ('Courtyard House, Nizwa', 'Architecture · Inward-facing plan around a shaded court. Demo project.'),
+    'assets/businesses/b1/08_Doubleheight_atrium_architectur.jpg': ('Atrium Villa, Qurum', 'Architecture · Double-height stair hall. Demo project.'),
+    'assets/businesses/b1/03_Architectural_model_of_contempor.jpg': ('Bawshar Townhouses', 'Architecture · Concept model for eight townhouses. Demo project.'),
+    'assets/businesses/b3/06_Styled_bedroom_interior_photography.jpg': ('Master Suite, Al Mouj', 'Interior · Warm minimal bedroom fit-out. Demo project.'),
+    'assets/businesses/b3/04_Reading_and_work_nook.jpg': ('Reading Nook, Muscat', 'Interior · Built-in reading and work corner. Demo project.'),
+    'assets/businesses/b3/01_Modern_designer_bathroom_interio.jpg': ('Stone Bathroom, Seeb', 'Interior · Stone and brass bathroom. Demo project.'),
+    'assets/businesses/b3/03_Powder_room_interior_photography.jpg': ('Powder Room, Bawshar', 'Interior · Compact guest powder room. Demo project.'),
+    'assets/businesses/b2/07_13_Finished_residential_building_ex.jpg': ('Residential Block, Sohar', 'Construction · Finished four-storey block. Demo project.'),
+    'assets/businesses/b2/05_Construction_site_with_tower_crane.jpg': ('Marina Tower Works', 'Construction · Structure phase. Demo project.'),
+  };
 
   static List<String> _demoPortfolio(ProType t) => switch (t) {
     ProType.architecture => const [
@@ -718,7 +788,10 @@ class DemoDevBuildRepository implements DevBuildRepository {
 
 final devBuildRepositoryProvider = Provider<DevBuildRepository>((ref) {
   if (!kUseDemoBackend) return const UnavailableDevBuildRepository();
-  final repo = DemoDevBuildRepository(() => ref.read(demoBackendStateProvider));
+  final repo = DemoDevBuildRepository(
+    () => ref.read(demoBackendStateProvider),
+    ownServices: () => ref.read(businessProfileProvider).services,
+  );
   return repo;
 });
 

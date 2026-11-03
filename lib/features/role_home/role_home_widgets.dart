@@ -1,7 +1,9 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
 import '../../core/aq/aq_demo.dart';
+import '../../core/aq/aq_glass.dart';
 import '../../core/aq/aq_documents.dart' show AQStatusBadge;
 import '../../core/aq/aq_primitives.dart';
 import '../../core/aq/aq_scene.dart';
@@ -9,9 +11,13 @@ import '../../core/aq/aq_tokens.dart';
 import '../../core/aq/aq_typography.dart';
 import '../../core/domain/account_models.dart';
 import '../../core/localization/flow_strings.dart';
-import '../devbuild/db_widgets.dart' show DbFit, DbIcon;
+import '../devbuild/db_repository.dart' show dbMyPortfolioProvider;
+import '../media/aq_media.dart' show AQBusinessLogo;
+import '../devbuild/db_widgets.dart' show DbFit, DbIcon, DbNotice, DbSkeleton;
 import '../entry/widgets/entry_common.dart' show MasterLogo;
+import '../viewing/widgets/viewing_format.dart' show aqLargeText;
 import '../workspace/aq_home.dart' show aqImg;
+import 'mode_switch.dart';
 import 'role_home_model.dart';
 
 /// Role accents stay inside the AQARATI warm family. They tint small details only (rules,
@@ -44,7 +50,7 @@ class RoleHomePage extends StatelessWidget {
           constraints: const BoxConstraints(maxWidth: AQSpacing.maxContent + AQSpacing.gutter * 2),
           child: SingleChildScrollView(
             padding: const EdgeInsets.fromLTRB(AQSpacing.gutter, AQSpacing.x2, AQSpacing.gutter, 128),
-            child: Column(crossAxisAlignment: CrossAxisAlignment.stretch, children: [...children, const SizedBox(height: AQSpacing.x6), const AQDemoNotice()]),
+            child: Column(crossAxisAlignment: CrossAxisAlignment.stretch, children: [const _ProModeBar(), ...children, const SizedBox(height: AQSpacing.x6), const AQDemoNotice()]),
           ),
         ),
       ),
@@ -104,8 +110,8 @@ class RoleHeader extends StatelessWidget {
   const RoleHeader({super.key, this.trailing});
   @override
   Widget build(BuildContext context) => Padding(
-        padding: const EdgeInsets.only(bottom: AQSpacing.x4),
-        child: Row(children: [const MasterLogo(width: 92), const Spacer(), ?trailing]),
+        padding: const EdgeInsets.only(bottom: AQSpacing.x3),
+        child: Row(children: [const MasterLogo(width: 64), const SizedBox(width: AQSpacing.x3), const AQBusinessLogo(size: 44, fallback: SizedBox.shrink()), const Spacer(), ?trailing]),
       );
 }
 
@@ -114,7 +120,7 @@ class RoleEyebrow extends StatelessWidget {
   final Color color;
   const RoleEyebrow(this.text, {super.key, required this.color});
   @override
-  Widget build(BuildContext context) => Text(text, style: AQTypography.of(context, AQText.labelSmall, color: color).copyWith(letterSpacing: 1.6));
+  Widget build(BuildContext context) => Text(text, textAlign: TextAlign.end, style: AQTypography.of(context, AQText.labelSmall, color: color).copyWith(letterSpacing: 1.6));
 }
 
 /// Section heading with an optional action. 48 pt target for the action.
@@ -145,43 +151,59 @@ class RoleSection extends StatelessWidget {
   }
 }
 
-/// Buyer / Agent workspace switch. The thumb animates, the state change is real: the owner
-/// updates the active workspace and the home beneath it changes. Reduced motion removes travel.
+/// Shop / Work mode capsule for an approved agent: two modes of the same app. The thumb slides
+/// under the selected mode, the icon and label sit on it; the state change is real (the owner updates
+/// the active workspace and the screen beneath changes). Reduced motion removes the travel.
 class RoleWorkspaceSwitcher extends StatelessWidget {
   final HomeWorkspace selected;
   final ValueChanged<HomeWorkspace> onChanged;
   const RoleWorkspaceSwitcher({super.key, required this.selected, required this.onChanged});
+
+  static const double _seg = 88;
+  static const double _h = 40;
 
   @override
   Widget build(BuildContext context) {
     final c = AQColors.of(context);
     final f = FlowStrings.of(context);
     final accent = roleAccent(context, HomeRole.agent);
-    final agent = selected == HomeWorkspace.agent;
-    Widget seg(HomeWorkspace w, String label) {
-      final on = selected == w;
-      return Expanded(
-        child: Semantics(
-          button: true,
-          selected: on,
-          label: label,
-          excludeSemantics: true,
-          child: GestureDetector(
-            behavior: HitTestBehavior.opaque,
-            onTap: on
-                ? null
-                : () {
-                    AQHaptics.selection();
-                    onChanged(w);
-                  },
-            child: Container(
-              constraints: const BoxConstraints(minHeight: 44),
-              padding: const EdgeInsets.symmetric(horizontal: AQSpacing.x2, vertical: AQSpacing.x2),
-              alignment: Alignment.center,
-              child: AnimatedDefaultTextStyle(
-                duration: AQMotion.scaled(context, const Duration(milliseconds: 200)),
-                style: AQTypography.of(context, AQText.labelLarge, color: on ? (c.isDark ? c.background : Colors.white) : c.inkSoft),
-                child: Text(label, textAlign: TextAlign.center),
+    final work = selected == HomeWorkspace.agent;
+    final on = c.isDark ? c.background : Colors.white;
+    Widget seg(HomeWorkspace w, String icon, String label, String semantic) {
+      final active = selected == w;
+      final color = active ? on : c.inkSoft;
+      return Semantics(
+        button: true,
+        selected: active,
+        label: semantic,
+        excludeSemantics: true,
+        onTap: active ? null : () => onChanged(w),
+        child: GestureDetector(
+          behavior: HitTestBehavior.opaque,
+          onTap: active
+              ? null
+              : () {
+                  AQHaptics.selection();
+                  onChanged(w);
+                },
+          child: SizedBox(
+            width: _seg,
+            height: _h,
+            child: Center(
+              child: FittedBox(
+                fit: BoxFit.scaleDown,
+                child: Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    AQIcon(icon, size: 16, color: color),
+                    const SizedBox(width: 6),
+                    AnimatedDefaultTextStyle(
+                      duration: AQMotion.scaled(context, const Duration(milliseconds: 200)),
+                      style: AQTypography.of(context, AQText.labelLarge, color: color),
+                      child: Text(label),
+                    ),
+                  ],
+                ),
               ),
             ),
           ),
@@ -193,23 +215,34 @@ class RoleWorkspaceSwitcher extends StatelessWidget {
       container: true,
       label: f.t('rh.switch.label'),
       hint: f.t('rh.switch.hint'),
-      child: Container(
-        padding: const EdgeInsets.all(4),
-        decoration: BoxDecoration(color: c.surfaceSelected, borderRadius: BorderRadius.circular(AQRadius.medium), border: Border.all(color: c.hairline)),
+      child: AQGlass(
+        radius: _h,
+        blur: 16,
+        fill: 0.58,
+        padding: const EdgeInsets.all(3),
         child: Stack(children: [
           Positioned.fill(
             child: AnimatedAlign(
               duration: AQMotion.scaled(context, const Duration(milliseconds: 220)),
-              curve: Curves.easeInOut,
-              alignment: agent ? AlignmentDirectional.centerEnd : AlignmentDirectional.centerStart,
-              child: FractionallySizedBox(
-                widthFactor: 0.5,
-                heightFactor: 1,
-                child: DecoratedBox(decoration: BoxDecoration(color: accent, borderRadius: BorderRadius.circular(AQRadius.medium - 4))),
+              curve: Curves.easeInOutCubic,
+              alignment: work ? AlignmentDirectional.centerEnd : AlignmentDirectional.centerStart,
+              child: SizedBox(
+                width: _seg,
+                height: _h,
+                child: DecoratedBox(
+                  decoration: BoxDecoration(
+                    color: accent,
+                    borderRadius: BorderRadius.circular(_h),
+                    boxShadow: [BoxShadow(color: accent.withValues(alpha: 0.35), blurRadius: 8, offset: const Offset(0, 2))],
+                  ),
+                ),
               ),
             ),
           ),
-          IntrinsicHeight(child: Row(crossAxisAlignment: CrossAxisAlignment.stretch, children: [seg(HomeWorkspace.buyer, f.t('rh.switch.buyer')), seg(HomeWorkspace.agent, f.t('rh.switch.agent'))])),
+          Row(mainAxisSize: MainAxisSize.min, children: [
+            seg(HomeWorkspace.buyer, 'home', f.t('rh.mode.shop'), f.t('rh.mode.shop.l')),
+            seg(HomeWorkspace.agent, 'agent', f.t('rh.mode.work'), f.t('rh.mode.work.l')),
+          ]),
         ]),
       ),
     );
@@ -327,42 +360,72 @@ class _RoleTileState extends State<RoleTile> {
   }
 }
 
-/// A numbered essentials cell (01 Identity ...). Opens a real destination.
-class RoleNumberCell extends StatelessWidget {
-  final String number;
-  final String label;
-  final String sub;
+/// One of the essentials of a profile (Identity, Presence, Directory, Reputation) as a real dashboard
+/// module: an icon, its number, a readable heading, one line of explanation, and a status chip when the
+/// state is known. Opens a real destination.
+class RoleEssentialCard extends StatelessWidget {
+  final String number, label, sub, icon;
+  final String? status;
+  final bool? statusOk;
   final VoidCallback onTap;
   final Color accent;
-  const RoleNumberCell({super.key, required this.number, required this.label, required this.sub, required this.onTap, required this.accent});
+  const RoleEssentialCard({super.key, required this.number, required this.label, required this.sub, required this.icon, required this.onTap, required this.accent, this.status, this.statusOk});
 
   @override
   Widget build(BuildContext context) {
     final c = AQColors.of(context);
+    void tap() {
+      AQHaptics.selection();
+      onTap();
+    }
+
     return Semantics(
       button: true,
       focusable: true,
       onFocus: () {},
-      label: '$label. $sub',
+      label: '$label. $sub${status == null ? '' : '. $status'}',
       excludeSemantics: true,
-      onTap: () {
-          AQHaptics.selection();
-          onTap();
-        },
+      onTap: tap,
       child: AQPressable(
-        onTap: () {
-          AQHaptics.selection();
-          onTap();
-        },
+        onTap: tap,
         child: Container(
-          constraints: const BoxConstraints(minHeight: 96),
-          padding: const EdgeInsets.all(AQSpacing.x3),
-          decoration: BoxDecoration(color: c.surfaceRaised, borderRadius: BorderRadius.circular(AQRadius.medium), border: Border.all(color: c.hairline)),
+          constraints: const BoxConstraints(minHeight: 176),
+          padding: const EdgeInsets.all(AQSpacing.x4),
+          decoration: BoxDecoration(
+            color: c.surfaceRaised,
+            borderRadius: BorderRadius.circular(AQRadius.large),
+            border: Border.all(color: c.hairline),
+            boxShadow: [BoxShadow(color: c.ink.withValues(alpha: c.isDark ? 0.0 : 0.05), blurRadius: 12, offset: const Offset(0, 4))],
+          ),
           child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-            Text(label.toUpperCase(), style: AQTypography.of(context, AQText.labelSmall, color: c.inkSoft).copyWith(letterSpacing: 1.3)),
-            const SizedBox(height: 2),
-            Text(number, style: AQTypography.of(context, AQText.headlineMedium, color: accent)),
-            Text(sub, style: AQTypography.of(context, AQText.bodySmall, soft: true)),
+            Row(children: [
+              Container(
+                width: 44,
+                height: 44,
+                decoration: BoxDecoration(color: accent.withValues(alpha: 0.14), borderRadius: BorderRadius.circular(AQRadius.medium)),
+                child: Center(child: DbIcon(icon, size: 22, color: accent)),
+              ),
+              const Spacer(),
+              Text(number, style: AQTypography.of(context, AQText.labelMedium, color: c.inkFaint).copyWith(letterSpacing: 1.2)),
+            ]),
+            const SizedBox(height: AQSpacing.x3),
+            Text(label, maxLines: 2, overflow: TextOverflow.ellipsis, style: AQTypography.of(context, AQText.titleMedium)),
+            const SizedBox(height: 4),
+            Text(sub, maxLines: 3, overflow: TextOverflow.ellipsis, style: AQTypography.of(context, AQText.bodySmall, soft: true)),
+            const SizedBox(height: AQSpacing.x3),
+            Row(children: [
+              if (status != null)
+                Expanded(
+                  child: Align(
+                    alignment: AlignmentDirectional.centerStart,
+                    child: FittedBox(fit: BoxFit.scaleDown, alignment: AlignmentDirectional.centerStart, child: RoleChip(status!, icon: statusOk == true ? 'check' : 'alert', color: statusOk == true ? c.success : c.warning)),
+                  ),
+                )
+              else
+                const Spacer(),
+              const SizedBox(width: AQSpacing.x1),
+              AQIcon('chevron-right', size: 18, color: c.inkSoft, directional: true),
+            ]),
           ]),
         ),
       ),
@@ -444,7 +507,9 @@ class RolePhotoPanel extends StatelessWidget {
         builder: (context, box) {
           // The picture sets a minimum height; long text or large type makes the panel taller
           // instead of being clipped.
-          final minHeight = box.maxWidth.isFinite ? box.maxWidth / aspect : 0.0;
+          // A hero introduces the workspace; it never dominates it. Height is capped per width.
+          final cap = box.maxWidth >= 600 ? 300.0 : 188.0;
+          final minHeight = box.maxWidth.isFinite ? (box.maxWidth / aspect).clamp(140.0, cap) : 0.0;
           return Stack(children: [
             Positioned.fill(
               child: ExcludeSemantics(
@@ -463,14 +528,18 @@ class RolePhotoPanel extends StatelessWidget {
                 child: Column(crossAxisAlignment: CrossAxisAlignment.start, mainAxisAlignment: MainAxisAlignment.end, mainAxisSize: MainAxisSize.min, children: [
                   if (kicker != null) Text(kicker!, style: AQTypography.of(context, AQText.labelSmall, color: const Color(0xFFF0DCC0)).copyWith(letterSpacing: 1.6)),
                   if (kicker != null) const SizedBox(height: AQSpacing.x1),
-                  Semantics(header: true, child: Text(title, style: AQTypography.of(context, AQText.headlineLarge, color: Colors.white))),
+                  Semantics(header: true, child: Text(title, style: AQTypography.of(context, AQText.headlineMedium, color: Colors.white))),
                   if (body != null) ...[
                     const SizedBox(height: AQSpacing.x1),
                     Text(body!, style: AQTypography.of(context, AQText.bodySmall, color: const Color(0xFFF3EBDD))),
                   ],
                   if (actions.isNotEmpty) ...[
                     const SizedBox(height: AQSpacing.x3),
-                    Wrap(spacing: AQSpacing.x2, runSpacing: AQSpacing.x2, children: actions),
+                    // Two actions share the width side by side (stacked at large text); more wrap.
+                    if (actions.length == 2 && !aqLargeText(context))
+                      Row(children: [Expanded(child: actions[0]), const SizedBox(width: AQSpacing.x2), Expanded(child: actions[1])])
+                    else
+                      Wrap(spacing: AQSpacing.x2, runSpacing: AQSpacing.x2, children: actions),
                   ],
                 ]),
               ),
@@ -507,12 +576,12 @@ class RolePhotoButton extends StatelessWidget {
           onTap();
         },
         child: Container(
-          constraints: const BoxConstraints(minHeight: AQControl.tap, minWidth: 120),
-          padding: const EdgeInsets.symmetric(horizontal: AQSpacing.x4),
+          constraints: const BoxConstraints(minHeight: AQControl.tap),
+          padding: const EdgeInsets.symmetric(horizontal: AQSpacing.x3),
           decoration: BoxDecoration(color: const Color(0xFFFBF7F1), borderRadius: BorderRadius.circular(AQRadius.medium)),
           child: Row(mainAxisSize: MainAxisSize.min, mainAxisAlignment: MainAxisAlignment.center, children: [
             if (icon != null) ...[DbIcon(icon!, size: 18, color: const Color(0xFF2D2823)), const SizedBox(width: 6)],
-            Flexible(child: Text(label, style: AQTypography.of(context, AQText.labelLarge, color: const Color(0xFF2D2823)))),
+            Flexible(child: Text(label, textAlign: TextAlign.center, style: AQTypography.of(context, AQText.labelMedium, color: const Color(0xFF2D2823)))),
           ]),
         ),
       ),
@@ -535,4 +604,83 @@ class RoleChip extends StatelessWidget {
           Flexible(child: Text(label, style: AQTypography.of(context, AQText.labelSmall, color: color))),
         ]),
       );
+}
+
+/// A horizontal strip of the studio's own portfolio pieces, picture first. Shows what the portfolio
+/// service returns; with nothing yet it says so and links to the portfolio page instead of inventing work.
+class RolePortfolioStrip extends ConsumerWidget {
+  final Color accent;
+  const RolePortfolioStrip({super.key, required this.accent});
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final f = FlowStrings.of(context);
+    final c = AQColors.of(context);
+    final items = ref.watch(dbMyPortfolioProvider);
+    void open() => context.push('/app/account/workspace/portfolio');
+    return Column(crossAxisAlignment: CrossAxisAlignment.stretch, children: [
+      RoleSection(f.t('rh.portfolio'), action: f.t('pt.viewAll'), onAction: open, accent: accent),
+      items.when(
+        loading: () => const DbSkeleton(height: 190),
+        error: (_, _) => Text(f.t('common.networkError'), style: AQTypography.of(context, AQText.bodySmall, color: c.danger)),
+        data: (list) => list.isEmpty
+            ? DbNotice(f.t('rh.portfolio.empty'), icon: 'work', action: AQTextButton(label: f.t('rh.portfolio.add'), color: c.accent, onPressed: open))
+            : SizedBox(
+                height: 208,
+                child: ListView.separated(
+                  scrollDirection: Axis.horizontal,
+                  itemCount: list.length,
+                  separatorBuilder: (_, _) => const SizedBox(width: AQSpacing.x3),
+                  itemBuilder: (context, i) {
+                    final it = list[i];
+                    return Semantics(
+                      button: true,
+                      focusable: true,
+                      onFocus: () {},
+                      label: it.title,
+                      excludeSemantics: true,
+                      onTap: open,
+                      child: AQPressable(
+                        onTap: open,
+                        child: ClipRRect(
+                          borderRadius: BorderRadius.circular(AQRadius.medium),
+                          child: SizedBox(
+                            width: 168,
+                            child: Stack(fit: StackFit.expand, children: [
+                              ExcludeSemantics(child: aqImg(it.image, cacheWidth: 520)),
+                              const DecoratedBox(decoration: BoxDecoration(gradient: LinearGradient(begin: Alignment.topCenter, end: Alignment.bottomCenter, colors: [Color(0x00000000), Color(0xB3000000)], stops: [0.45, 1]))),
+                              Positioned(
+                                left: AQSpacing.x3,
+                                right: AQSpacing.x3,
+                                bottom: AQSpacing.x3,
+                                child: Text(it.title, maxLines: 2, overflow: TextOverflow.ellipsis, style: AQTypography.of(context, AQText.titleSmall, color: Colors.white)),
+                              ),
+                            ]),
+                          ),
+                        ),
+                      ),
+                    );
+                  },
+                ),
+              ),
+      ),
+    ]);
+  }
+}
+
+/// The Shop / Work capsule at the top of a business home: Work is selected; Shop opens the customer app.
+class _ProModeBar extends ConsumerWidget {
+  const _ProModeBar();
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final res = ref.watch(homeResolutionProvider);
+    if (!res.isProfessionalCompany) return const SizedBox.shrink();
+    return Padding(
+      padding: const EdgeInsets.only(bottom: AQSpacing.x2),
+      child: Align(
+        alignment: AlignmentDirectional.centerEnd,
+        child: RoleWorkspaceSwitcher(selected: HomeWorkspace.agent, onChanged: (w) => w == HomeWorkspace.buyer ? switchToShop(context, ref) : null),
+      ),
+    );
+  }
 }

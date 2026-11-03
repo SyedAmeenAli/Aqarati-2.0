@@ -14,6 +14,7 @@ import '../../data/repositories/app_state_providers.dart' show savedSearchesProv
 import '../saved/saved_screen.dart' show aqSaveSearch;
 import '../viewing/widgets/viewing_format.dart';
 import '../viewing/widgets/viewing_scaffold.dart';
+import '../workspace/aq_cards.dart' show AQResultGrid, aqListMaxWidth;
 import '../workspace/aq_home.dart';
 import 'aq_filter_sheet.dart';
 import 'aq_filters.dart';
@@ -449,6 +450,7 @@ class _SearchResultsScreenState extends ConsumerState<SearchResultsScreen> {
     final q = _ctl.text.trim();
     final txIndex = _f.tx == null ? 0 : (_f.tx == TransactionType.buy ? 1 : 2);
     return AQViewingScaffold(
+      maxWidth: aqListMaxWidth(context) == null ? null : aqListMaxWidth(context)! + AQSpacing.gutter * 2,
       title: f.t('srch.results'),
       subtitle: q.isEmpty ? null : f.t('srch.resultsFor', {'q': q}),
       backLabel: f.t('common.back'),
@@ -484,7 +486,7 @@ class _SearchResultsScreenState extends ConsumerState<SearchResultsScreen> {
               if (shown.isEmpty)
                 Column(children: [AQNoticeLine(text: f.t('props.empty')), if (_f.activeCount > 0 || _f.tx != null) AQSecondaryButton(label: f.t('flt.clear'), trailingChevron: false, onPressed: () => setState(_f.reset))])
               else
-                for (final p in shown) Padding(padding: const EdgeInsets.only(bottom: AQSpacing.x3), child: AQResultCard(property: p)),
+                AQResultGrid(children: [for (final p in shown) AQResultCard(property: p)]),
             ]);
           },
         ),

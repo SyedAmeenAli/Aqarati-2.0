@@ -87,7 +87,7 @@ class _CalculatorScreenState extends State<CalculatorScreen> {
               : Container(
                   key: const ValueKey('result'),
                   padding: const EdgeInsets.all(AQSpacing.x5),
-                  decoration: BoxDecoration(color: c.surfaceRaised, borderRadius: BorderRadius.circular(AQRadius.large), border: Border.all(color: c.hairline), boxShadow: AQElevation.floating),
+                  decoration: BoxDecoration(color: c.surfaceRaised, borderRadius: BorderRadius.circular(AQRadius.medium), border: Border.all(color: c.hairline), boxShadow: AQElevation.floating),
                   child: Semantics(
                     liveRegion: true,
                     child: Column(crossAxisAlignment: CrossAxisAlignment.stretch, children: [

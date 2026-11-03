@@ -6,7 +6,7 @@
 | Setting | Value |
 | --- | --- |
 | Install | clone Flutter 3.47.4, `precache --web`, `pub get` |
-| Build | `flutter build web --release --pwa-strategy=none --dart-define=AQARATI_DEMO_MODE=${AQARATI_DEMO_MODE:-false}` |
+| Build | `flutter build web --release --pwa-strategy=none --no-web-resources-cdn --dart-define=AQARATI_DEMO_MODE=${AQARATI_DEMO_MODE:-false}` |
 | Output | `build/web` |
 
 `AQARATI_DEMO_MODE` is a compile-time flag. Its source default is **false** (`lib/core/config/demo_mode.dart`). A Vercel environment variable alone does nothing; the build command forwards it into `--dart-define`.
@@ -26,3 +26,5 @@ Fictional records only: sample accounts, contacts, listings, sponsored campaigns
 
 ## Not covered
 No real authentication, backend, payments or advertising agreements exist. Opening `#/admin` on production shows the admin sign-in, but nobody can sign in there because the production build has no demo accounts.
+
+> 2026-10-31: `--no-web-resources-cdn` bundles CanvasKit and the fallback font so the page makes no request to Google hosts. This is a local edit of `vercel.json`; the deployed project keeps its previous build command until you deploy.

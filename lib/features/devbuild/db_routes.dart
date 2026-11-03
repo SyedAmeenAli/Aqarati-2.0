@@ -54,7 +54,7 @@ List<RouteBase> dbStandaloneRoutes() => [
     path: '/build/pro/:id',
     pageBuilder: (context, state) => AQRoute.forward(
       key: state.pageKey,
-      child: DbProfileScreen(id: state.pathParameters['id']!),
+      child: DbProfileScreen(id: state.pathParameters['id']!, service: state.uri.queryParameters['svc']),
     ),
   ),
   GoRoute(

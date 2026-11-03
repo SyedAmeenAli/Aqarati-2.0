@@ -56,7 +56,9 @@ class _SecureNote extends StatelessWidget {
 class LoginScreen extends ConsumerStatefulWidget {
   /// The entry experience the person came through (`user` or `agent`). Context only.
   final String? experience;
-  const LoginScreen({super.key, this.experience});
+  /// Where to go after signing in (an in-app path the person was sent away from). Ignored unless it is a plain local path.
+  final String? next;
+  const LoginScreen({super.key, this.experience, this.next});
   @override
   ConsumerState<LoginScreen> createState() => _LoginScreenState();
 }
@@ -98,7 +100,8 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
       if (mismatch) {
         ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(FlowStrings.of(context).t(want == EntryExperience.agent ? 'xp.mismatch.agent' : 'xp.mismatch.user'))));
       }
-      context.go(routeForSession(me));
+      final n = widget.next;
+      context.go(n != null && n.startsWith('/') && !n.startsWith('//') ? n : routeForSession(me));
     } on AuthException catch (e) {
       if (mounted) setState(() => _bannerKey = switch (e.error) { AuthError.network => 'common.networkError', AuthError.tooManyRequests => 'login.tooMany', AuthError.unavailable => 'login.unavailable', _ => 'login.invalid' });
     } on ApiException catch (_) {

@@ -33,7 +33,7 @@ class AgentHome extends ConsumerWidget {
             Flexible(child: RoleChip(f.t('rh.verifiedRole'), icon: 'verified', color: c.success)),
           ]),
           const SizedBox(height: AQSpacing.x1),
-          Semantics(header: true, child: Text(f.t('rh.agent.title'), style: AQTypography.of(context, AQText.displaySmall))),
+          Semantics(header: true, child: Text(f.t('rh.agent.title'), style: AQTypography.of(context, AQText.headlineLarge))),
         ]),
       ),
       const SizedBox(height: AQSpacing.x4),

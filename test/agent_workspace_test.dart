@@ -145,11 +145,11 @@ void main() {
   });
 
   group('agent workspace', () {
-    testWidgets('has its own five destinations and none of the customer tabs', (t) async {
+    testWidgets('on a phone has Dashboard, Listings, Contacts, Calendar and More (Analytics is under More) and none of the customer tabs', (t) async {
       phone(t);
       await t.pumpWidget(app());
       await settle(t);
-      for (final s in ['Dashboard', 'Contacts', 'Listings', 'Calendar', 'More']) {
+      for (final s in ['Dashboard', 'Listings', 'Contacts', 'Calendar', 'More']) {
         expect(find.text(s), findsWidgets, reason: s);
       }
       for (final s in ['Explore', 'Activity', 'Account']) {
@@ -316,10 +316,11 @@ void main() {
 
   test('which tab a location selects', () {
     expect(agentTabFor('/agent'), 0);
-    expect(agentTabFor('/agent/contacts/C1'), 1);
-    expect(agentTabFor('/agent/listings/new'), 2);
+    expect(agentTabFor('/agent/listings/new'), 1);
+    expect(agentTabFor('/agent/contacts/C1'), 2);
     expect(agentTabFor('/agent/calendar'), 3);
-    expect(agentTabFor('/agent/leads'), 4);
-    expect(agentTabFor('/workspace/enquiries'), 4);
+    expect(agentTabFor('/agent/analytics'), 4);
+    expect(agentTabFor('/agent/leads'), 5);
+    expect(agentTabFor('/workspace/enquiries'), 5);
   });
 }

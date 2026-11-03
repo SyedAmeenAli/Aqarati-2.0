@@ -43,8 +43,7 @@ dependencies:
   # Navigation
   go_router: ^14.6.2
 
-  # Typography (Cormorant Garamond + Inter, per AQARATI brand)
-  google_fonts: ^6.2.1
+  # Typography: Fraunces, Plus Jakarta Sans and IBM Plex Sans Arabic are bundled (see fonts below)
 
   # Icons (vector, unified icon language)
   flutter_svg: ^2.0.16

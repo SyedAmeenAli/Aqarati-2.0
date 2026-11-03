@@ -1,4 +1,4 @@
-import 'package:flutter/material.dart';
+import 'package:flutter/material.dart' hide Text;
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
@@ -13,8 +13,10 @@ import 'admin_directory.dart' show adminLog, decisionVerb;
 import 'admin_models.dart';
 import 'admin_repository.dart';
 import 'admin_review_parts.dart';
+import 'admin_images.dart';
 import 'admin_widgets.dart';
 import 'admin_ui.dart';
+import 'admin_l10n.dart';
 
 const _pageSize = 8;
 
@@ -52,11 +54,11 @@ class _VerificationQueueScreenState
     final store = ref.watch(adminStoreProvider);
     return AdminFrame(
       section: '/verification',
-      title: 'Verification queue',
-      subtitle: 'Agents and companies waiting for review. Resubmissions come first, then the oldest.',
+      title: tr('Verification queue'),
+      subtitle: tr('Agents and companies waiting for review. Resubmissions come first, then the oldest.'),
       actions: [
         AdminSecondaryButton(
-          label: 'Refresh',
+          label: tr('Refresh'),
           leadingIcon: 'refresh',
           trailingChevron: false,
           compact: true,
@@ -71,11 +73,11 @@ class _VerificationQueueScreenState
             if (all.isEmpty) {
               return AdminNotice(
                 icon: 'verified',
-                title: 'The queue is empty',
-                body: 'New applications from agents and companies appear here.',
+                title: tr('The queue is empty'),
+                body: tr('New applications from agents and companies appear here.'),
                 action: kUseDemoBackend && store != null
                     ? AdminSecondaryButton(
-                        label: 'Add demo records',
+                        label: tr('Add demo records'),
                         trailingChevron: false,
                         onPressed: () {
                           store.seedDemoRecords();
@@ -107,7 +109,7 @@ class _VerificationQueueScreenState
               children: [
                 AdminSearchField(
                   controller: _search,
-                  hint: 'Search by name or application ID',
+                  hint: tr('Search by name or application ID'),
                   onChanged: (_) => _filter(() {}),
                 ),
                 const SizedBox(height: AQSpacing.x3),
@@ -140,10 +142,10 @@ class _VerificationQueueScreenState
                   ),
                 ),
                 if (shown.isEmpty)
-                  const AdminNotice(
+                  AdminNotice(
                     icon: 'search',
-                    title: 'Nothing matches these filters',
-                    body: 'Clear a filter or change the search to see more.',
+                    title: tr('Nothing matches these filters'),
+                    body: tr('Clear a filter or change the search to see more.'),
                   )
                 else
                   AdminTable(
@@ -155,15 +157,17 @@ class _VerificationQueueScreenState
                       'Documents',
                     ],
                     flex: const [4, 3, 3, 3, 2],
+                    endColumns: const {4},
                     rows: [
                       for (final v in slice)
                         AdminTableRow(
                           key: v.id,
-                          semantics:
-                              '${v.applicantName}, ${kindLabel(v.kind)}, ${queueStatusLabel(v.status)}',
+                          semantics: tr('${v.applicantName}, ${kindLabel(v.kind)}, ${queueStatusLabel(v.status)}'),
                           onTap: () => context.go('/verification/${v.id}'),
                           cells: [
-                            Column(
+                            AdminThumbCell(
+                              thumb: const AdminThumb(icon: 'user', size: 44),
+                              child: Column(
                               crossAxisAlignment: CrossAxisAlignment.start,
                               mainAxisSize: MainAxisSize.min,
                               children: [
@@ -183,6 +187,7 @@ class _VerificationQueueScreenState
                                   ),
                                 ),
                               ],
+                            ),
                             ),
                             Text(
                               kindLabel(v.kind),
@@ -218,37 +223,7 @@ class _VerificationQueueScreenState
                     ],
                   ),
                 if (pages > 1)
-                  Padding(
-                    padding: const EdgeInsets.only(top: AQSpacing.x4),
-                    child: Row(
-                      mainAxisAlignment: MainAxisAlignment.center,
-                      children: [
-                        AdminTextButton(
-                          label: 'Previous',
-                          color: c.accent,
-                          onPressed: page == 0
-                              ? null
-                              : () => setState(() => _page = page - 1),
-                        ),
-                        Padding(
-                          padding: const EdgeInsets.symmetric(
-                            horizontal: AQSpacing.x3,
-                          ),
-                          child: Text(
-                            'Page ${page + 1} of $pages',
-                            style: AQTypography.of(context, AQText.bodyMedium),
-                          ),
-                        ),
-                        AdminTextButton(
-                          label: 'Next',
-                          color: c.accent,
-                          onPressed: page >= pages - 1
-                              ? null
-                              : () => setState(() => _page = page + 1),
-                        ),
-                      ],
-                    ),
-                  ),
+                  AdminPager(page: page, pages: pages, onPrevious: page == 0 ? null : () => setState(() => _page = page - 1), onNext: page >= pages - 1 ? null : () => setState(() => _page = page + 1)),
               ],
             );
           },
@@ -315,17 +290,17 @@ class _VerificationDetailScreenState
           ? null
           : '${kindLabel(async.value!.kind)} · ID ${async.value!.id}',
       onBack: () => context.go('/verification'),
-      backLabel: 'Back to the queue',
+      backLabel: tr('Back to the queue'),
       children: [
         AdminAsyncView<VerificationItem?>(
           value: async,
           onRetry: () => ref.invalidate(verificationItemProvider(widget.id)),
           builder: (v) {
             if (v == null) {
-              return const AdminNotice(
+              return AdminNotice(
                 icon: 'info',
-                title: 'We could not find this application',
-                body: 'It may have been removed. Go back to the queue.',
+                title: tr('We could not find this application'),
+                body: tr('It may have been removed. Go back to the queue.'),
               );
             }
             final role = session?.role ?? AdminRole.auditor;
@@ -363,8 +338,8 @@ class _VerificationDetailScreenState
                         ),
                         if (v.isResubmission) ...[
                           const SizedBox(width: AQSpacing.x2),
-                          const AQStatusPill(
-                            label: 'Resubmission',
+                          AQStatusPill(
+                            label: tr('Resubmission'),
                             tone: AQTone.warning,
                             icon: 'refresh',
                             dense: true,

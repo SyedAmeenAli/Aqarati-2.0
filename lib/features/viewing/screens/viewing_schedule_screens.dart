@@ -56,6 +56,42 @@ class _SelectionSummary extends StatelessWidget {
   }
 }
 
+/// "Step n of 3 · Name" with three segments; the filled ones animate in. Purely a position cue.
+class _StepProgress extends StatelessWidget {
+  final int step;
+  const _StepProgress({required this.step});
+
+  @override
+  Widget build(BuildContext context) {
+    final c = AQColors.of(context);
+    final v = ViewingStrings.of(context);
+    final name = v.t('vw.stepName$step');
+    final label = '${v.t('vw.stepOf', {'n': VFmt.n(context, step), 't': VFmt.n(context, 3)})} · $name';
+    return Semantics(
+      label: label,
+      child: ExcludeSemantics(
+        child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+          Row(children: [
+            for (var i = 1; i <= 3; i++) ...[
+              if (i > 1) const SizedBox(width: AQSpacing.x1 + 2),
+              Expanded(
+                child: AnimatedContainer(
+                  duration: AQMotion.scaled(context, AQMotion.standard),
+                  curve: AQMotion.standardCurve,
+                  height: 4,
+                  decoration: BoxDecoration(color: i <= step ? c.accent : c.hairline, borderRadius: BorderRadius.circular(2)),
+                ),
+              ),
+            ],
+          ]),
+          const SizedBox(height: AQSpacing.x2),
+          Text(label, style: AQTypography.of(context, AQText.labelMedium, soft: true)),
+        ]),
+      ),
+    );
+  }
+}
+
 DateTime? _effectiveDay(ViewingAvailability a, ViewingDraft d) => d.day ?? a.firstBookable?.date;
 
 /// Screen 39: discover availability. Property context, a date rail, times by part of day.
@@ -93,28 +129,39 @@ class _ViewingAvailabilityScreenState extends ConsumerState<ViewingAvailabilityS
     if (data != null) _checkStale(data, draft);
     final day = data == null ? null : _effectiveDay(data, draft);
     final dayInfo = day == null ? null : data!.dayOf(day);
-    final slot = draft.slot;
 
-    final summaryValue = slot == null ? null : '${VFmt.shortDate(context, slot.start)} · ${VFmt.time(context, slot.start)}';
+    final summaryValue = day == null ? null : VFmt.fullDate(context, day);
+    final canContinue = dayInfo != null && dayInfo.bookable;
 
     return AQViewingScaffold(
-      title: v.t('vw.schedule.title'),
-      subtitle: property.valueOrNull == null ? null : '${VFmt.iso(property.valueOrNull!.title)} · ${VFmt.iso(property.valueOrNull!.locationLabel.split(',').first.trim())}',
+      title: v.t('vw.s1.title'),
+      subtitle: v.t('vw.s1.sub'),
       backLabel: v.t('vw.back'),
       onBack: () => aqBack(context, '/property/$id'),
       bottom: AQBottomActionBar(
-        summary: _SelectionSummary(label: v.t('vw.selected'), value: summaryValue, hint: day == null ? v.t('vw.pick') : v.t('vw.pickTime')),
-        primary: AQPrimaryButton(label: v.t('vw.continue'), onPressed: slot == null ? null : () => context.push(_flow(id, 'slot'))),
-        footnote: v.t('vw.hostConfirms'),
+        summary: _SelectionSummary(label: v.t('vw.selectedDate'), value: summaryValue, hint: v.t('vw.pickDate')),
+        primary: AQPrimaryButton(
+          label: v.t('vw.s1.cta'),
+          onPressed: canContinue
+              ? () {
+                  notifier.selectDay(day!);
+                  context.push(_flow(id, 'slot'));
+                }
+              : null,
+        ),
+        footnote: v.t('vw.s1.note'),
       ),
       children: [
+        const SizedBox(height: AQSpacing.x1),
+        const _StepProgress(step: 1),
+        const SizedBox(height: AQSpacing.x4),
         property.when(
           loading: () => const AQViewingSkeleton(height: 96),
           error: (_, _) => const SizedBox.shrink(),
           data: (p) => p == null ? const SizedBox.shrink() : AQViewingPropertySummary(property: p, density: AQViewingDensity.compact),
         ),
         AQViewingSectionTitle(v.t('vw.chooseDate')),
-        Text(v.t('vw.chooseDate.sub'), style: AQTypography.of(context, AQText.bodySmall, soft: true)),
+        Text(v.t('vw.s1.hint'), style: AQTypography.of(context, AQText.bodySmall, soft: true)),
         const SizedBox(height: AQSpacing.x3),
         avail.when(
           loading: () => const AQViewingSkeleton(height: 118),
@@ -127,10 +174,12 @@ class _ViewingAvailabilityScreenState extends ConsumerState<ViewingAvailabilityS
                   const AQViewingAvailabilityLegend(),
                 ]),
         ),
-        AQViewingSectionTitle(v.t('vw.times'), icon: 'clock'),
-        if (data != null) Padding(padding: const EdgeInsets.only(bottom: AQSpacing.x3), child: Text(v.t('vw.zone', {'city': data.zoneCity, 'zone': data.zoneLabel}), style: AQTypography.of(context, AQText.bodySmall, soft: true))),
-        if (avail.isLoading) const AQViewingSkeleton(height: 160),
+        if (dayInfo != null && dayInfo.bookable) ...[
+          const SizedBox(height: AQSpacing.x4),
+          AQNoticeCard(icon: 'clock', title: v.t('vw.s1.open', {'n': VFmt.n(context, dayInfo.freeCount), 'd': VFmt.shortDate(context, dayInfo.date)}), body: v.t('vw.zone', {'city': data!.zoneCity, 'zone': data.zoneLabel})),
+        ],
         if (dayInfo != null && !dayInfo.bookable) ...[
+          const SizedBox(height: AQSpacing.x4),
           AQNoticeCard(icon: 'calendar', title: v.t('vw.noTimes'), body: ''),
           Align(
             alignment: AlignmentDirectional.centerStart,
@@ -145,26 +194,6 @@ class _ViewingAvailabilityScreenState extends ConsumerState<ViewingAvailabilityS
             ),
           ),
         ],
-        if (dayInfo != null && dayInfo.bookable)
-          for (final p in ViewingPeriod.values)
-            if (dayInfo.inPeriod(p).isNotEmpty)
-              Padding(
-                padding: const EdgeInsets.only(bottom: AQSpacing.x3),
-                child: AQSurface(
-                  padding: const EdgeInsets.all(AQSpacing.x3),
-                  child: Column(crossAxisAlignment: CrossAxisAlignment.stretch, children: [
-                    Row(children: [
-                      AQIcon(periodIcon(p), size: AQIconSize.medium, color: c.accent),
-                      const SizedBox(width: AQSpacing.x2),
-                      Text(v.t(periodKey(p)), style: AQTypography.of(context, AQText.titleSmall)),
-                      const SizedBox(width: AQSpacing.x2),
-                      Expanded(child: Text(periodRange(context, dayInfo.inPeriod(p)), style: AQTypography.of(context, AQText.bodySmall, soft: true))),
-                    ]),
-                    const SizedBox(height: AQSpacing.x3),
-                    AQViewingSlotGrid(slots: dayInfo.inPeriod(p), selected: slot, onSelect: notifier.selectSlot),
-                  ]),
-                ),
-              ),
       ],
     );
   }
@@ -213,36 +242,43 @@ class _ViewingSlotScreenState extends ConsumerState<ViewingSlotScreen> {
     }
 
     return AQViewingScaffold(
-      title: v.t('vw.slot.title'),
-      subtitle: v.t('vw.slot.sub'),
+      title: v.t('vw.s2.title'),
+      subtitle: day == null ? v.t('vw.s2.sub0') : v.t('vw.s2.sub', {'d': VFmt.fullDate(context, day)}),
       backLabel: v.t('vw.back'),
       onBack: () => aqBack(context, _flow(id)),
       bottom: AQBottomActionBar(
-        summary: _SelectionSummary(label: v.t('vw.selectedSlot'), value: slot == null ? null : '${VFmt.fullDate(context, slot.start)} · ${VFmt.range(context, slot)}', hint: day == null ? v.t('vw.pick') : v.t('vw.pickTime')),
-        primary: AQPrimaryButton(label: v.t('vw.continue'), onPressed: slot == null ? null : () => context.push(_flow(id, 'review'))),
+        summary: _SelectionSummary(label: v.t('vw.selectedSlot'), value: slot == null ? null : '${VFmt.fullDate(context, slot.start)} · ${VFmt.range(context, slot)}', hint: v.t('vw.pickTime')),
+        primary: AQPrimaryButton(label: v.t('vw.s2.cta'), onPressed: slot == null ? null : () => context.push(_flow(id, 'review'))),
         footnote: v.t('vw.reviewFirst'),
       ),
       children: [
+        const SizedBox(height: AQSpacing.x1),
+        const _StepProgress(step: 2),
+        const SizedBox(height: AQSpacing.x4),
         property.when(
           loading: () => const AQViewingSkeleton(height: 56),
           error: (_, _) => const SizedBox.shrink(),
           data: (p) => p == null ? const SizedBox.shrink() : _MiniProperty(property: p),
         ),
-        AQViewingSectionTitle(v.t('vw.step1')),
-        avail.when(
-          loading: () => const AQViewingSkeleton(height: 132),
-          error: (_, _) => AQErrorBanner(text: v.t('vw.availError'), action: AQTextButton(label: v.t('vw.retry'), color: c.accent, onPressed: () => ref.invalidate(viewingAvailabilityProvider(id)))),
-          data: (a) => a.firstBookable == null
-              ? AQNoticeCard(icon: 'calendar', title: v.t('vw.noDays'), body: '')
-              : Column(crossAxisAlignment: CrossAxisAlignment.stretch, children: [
-                  AQViewingDatePicker(days: a.days, selected: day, onSelect: notifier.selectDay, showCount: true, showNav: true),
-                  const SizedBox(height: AQSpacing.x3),
-                  const AQViewingAvailabilityLegend(),
-                ]),
-        ),
-        AQViewingSectionTitle(v.t('vw.step2')),
+        if (day != null) ...[
+          const SizedBox(height: AQSpacing.x3),
+          AQSurface(
+            padding: const EdgeInsets.symmetric(horizontal: AQSpacing.x3, vertical: AQSpacing.x2),
+            child: Wrap(crossAxisAlignment: WrapCrossAlignment.center, runSpacing: AQSpacing.x1, children: [
+              Row(mainAxisSize: MainAxisSize.min, children: [
+                AQIcon('calendar-check', size: AQIconSize.medium, color: c.accent),
+                const SizedBox(width: AQSpacing.x2),
+                ConstrainedBox(constraints: BoxConstraints(maxWidth: MediaQuery.sizeOf(context).width - 150), child: Text(VFmt.fullDate(context, day), style: AQTypography.of(context, AQText.titleSmall))),
+              ]),
+              AQTextButton(label: v.t('vw.s2.change'), color: c.accent, onPressed: () => aqBack(context, _flow(id))),
+            ]),
+          ),
+        ],
+        AQViewingSectionTitle(v.t('vw.times'), icon: 'clock'),
         if (data != null) Padding(padding: const EdgeInsets.only(bottom: AQSpacing.x3), child: Text(v.t('vw.zone', {'city': data.zoneCity, 'zone': data.zoneLabel}), style: AQTypography.of(context, AQText.bodySmall, soft: true))),
         if (avail.isLoading) const AQViewingSkeleton(height: 180),
+        if (avail.hasError) AQErrorBanner(text: v.t('vw.availError'), action: AQTextButton(label: v.t('vw.retry'), color: c.accent, onPressed: () => ref.invalidate(viewingAvailabilityProvider(id)))),
+        if (data != null && data.firstBookable == null) AQNoticeCard(icon: 'calendar', title: v.t('vw.noDays'), body: ''),
         if (dayInfo != null && !dayInfo.bookable)
           AQNoticeCard(icon: 'calendar', title: v.t('vw.noTimes'), body: v.t('vw.noTimes.action'))
         else if (dayInfo != null && period != null) ...[
@@ -325,11 +361,15 @@ class _PeriodTabs extends StatelessWidget {
             padding: const EdgeInsets.symmetric(horizontal: AQSpacing.x2, vertical: AQSpacing.x2),
             decoration: BoxDecoration(color: sel ? c.surfaceSelected : c.surface, borderRadius: BorderRadius.circular(AQRadius.medium), border: Border.all(color: sel ? c.accent : Colors.transparent, width: 1.5)),
             child: Column(mainAxisAlignment: MainAxisAlignment.center, children: [
-              Row(mainAxisAlignment: MainAxisAlignment.center, children: [
-                AQIcon(periodIcon(p), size: 18, color: sel ? c.accentDeep : c.accent),
-                const SizedBox(width: 6),
-                Flexible(child: Text(v.t(periodKey(p)), style: AQTypography.of(context, AQText.labelMedium, color: sel ? c.ink : c.inkSoft))),
-              ]),
+              // One line, scaled down when a third of a phone is too narrow for icon and word together.
+              FittedBox(
+                fit: BoxFit.scaleDown,
+                child: Row(mainAxisSize: MainAxisSize.min, children: [
+                  AQIcon(periodIcon(p), size: 18, color: sel ? c.accentDeep : c.accent),
+                  const SizedBox(width: 6),
+                  Text(v.t(periodKey(p)), maxLines: 1, softWrap: false, style: AQTypography.of(context, AQText.labelMedium, color: sel ? c.ink : c.inkSoft)),
+                ]),
+              ),
               const SizedBox(height: 2),
               Text(periodRange(context, day.inPeriod(p)), textAlign: TextAlign.center, style: AQTypography.of(context, AQText.bodySmall, color: c.inkFaint).copyWith(fontSize: 11)),
             ]),
@@ -406,18 +446,23 @@ class _ViewingReviewScreenState extends ConsumerState<ViewingReviewScreen> {
       return viewingLoadingFrame(context, title: v.t('vw.review.title'), onBack: () => aqBack(context, _flow(id, 'slot')));
     }
     final p = property.valueOrNull;
+    final compact = MediaQuery.sizeOf(context).width < 400;
     return AQViewingScaffold(
       title: v.t('vw.review.title'),
       subtitle: v.t('vw.review.sub'),
       backLabel: v.t('vw.back'),
       onBack: _sending ? () {} : () => aqBack(context, _flow(id, 'slot')),
       bottom: AQBottomActionBar(
-            stack: true,
-        primary: AQPrimaryButton(label: v.t('vw.send'), leadingIcon: 'send', trailingChevron: false, loading: _sending, onPressed: () => _send(slot)),
-        secondary: AQBarSecondaryButton(label: v.t('vw.changeTime'), onPressed: _sending ? null : () => aqBack(context, _flow(id, 'slot'))),
+            stack: !compact,
+        primary: AQPrimaryButton(label: compact ? v.t('vw.send.short') : v.t('vw.send'), leadingIcon: 'send', trailingChevron: false, loading: _sending, onPressed: () => _send(slot)),
+        secondary: AQBarSecondaryButton(label: compact ? v.t('vw.changeTime.short') : v.t('vw.changeTime'), onPressed: _sending ? null : () => aqBack(context, _flow(id, 'slot'))),
+        compact: compact,
         footnote: v.t('vw.hostConfirms'),
       ),
       children: [
+        const SizedBox(height: AQSpacing.x1),
+        const _StepProgress(step: 3),
+        const SizedBox(height: AQSpacing.x4),
         if (_failed) AQErrorBanner(text: v.t('vw.sendError')),
         property.when(
           loading: () => const AQViewingSkeleton(height: 150),
@@ -484,6 +529,7 @@ class ViewingConflictScreen extends ConsumerWidget {
     final options = dayInfo?.slots.where((s) => s.bookable).take(9).toList() ?? const <SlotInfo>[];
     final slot = draft.slot;
     final p = property.valueOrNull;
+    final compact = MediaQuery.sizeOf(context).width < 400;
     return AQViewingScaffold(
       emotional: true,
       washImage: p?.imageUrls.firstOrNull,
@@ -493,11 +539,12 @@ class ViewingConflictScreen extends ConsumerWidget {
       backLabel: v.t('vw.back'),
       onBack: () => aqBack(context, _flow(id, 'slot')),
       bottom: AQBottomActionBar(
-            stack: true,
+            stack: !compact,
         primary: slot == null
-            ? AQPrimaryButton(label: v.t('vw.selectNew'), leadingIcon: 'calendar', trailingChevron: false, onPressed: () => context.push(_flow(id, 'slot')))
-            : AQPrimaryButton(label: '${v.t('vw.continue')} · ${VFmt.time(context, slot.start)}', onPressed: () => context.push(_flow(id, 'review'))),
-        secondary: AQBarSecondaryButton(label: v.t('vw.browseSimilar'), leadingIcon: 'search', onPressed: () => aqBrowseSimilar(context, p)),
+            ? AQPrimaryButton(label: compact ? v.t('vw.selectNew.short') : v.t('vw.selectNew'), leadingIcon: 'calendar', trailingChevron: false, onPressed: () => context.push(_flow(id, 'slot')))
+            : AQPrimaryButton(label: compact ? v.t('vw.useTime', {'t': VFmt.time(context, slot.start)}) : '${v.t('vw.continue')} · ${VFmt.time(context, slot.start)}', onPressed: () => context.push(_flow(id, 'review'))),
+        secondary: AQBarSecondaryButton(label: compact ? v.t('vw.short.browseSimilar') : v.t('vw.browseSimilar'), leadingIcon: compact ? null : 'search', onPressed: () => aqBrowseSimilar(context, p)),
+        compact: compact,
       ),
       children: [
         property.when(loading: () => const AQViewingSkeleton(height: 150), error: (_, _) => const SizedBox.shrink(), data: (x) => x == null ? const SizedBox.shrink() : AQViewingPropertySummary(property: x)),

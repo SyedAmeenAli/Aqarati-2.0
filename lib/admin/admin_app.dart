@@ -5,9 +5,11 @@ import 'package:go_router/go_router.dart';
 
 import '../core/aq/aq_scene.dart';
 import '../core/aq/aq_tokens.dart';
+import '../core/localization/entry_strings.dart' show localeProvider;
 import '../core/theme/app_theme.dart';
 import '../features/ads/ad_repository.dart';
 import 'admin_ads_screens.dart';
+import 'admin_l10n.dart' show AdminLang;
 import 'admin_auth.dart';
 import 'admin_auth_screens.dart';
 import 'admin_directory_screens.dart';
@@ -183,8 +185,13 @@ class _AdminAppState extends ConsumerState<AdminApp> {
   @override
   Widget build(BuildContext context) {
     ref.listen(adminAuthProvider, (_, _) => _listenable.ping());
+    // The console follows the app's own language switch. The strings are looked up while building,
+    // so the whole tree is rebuilt (keyed below) when the language changes.
+    final locale = ref.watch(localeProvider);
+    AdminLang.ar = locale.languageCode == 'ar';
     return MaterialApp.router(
       title: 'AQARATI Admin',
+      locale: locale,
       debugShowCheckedModeBanner: false,
       theme: AppTheme.light,
       darkTheme: ThemeData(
@@ -203,11 +210,14 @@ class _AdminAppState extends ConsumerState<AdminApp> {
       routeInformationParser: _router.routeInformationParser,
       routerDelegate: _router.routerDelegate,
       backButtonDispatcher: _router.backButtonDispatcher,
-      builder: (context, child) => AQThemeTransition(
-        mode: ThemeMode.light,
-        child: child ?? const SizedBox.shrink(),
+      builder: (context, child) => KeyedSubtree(
+        key: ValueKey(locale.languageCode),
+        child: AQThemeTransition(
+          mode: ThemeMode.light,
+          child: child ?? const SizedBox.shrink(),
+        ),
       ),
-      supportedLocales: const [Locale('en')],
+      supportedLocales: const [Locale('en'), Locale('ar')],
       localizationsDelegates: const [
         GlobalMaterialLocalizations.delegate,
         GlobalWidgetsLocalizations.delegate,

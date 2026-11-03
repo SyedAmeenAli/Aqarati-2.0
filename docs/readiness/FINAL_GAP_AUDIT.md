@@ -6,6 +6,38 @@ This replaces the first audit. Where the client's latest instruction differs fro
 States: **CV** Complete and verified · **IV** Implemented but not fully verified · **P** Partial · **M** Missing · **BA** Blocked by a missing API · **BD** Blocked by a specific unresolved product decision.
 "Verified" means walked in headless Chromium (Playwright, accessibility tree) and/or covered by tests. Nothing is connected to a real service; everything not marked otherwise is demo-only and labelled.
 
+## Master implementation pass (2026-10-31) — current state
+
+Local only. Not committed, pushed or deployed. This section is the latest state; later sections below it are earlier passes. Companion files: `ROUTE_MATRIX.md`, `SCREENSHOT_INDEX.md`, `VIEWPORT_MATRIX.md`, `KNOWN_LIMITATIONS.md`, `NAVIGATION_AUDIT.md`, `ADMIN_ACCESS.md`.
+
+| Gate | Result |
+|---|---|
+| `flutter test` (demo off, the default) | 981 passed, 17 skipped (they need demo mode), 0 failed |
+| `flutter test --dart-define=AQARATI_DEMO_MODE=true` | 996 passed, 2 skipped (they only apply to a normal build), 0 failed |
+| `flutter analyze` | no errors; 2 existing warnings in `test/devbuild_stabilisation_test.dart` (unused optional parameters); 52 infos |
+| Builds | `build/web` (demo off), `build/web_demo` (demo on + review tools), `build/web_admin`, all with `--no-web-resources-cdn` |
+| Browser (`j80` 81, `j82` 29, `j90` 42, `j42` 70, `j44` 8) | 230 checks, 0 failures |
+
+| Area | State | Where | Evidence |
+|---|---|---|---|
+| Typography | CV | Fraunces, Plus Jakarta Sans, IBM Plex Sans Arabic bundled; `google_fonts` removed; `--no-web-resources-cdn` bundles CanvasKit and the fallback font | `j82`: no request leaves localhost; font files listed in `VIEWPORT_MATRIX.md` |
+| Minimal customer Home | CV | `aq_home.dart`, `aq_home_services.dart` | `j80`, `home_banner_test`, 4 widths |
+| Properties landing and Buy / Rent / Sell / Favorites journeys | CV | `aq_properties_hub.dart`, router | `j80`, `properties_flow_test` |
+| Explore marketplace (4 markets, all types, people) | CV | `aq_explore.dart` | `j80`, `explore_marketplace_test` (7) |
+| Customer settings (8 pages) with local persistence | CV | `lib/features/settings/` | `j80`, `j82` reload run, `settings_test` (45) |
+| Business settings separate from customer settings, shared language and appearance | CV | `business_settings_screen.dart` | `j80`, `j82`, `settings_test` |
+| Role Analytics and KPI strips, five roles | CV (sample data) | `lib/features/analytics/` | `j80`, `analytics_test` (15): same input gives the same series |
+| One business account: primary role plus additional services | P | Business settings | Settings model only; not wired into public discovery |
+| English and Arabic across all new screens, RTL | CV (copy is draft) | `*_strings.dart` | `j90` 42 checks from a genuine User to Shop demo session |
+| Sponsored campaign copy in Arabic | CV | `kSampleCampaignsAr` | `j90` |
+| Light and dark themes on the new screens | CV | | `j82` |
+| Eight viewport widths | CV | | `VIEWPORT_MATRIX.md` |
+| Admin Console | CV, English only | `lib/admin/` | `j42` 70 checks |
+| Demo-mode tests in both configurations | CV | `devbuild_workspace_test.dart` | demo off 50/50, demo on 50/50 |
+
+Not done, said plainly: additional services in public discovery; the brief's six-label professional navigation (Analytics and Business settings are under More); email and push channels; real password change; real measurements behind the charts; native-speaker review of the Arabic; Admin Console translation; screen-reader and non-Chromium testing. See `KNOWN_LIMITATIONS.md`.
+
+
 ## Results of this pass
 
 | Gate | Result |
@@ -301,3 +333,17 @@ Before and after screenshots: `docs/readiness/evidence/browser/adm_before_*` and
 
 ## Remaining
 The sign-in and code pages were checked at 1280 and 390 px only. Dark mode in the admin was not reviewed (the console is light-only). No screen-reader walk.
+
+## Current state, gap-closure pass (2026-11-01)
+
+The five gaps the previous review left open are closed in the local working tree. Details, files and tests: `GAP_CLOSURE.md`.
+
+| Gap | State |
+|---|---|
+| Professional navigation (Analytics and Business settings hidden under More) | **Closed.** Six destinations per role, Analytics a tab, Business settings in the Company/Profile hub and still on Home; new Units, Projects and Services screens (sample data, labelled). |
+| Additional business services not wired into Explore | **Closed with local fixtures.** One record, several categories; listed once per category; filter, public profile categories and enquiry context work. The signed-in business is not inserted into the public directory (nothing is published). |
+| Admin Console English only | **Closed.** Complete Arabic with real right-to-left layout, the app's language switch, Arabic-Indic digits, bundled Arabic font. Arabic copy is draft. |
+| Password change did nothing | **Closed as a prototype.** Dedicated screen, rules, errors, simulated confirmation, no server claim. |
+| Roboto fallback not audited | **Audited.** No audited screen draws a style without a bundled family; Material defaults now reach the Arabic family; offline run loads only bundled fonts. |
+
+Still open, unchanged: real authentication, email and push channels, real publishing, real analytics, native review of the Arabic, a real screen-reader pass, non-Chromium browsers.
