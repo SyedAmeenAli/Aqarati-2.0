@@ -35,56 +35,52 @@ Future<void> settle(WidgetTester t) async {
 }
 
 void main() {
-  testWidgets('Explore offers every property type of all four markets, not only villas and apartments', (t) async {
-    t.view.physicalSize = const Size(393, 5200);
+  // The old Explore (banners, a grid of property types, people shortcuts) was removed on purpose: Explore is now
+  // the one search page. These tests cover what replaced it.
+  testWidgets('Explore is one search page: one input, a category row, no browse grid or banners', (t) async {
+    t.view.physicalSize = const Size(393, 2400);
     t.view.devicePixelRatio = 1;
     addTearDown(t.view.reset);
     await t.pumpWidget(app());
     await settle(t);
-    const f = FlowStrings.forTest(false);
-    for (final cat in PropCategory.values) {
-      expect(find.text(f.t(cat.key)), findsWidgets, reason: cat.name);
-      for (final e in kBrowseTypes[cat]!) {
-        expect(find.text(f.t('bt.${e.$1.name}')), findsWidgets, reason: '${cat.name}/${e.$1.name}');
-      }
+    expect(find.byType(TextField), findsOneWidget);
+    for (final label in ['All', 'Properties', 'Professionals', 'Services']) {
+      expect(find.text(label), findsWidgets, reason: label);
     }
-    expect(find.text('Browse by property type'), findsOneWidget);
+    expect(find.text('Browse by property type'), findsNothing);
+    expect(find.text('Find your next place'), findsNothing);
+    expect(find.text('Find people'), findsNothing);
   });
 
-  testWidgets('a type opens results for that market and type, not an unfiltered list', (t) async {
-    t.view.physicalSize = const Size(393, 5200);
+  testWidgets('every property type is still offered, as a filter inside the same page', (t) async {
+    t.view.physicalSize = const Size(393, 2400);
     t.view.devicePixelRatio = 1;
     addTearDown(t.view.reset);
     await t.pumpWidget(app());
     await settle(t);
-    await t.ensureVisible(find.text('Factory'));
-    await t.tap(find.text('Factory'));
-    await settle(t);
-    expect(reached, '/properties/all?cat=industrial&types=industrial');
-    await t.pumpWidget(app());
-    await settle(t);
-    await t.ensureVisible(find.text('Commercial Land'));
-    await t.tap(find.text('Commercial Land'));
-    await settle(t);
-    expect(reached, '/properties/all?cat=commercial&types=commercialLand');
+    await t.tap(find.text('Filters').first);
+    await t.pumpAndSettle();
+    expect(find.text('Property type'), findsWidgets);
+    for (final label in ['Villa', 'Apartment', 'Warehouse']) {
+      expect(find.text(label), findsWidgets, reason: label);
+    }
+    expect(reached, '', reason: 'filtering did not navigate anywhere');
   });
 
-  testWidgets('the people shortcuts reach their own directories', (t) async {
-    t.view.physicalSize = const Size(393, 5200);
+  testWidgets('searching for a person or business stays on the same page and its card opens the profile', (t) async {
+    t.view.physicalSize = const Size(393, 2400);
     t.view.devicePixelRatio = 1;
     addTearDown(t.view.reset);
-    final expected = {
-      'Real estate agents': '/broker/list',
-      'Trusted brokers': '/broker',
-    };
-    for (final e in expected.entries) {
-      await t.pumpWidget(app());
-      await settle(t);
-      await t.ensureVisible(find.text(e.key));
-      await t.tap(find.text(e.key));
-      await settle(t);
-      expect(reached, e.value, reason: e.key);
-    }
+    reached = '';
+    await t.pumpWidget(app());
+    await settle(t);
+    await t.enterText(find.byType(TextField), 'Namaa');
+    await settle(t);
+    expect(reached, '', reason: 'typing does not send the user to another page');
+    expect(find.text('Namaa Construction'), findsWidgets);
+    await t.tap(find.text('Namaa Construction').first);
+    await settle(t);
+    expect(reached, startsWith('/business/'));
   });
 
   for (final w in [320.0, 360.0, 412.0, 1024.0]) {

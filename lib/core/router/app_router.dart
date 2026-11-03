@@ -17,7 +17,6 @@ import '../../features/search/aq_properties_hub.dart';
 import '../../features/settings/business_settings_screen.dart' show ProBusinessSettingsScreen;
 import '../../features/settings/settings_screens.dart' show kSettingsRoutes, kProSettings, settingsPageFor;
 import '../../features/analytics/analytics_screens.dart' show ProAnalyticsScreen;
-import '../../features/search/aq_search.dart';
 import '../../features/entry/screens/onboarding_entry_screen.dart';
 import '../../features/entry/models/signup_purpose.dart';
 import '../../features/flow/screens/auth_screens.dart';
@@ -350,20 +349,15 @@ final appRouter = GoRouter(
         child: AQMapScreen(tx: state.uri.queryParameters['tx']),
       ),
     ),
+    // One search page: the old search routes lead to Explore, which is the unified search.
     GoRoute(
       path: '/search',
-      pageBuilder: (context, state) => AQRoute.forward(
-        key: state.pageKey,
-        child: SearchResultsScreen(
-          initialQuery: state.uri.queryParameters['q'],
-        ),
-      ),
+      redirect: (context, state) {
+        final q = state.uri.queryParameters['q'];
+        return q == null || q.isEmpty ? '/app/explore' : '/app/explore?q=${Uri.encodeQueryComponent(q)}';
+      },
     ),
-    GoRoute(
-      path: '/search/start',
-      pageBuilder: (context, state) =>
-          AQRoute.forward(key: state.pageKey, child: const SearchScreen()),
-    ),
+    GoRoute(path: '/search/start', redirect: (context, state) => '/app/explore?focus=1'),
         ...extraShellRoutes(),
         ...dbShellRoutes(),
       ],

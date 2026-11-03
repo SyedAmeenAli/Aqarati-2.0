@@ -138,13 +138,13 @@ void main() {
     }
   });
 
-  testWidgets('Home search entry and the Properties service open their existing routes', (t) async {
+  testWidgets('Home search entry opens the unified search page and the Properties service its existing route', (t) async {
     await t.binding.setSurfaceSize(const Size(393, 1400));
     addTearDown(() => t.binding.setSurfaceSize(null));
     final seen = <String>[];
     final router = GoRouter(routes: [
       GoRoute(path: '/', builder: (_, _) => const Scaffold(body: AQHomeScreen())),
-      GoRoute(path: '/search/start', builder: (_, _) { seen.add('/search/start'); return const Scaffold(); }),
+      GoRoute(path: '/app/explore', builder: (_, s) { seen.add('/app/explore?${s.uri.query}'); return const Scaffold(); }),
       GoRoute(path: '/properties', builder: (_, _) { seen.add('/properties'); return const Scaffold(); }),
     ]);
     await t.pumpWidget(ProviderScope(
@@ -157,7 +157,7 @@ void main() {
     await _settle(t);
     await t.tap(find.byType(AQSearchEntry));
     await t.pumpAndSettle();
-    expect(seen, ['/search/start']);
+    expect(seen, ['/app/explore?focus=1'], reason: 'the Home search bar opens the one search page (Explore)');
     router.go('/');
     await _settle(t);
     final props = find.byWidgetPredicate((w) => w is Semantics && (w.properties.label ?? '').startsWith('Properties.') && w.properties.button == true);

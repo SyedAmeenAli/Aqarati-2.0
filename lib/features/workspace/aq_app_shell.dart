@@ -191,7 +191,10 @@ class HomeTab extends StatelessWidget {
 class ExploreTab extends StatelessWidget {
   const ExploreTab({super.key});
   @override
-  Widget build(BuildContext context) => const AQExploreScreen();
+  Widget build(BuildContext context) {
+    final q = GoRouterState.of(context).uri.queryParameters;
+    return AQExploreScreen(key: ValueKey('explore-${q['q']}-${q['focus']}'), initialQuery: q['q'], focus: q['focus'] == '1');
+  }
 }
 
 class AccountTab extends ConsumerWidget {

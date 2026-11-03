@@ -90,7 +90,6 @@ class _Profile extends ConsumerWidget {
     final cats = b.categories.map((k) => f.t('bcat.${k.name}')).toList();
     final cover = b.galleryUrls.isNotEmpty ? b.galleryUrls.first : null;
     final props = ref.watch(aqAllPropertiesProvider).valueOrNull?.where((p) => p.listedByBusinessId == b.id).toList() ?? const [];
-    final cols = aqLargeText(context) ? 2 : 3;
     return AQViewingScaffold(
       maxWidth: aqListMaxWidth(context) == null ? null : aqListMaxWidth(context)! + AQSpacing.gutter * 2,
       backLabel: f.t('common.back'),

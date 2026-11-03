@@ -1,6 +1,8 @@
 /// Properties hub, category and type steps, the Home module grid and the entry experiences.
 /// ARABIC IS DRAFT COPY and needs native review.
 const Map<String, (String, String)> hubStrings = {
+  // Unified search
+  'flt.apply': ('Apply filters', 'تطبيق التصفية'),
   // Home (premium pass)
   'hm8.search': ('Search homes, areas, professionals', 'ابحث عن منازل ومناطق ومختصين'),
   'hm8.notifications': ('Notifications', 'الإشعارات'),
