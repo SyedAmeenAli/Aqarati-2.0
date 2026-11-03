@@ -43,8 +43,9 @@ void main() {
           await t.pumpWidget(_app(const AQHomeScreen(), width: w, dir: rtl ? TextDirection.rtl : TextDirection.ltr, mode: dark ? ThemeMode.dark : ThemeMode.light));
           await _settle(t);
           expect(t.takeException(), isNull);
-          expect(find.byType(AQPropertyCard), findsWidgets);
-          expect(find.byType(AQProfessionalCard), findsWidgets);
+          expect(find.byType(AQSearchEntry), findsOneWidget);
+          expect(find.byType(AQPropertyCard), findsNothing, reason: 'Shop Home is search, banner and services only');
+          expect(find.byType(AQProfessionalCard), findsNothing);
         });
       }
     }
@@ -116,16 +117,35 @@ void main() {
     expect(find.bySemanticsLabel('Search homes'), findsOneWidget);
   });
 
-  // The journeys the redesign must not change: each tap lands on the same route as before.
-  testWidgets('Home search entry, a property card and a professional card open their existing routes', (t) async {
+  // Shop Home is the search bar, the sponsored banner and the six services, in that order, and nothing else.
+  testWidgets('Home content is search, then services, with no hero, rails or greeting', (t) async {
+    await t.binding.setSurfaceSize(const Size(393, 1400));
+    addTearDown(() => t.binding.setSurfaceSize(null));
+    await t.pumpWidget(_app(const AQHomeScreen()));
+    await _settle(t);
+    expect(find.byType(AQPropertyCard), findsNothing);
+    expect(find.byType(AQProfessionalCard), findsNothing);
+    expect(find.text('Welcome back'), findsNothing);
+    expect(find.text('Featured properties'), findsNothing);
+    expect(find.text('Trusted professionals'), findsNothing);
+    final search = t.getRect(find.byType(AQSearchEntry));
+    final labels = ['Properties', 'Development', 'Interior & Exterior Designer', 'Construction Company', 'Maintenance', 'Loan Calculator'];
+    var previousTop = search.bottom;
+    for (final l in labels) {
+      final r = t.getRect(find.byWidgetPredicate((w) => w is Semantics && (w.properties.label ?? '').startsWith('$l.') && w.properties.button == true));
+      expect(r.top, greaterThanOrEqualTo(previousTop - 1), reason: '$l sits below the search bar and in order');
+      previousTop = r.top;
+    }
+  });
+
+  testWidgets('Home search entry and the Properties service open their existing routes', (t) async {
     await t.binding.setSurfaceSize(const Size(393, 1400));
     addTearDown(() => t.binding.setSurfaceSize(null));
     final seen = <String>[];
     final router = GoRouter(routes: [
       GoRoute(path: '/', builder: (_, _) => const Scaffold(body: AQHomeScreen())),
       GoRoute(path: '/search/start', builder: (_, _) { seen.add('/search/start'); return const Scaffold(); }),
-      GoRoute(path: '/property/:id', builder: (_, s) { seen.add('/property/${s.pathParameters['id']}'); return const Scaffold(); }),
-      GoRoute(path: '/business/:id', builder: (_, s) { seen.add('/business/${s.pathParameters['id']}'); return const Scaffold(); }),
+      GoRoute(path: '/properties', builder: (_, _) { seen.add('/properties'); return const Scaffold(); }),
     ]);
     await t.pumpWidget(ProviderScope(
       child: MaterialApp.router(
@@ -140,16 +160,9 @@ void main() {
     expect(seen, ['/search/start']);
     router.go('/');
     await _settle(t);
-    await t.tap(find.byType(AQPropertyCard).first.hitTestable(), warnIfMissed: false);
-    final card = find.byType(AQPropertyCard).first;
-    await t.tapAt(t.getTopLeft(card) + const Offset(60, 60));
+    final props = find.byWidgetPredicate((w) => w is Semantics && (w.properties.label ?? '').startsWith('Properties.') && w.properties.button == true);
+    await t.tapAt(t.getCenter(props));
     await t.pumpAndSettle();
-    expect(seen.last, startsWith('/property/'));
-    router.go('/');
-    await _settle(t);
-    await t.ensureVisible(find.byType(AQProfessionalCard).first);
-    await t.tapAt(t.getTopLeft(find.byType(AQProfessionalCard).first) + const Offset(60, 60));
-    await t.pumpAndSettle();
-    expect(seen.last, startsWith('/business/'));
+    expect(seen.last, '/properties');
   });
 }
