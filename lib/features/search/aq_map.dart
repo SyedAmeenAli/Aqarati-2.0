@@ -149,6 +149,9 @@ class _AQMapScreenState extends ConsumerState<AQMapScreen> {
     },
   );
   final _pages = PageController(viewportFraction: 0.92);
+  // The results sheet has three heights: just its header (the map is free), the card strip, and a full list.
+  static const double _sheetMin = 92, _sheetMid = 292;
+  double _sheetH = _sheetMid;
   GoogleMapController? _map;
   final Map<String, Offset> _pos = {};
   String? _selectedId;
@@ -403,10 +406,35 @@ class _AQMapScreenState extends ConsumerState<AQMapScreen> {
       ),
     );
 
-    final bottomH = 292.0;
+    final screenH = MediaQuery.sizeOf(context).height;
+    final sheetMax = (screenH * 0.72).clamp(_sheetMid + 80, 640.0).toDouble();
+    final bottomH = _sheetH.clamp(_sheetMin, sheetMax).toDouble();
+    final expanded = bottomH > _sheetMid + 60;
+    final collapsed = bottomH < 160;
+    void snap(double velocity) {
+      final stops = [_sheetMin, _sheetMid, sheetMax];
+      // A fling goes to the next stop in its direction; a slow drag goes to the nearest.
+      var target = stops.reduce((a, b) => (bottomH - a).abs() < (bottomH - b).abs() ? a : b);
+      if (velocity < -500) target = stops.firstWhere((e) => e > bottomH + 8, orElse: () => sheetMax);
+      if (velocity > 500) target = stops.lastWhere((e) => e < bottomH - 8, orElse: () => _sheetMin);
+      setState(() => _sheetH = target);
+    }
     final sheetBody = <Widget>[
-      const SizedBox(height: AQSpacing.x3),
-      Center(child: Container(width: 36, height: 4, decoration: BoxDecoration(color: c.hairline, borderRadius: BorderRadius.circular(2)))),
+      const SizedBox(height: AQSpacing.x1),
+      Center(
+        child: Semantics(
+          button: true,
+          label: collapsed ? f.t('map.sheet.open') : f.t('map.sheet.close'),
+          excludeSemantics: true,
+          onTap: () => setState(() => _sheetH = collapsed ? _sheetMid : _sheetMin),
+          child: GestureDetector(
+            behavior: HitTestBehavior.opaque,
+            onTap: () => setState(() => _sheetH = collapsed ? _sheetMid : (expanded ? _sheetMid : sheetMax)),
+            // A 48 px tall grab area around the small handle.
+            child: SizedBox(height: 28, width: 96, child: Center(child: Container(width: 40, height: 5, decoration: BoxDecoration(color: c.inkFaint.withValues(alpha: 0.5), borderRadius: BorderRadius.circular(3))))),
+          ),
+        ),
+      ),
       Padding(
         padding: const EdgeInsets.fromLTRB(AQSpacing.gutter, AQSpacing.x2, AQSpacing.gutter, AQSpacing.x2),
         child: Row(children: [
@@ -513,10 +541,24 @@ class _AQMapScreenState extends ConsumerState<AQMapScreen> {
               child: SizedBox(
                 height: bottomH,
                 child: Column(crossAxisAlignment: CrossAxisAlignment.stretch, children: [
-                  ...sheetBody,
+                  GestureDetector(
+                    behavior: HitTestBehavior.opaque,
+                    onVerticalDragUpdate: (d) => setState(() => _sheetH = (_sheetH - d.delta.dy).clamp(_sheetMin, sheetMax).toDouble()),
+                    onVerticalDragEnd: (d) => snap(d.primaryVelocity ?? 0),
+                    child: Column(crossAxisAlignment: CrossAxisAlignment.stretch, children: sheetBody),
+                  ),
                   Expanded(
-                    child: shown.isEmpty
+                    child: collapsed
+                        ? const SizedBox.shrink()
+                        : shown.isEmpty
                         ? Center(child: emptyOrLoading())
+                        : expanded
+                        // Fully open: every result in a list you can scroll.
+                        ? ListView.builder(
+                            padding: const EdgeInsets.fromLTRB(AQSpacing.gutter, 0, AQSpacing.gutter, AQSpacing.x4),
+                            itemCount: shown.length,
+                            itemBuilder: (context, i) => Padding(padding: const EdgeInsets.only(bottom: AQSpacing.x3), child: AQResultCard(property: shown[i], compact: true)),
+                          )
                         : PageView.builder(
                             controller: _pages,
                             itemCount: shown.length,
