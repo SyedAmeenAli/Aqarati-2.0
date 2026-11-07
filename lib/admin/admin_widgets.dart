@@ -2026,7 +2026,7 @@ class _AdminHeroState extends State<AdminHero> with SingleTickerProviderStateMix
                   tween: Tween(begin: 0, end: widget.number.toDouble()),
                   duration: MediaQuery.disableAnimationsOf(context) ? Duration.zero : const Duration(milliseconds: 1100),
                   curve: Curves.easeOutCubic,
-                  builder: (context, v, _) => Text('${v.round()}', style: AQTypography.of(context, AQText.displayLarge, color: Colors.white).copyWith(height: 1)),
+                  builder: (context, v, _) => Text(v.round().toString().replaceAllMapped(RegExp(r'\B(?=(\d{3})+(?!\d))'), (_) => ','), style: AQTypography.of(context, AQText.displayLarge, color: Colors.white).copyWith(height: 1)),
                 ),
                 const SizedBox(width: 12),
                 Expanded(
