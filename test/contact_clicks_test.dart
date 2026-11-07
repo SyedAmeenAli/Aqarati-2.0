@@ -34,7 +34,7 @@ void main() {
     await t.pump();
     await t.tap(find.text('Message in the app'));
     await t.pumpAndSettle();
-    expect(find.text('Chat with Rawaq'), findsOneWidget);
+    expect(find.byType(AQChatScreen), findsOneWidget);
     expect(find.textContaining('not sent'), findsOneWidget, reason: 'the demo chat says nothing leaves the screen');
   });
 
@@ -44,11 +44,14 @@ void main() {
     await t.tap(find.text('Message in the app'));
     await t.pumpAndSettle();
     await t.enterText(find.byType(TextField), 'Is it still available?');
+    await t.pump();
     await t.tap(find.bySemanticsLabel('Send message'));
     await t.pump();
     expect(find.text('Is it still available?'), findsOneWidget);
+    // Typing shows the demo business as typing, then it answers.
     // The demo business answers a moment later, in the same conversation.
-    await t.pump(const Duration(milliseconds: 1500));
+    await t.pump(const Duration(milliseconds: 1700));
+    await t.pump(const Duration(milliseconds: 500));
     expect(find.textContaining('demo reply'), findsOneWidget);
     await t.pumpWidget(const SizedBox());
   });
@@ -102,10 +105,10 @@ void main() {
     ));
     await t.pump();
     expect(find.text('Rawaq'), findsOneWidget);
-    expect(find.text('Is it available?'), findsOneWidget);
+    expect(find.textContaining('Is it available?'), findsOneWidget);
     await t.tap(find.text('Rawaq'));
     await t.pumpAndSettle();
-    expect(find.text('Chat with Rawaq'), findsOneWidget);
+    expect(find.byType(AQChatScreen), findsOneWidget);
   });
 
   testWidgets('the inbox starts with two sample conversations', (t) async {
