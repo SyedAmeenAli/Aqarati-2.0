@@ -998,6 +998,54 @@ class _Skeleton extends StatelessWidget {
   }
 }
 
+/// A round icon with a soft halo that breathes, so empty and info states feel alive.
+class _GlowIcon extends StatefulWidget {
+  final String icon;
+  const _GlowIcon({required this.icon});
+  @override
+  State<_GlowIcon> createState() => _GlowIconState();
+}
+
+class _GlowIconState extends State<_GlowIcon> with SingleTickerProviderStateMixin {
+  late final AnimationController _ctl = AnimationController(vsync: this, duration: const Duration(milliseconds: 2400));
+  bool _started = false;
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    if (!_started && !MediaQuery.disableAnimationsOf(context)) {
+      _started = true;
+      _ctl.repeat(reverse: true);
+    }
+  }
+
+  @override
+  void dispose() {
+    _ctl.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final c = AQColors.of(context);
+    return AnimatedBuilder(
+      animation: _ctl,
+      builder: (context, _) {
+        final t = Curves.easeInOut.transform(_ctl.value);
+        return Container(
+          width: 64,
+          height: 64,
+          decoration: BoxDecoration(
+            shape: BoxShape.circle,
+            gradient: LinearGradient(begin: Alignment.topLeft, end: Alignment.bottomRight, colors: [c.surfaceSelected, Color.alphaBlend(c.accent.withValues(alpha: 0.18), c.surfaceSelected)]),
+            boxShadow: [BoxShadow(color: c.accent.withValues(alpha: 0.12 + 0.16 * t), blurRadius: 14 + 14 * t, spreadRadius: 2 * t)],
+          ),
+          child: Center(child: AQIcon(widget.icon, size: 28, color: c.accentDeep)),
+        );
+      },
+    );
+  }
+}
+
 class AdminNotice extends StatelessWidget {
   final String icon, title, body;
   final Widget? action;
@@ -1015,14 +1063,15 @@ class AdminNotice extends StatelessWidget {
       width: double.infinity,
       padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 24),
       decoration: BoxDecoration(
-        color: c.surface,
-        borderRadius: BorderRadius.circular(AdminSize.panel),
+        gradient: LinearGradient(begin: Alignment.topCenter, end: Alignment.bottomCenter, colors: [Color.alphaBlend(c.accent.withValues(alpha: 0.07), c.surfaceRaised), c.surfaceRaised]),
+        borderRadius: BorderRadius.circular(AdminSize.panel + 6),
         border: Border.all(color: c.hairline),
+        boxShadow: [BoxShadow(color: c.accentDeep.withValues(alpha: 0.08), blurRadius: 24, offset: const Offset(0, 10))],
       ),
       child: Column(
         children: [
-          AQIcon(icon, size: 22, color: c.accent),
-          const SizedBox(height: 10),
+          _GlowIcon(icon: icon),
+          const SizedBox(height: 14),
           Semantics(
             header: true,
             child: Text(title, textAlign: TextAlign.center, style: AQTypography.of(context, AQText.titleMedium)),
