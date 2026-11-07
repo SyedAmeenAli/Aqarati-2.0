@@ -426,7 +426,7 @@ class _AQMapScreenState extends ConsumerState<AQMapScreen> {
           button: true,
           label: collapsed ? f.t('map.sheet.open') : f.t('map.sheet.close'),
           excludeSemantics: true,
-          onTap: () => setState(() => _sheetH = collapsed ? _sheetMid : _sheetMin),
+          onTap: () => setState(() => _sheetH = collapsed ? _sheetMid : (expanded ? _sheetMid : sheetMax)),
           child: GestureDetector(
             behavior: HitTestBehavior.opaque,
             onTap: () => setState(() => _sheetH = collapsed ? _sheetMid : (expanded ? _sheetMid : sheetMax)),
