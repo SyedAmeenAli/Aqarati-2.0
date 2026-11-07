@@ -4,6 +4,7 @@ import 'package:go_router/go_router.dart';
 
 import '../core/aq/aq_demo.dart';
 import '../core/aq/aq_forms.dart';
+import '../core/aq/aq_glass.dart';
 import '../core/aq/aq_primitives.dart';
 import '../core/aq/aq_status.dart';
 import '../core/aq/aq_tokens.dart';
@@ -180,7 +181,7 @@ const _groups = [
   ]),
   _NavGroup('Listings', [
     _NavItem('Listing moderation', 'shield', '/moderation'),
-    _NavItem('Property listings', 'key', '/m/listings'),
+    _NavItem('Property listings', 'listings', '/m/listings'),
     _NavItem('Development projects', 'development', '/m/projects'),
     _NavItem('Construction', 'construction', '/m/construction'),
     _NavItem('Architecture and design', 'architecture', '/m/design'),
@@ -457,7 +458,7 @@ class AdminFrame extends ConsumerWidget {
       child: ConstrainedBox(
         constraints: const BoxConstraints(maxWidth: AdminSize.content),
         child: SingleChildScrollView(
-          padding: EdgeInsets.fromLTRB(side, wide ? 28 : 12, side, 56),
+          padding: EdgeInsets.fromLTRB(side, wide ? 28 : 12, side, wide ? 56 : 120),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
@@ -490,8 +491,9 @@ class AdminFrame extends ConsumerWidget {
         backgroundColor: c.surfaceRaised,
         child: _Sidebar(section: section, inDrawer: true),
       ),
+      extendBody: !rail,
       bottomNavigationBar: rail ? null : _BottomNav(section: section),
-      body: SafeArea(
+      body: _Ambient(child: SafeArea(
         bottom: false,
         child: Builder(
           builder: (context) => Column(
@@ -526,16 +528,36 @@ class AdminFrame extends ConsumerWidget {
             ],
           ),
         ),
-      ),
+      )),
     );
   }
+}
+
+/// Soft warm light behind the content, so frosted surfaces have something to blur.
+class _Ambient extends StatelessWidget {
+  final Widget child;
+  const _Ambient({required this.child});
+  @override
+  Widget build(BuildContext context) {
+    final c = AQColors.of(context);
+    return Stack(children: [
+      Positioned(top: -120, right: -100, child: _glow(c.accent.withValues(alpha: 0.22), 340)),
+      Positioned(top: 380, left: -140, child: _glow(const Color(0xFFD9A877).withValues(alpha: 0.22), 360)),
+      Positioned(bottom: -140, right: -80, child: _glow(c.accentDeep.withValues(alpha: 0.16), 320)),
+      Positioned.fill(child: child),
+    ]);
+  }
+
+  Widget _glow(Color color, double size) => IgnorePointer(
+    child: Container(width: size, height: size, decoration: BoxDecoration(shape: BoxShape.circle, gradient: RadialGradient(colors: [color, color.withValues(alpha: 0)]))),
+  );
 }
 
 /// The four destinations a phone needs most. Everything else is under More (the drawer).
 const _primaryNav = [
   _NavItem('Overview', 'home', '/overview'),
   _NavItem('Accounts', 'account', '/accounts'),
-  _NavItem('Property listings', 'key', '/m/listings'),
+  _NavItem('Property listings', 'listings', '/m/listings'),
 ];
 
 class _BottomNav extends StatelessWidget {
@@ -552,41 +574,40 @@ class _BottomNav extends StatelessWidget {
     return SafeArea(
       top: false,
       child: Padding(
-        padding: const EdgeInsets.fromLTRB(12, 6, 12, 10),
-        child: Container(
-          height: 64,
-          decoration: BoxDecoration(
-            gradient: LinearGradient(begin: Alignment.topCenter, end: Alignment.bottomCenter, colors: [c.surfaceRaised, Color.alphaBlend(c.accent.withValues(alpha: 0.06), c.surfaceRaised)]),
-            borderRadius: BorderRadius.circular(32),
-            border: Border.all(color: c.hairline),
-            boxShadow: [BoxShadow(color: c.accentDeep.withValues(alpha: 0.18), blurRadius: 26, offset: const Offset(0, 10))],
-          ),
-          child: Stack(children: [
-            // The highlight slides to the chosen destination.
-            AnimatedAlign(
-              duration: AQMotion.scaled(context, const Duration(milliseconds: 380)),
-              curve: Curves.easeOutBack,
-              alignment: Alignment(dx, 0),
-              child: FractionallySizedBox(
-                widthFactor: 1 / count,
-                heightFactor: 1,
-                child: Padding(
-                  padding: const EdgeInsets.all(6),
-                  child: DecoratedBox(
-                    decoration: BoxDecoration(
-                      gradient: LinearGradient(begin: Alignment.topLeft, end: Alignment.bottomRight, colors: [c.surfaceSelected, Color.alphaBlend(c.accent.withValues(alpha: 0.22), c.surfaceSelected)]),
-                      borderRadius: BorderRadius.circular(26),
-                      boxShadow: [BoxShadow(color: c.accent.withValues(alpha: 0.28), blurRadius: 14, offset: const Offset(0, 4))],
+        padding: const EdgeInsets.fromLTRB(12, 0, 12, 10),
+        // The same frosted glass as the customer app's bar: the page shows through it.
+        child: AQGlass(
+          radius: 32,
+          blur: 22,
+          fill: 0.58,
+          child: SizedBox(
+            height: 64,
+            child: Stack(children: [
+              AnimatedAlign(
+                duration: AQMotion.scaled(context, const Duration(milliseconds: 380)),
+                curve: Curves.easeOutBack,
+                alignment: Alignment(dx, 0),
+                child: FractionallySizedBox(
+                  widthFactor: 1 / count,
+                  heightFactor: 1,
+                  child: Padding(
+                    padding: const EdgeInsets.all(5),
+                    child: DecoratedBox(
+                      decoration: BoxDecoration(
+                        color: c.accent.withValues(alpha: 0.16),
+                        borderRadius: BorderRadius.circular(27),
+                        border: Border.all(color: Colors.white.withValues(alpha: 0.5)),
+                      ),
                     ),
                   ),
                 ),
               ),
-            ),
-            Row(children: [
-              for (final n in _primaryNav) Expanded(child: _NavButton(icon: n.icon, label: tr(n.label == 'Property listings' ? 'Listings' : n.label), selected: section == n.route, onTap: () => context.go(n.route), bar: true)),
-              Expanded(child: _NavButton(icon: 'more', label: tr('More'), selected: idx < 0, onTap: () => Scaffold.of(context).openDrawer(), bar: true)),
+              Row(children: [
+                for (final n in _primaryNav) Expanded(child: _NavButton(icon: n.icon, label: tr(n.label == 'Property listings' ? 'Listings' : n.label), selected: section == n.route, onTap: () => context.go(n.route), bar: true)),
+                Expanded(child: _NavButton(icon: 'more', label: tr('More'), selected: idx < 0, onTap: () => Scaffold.of(context).openDrawer(), bar: true)),
+              ]),
             ]),
-          ]),
+          ),
         ),
       ),
     );
@@ -846,14 +867,11 @@ class AdminTable extends StatelessWidget {
                 r,
                 AQPressable(
                   onTap: r.onTap,
-                  child: Container(
+                  child: AQGlass(
+                    radius: 24,
+                    blur: 14,
+                    fill: 0.66,
                     padding: const EdgeInsets.all(14),
-                    decoration: BoxDecoration(
-                      gradient: LinearGradient(begin: Alignment.topLeft, end: Alignment.bottomRight, colors: [c.surfaceRaised, Color.alphaBlend(c.accent.withValues(alpha: 0.05), c.surfaceRaised)]),
-                      borderRadius: BorderRadius.circular(AdminSize.panel + 4),
-                      border: Border.all(color: c.hairline),
-                      boxShadow: [BoxShadow(color: c.accentDeep.withValues(alpha: 0.07), blurRadius: 18, offset: const Offset(0, 6))],
-                    ),
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
