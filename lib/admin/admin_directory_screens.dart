@@ -116,7 +116,12 @@ class AdminOverviewScreen extends ConsumerWidget {
         pressedScale: 0.99,
         child: Container(
           padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
-          decoration: BoxDecoration(color: c.surfaceRaised, borderRadius: BorderRadius.circular(AdminSize.panel), border: Border.all(color: c.hairline)),
+          decoration: BoxDecoration(
+            gradient: LinearGradient(begin: Alignment.topLeft, end: Alignment.bottomRight, colors: [c.surfaceRaised, Color.alphaBlend(c.accent.withValues(alpha: 0.07), c.surfaceRaised)]),
+            borderRadius: BorderRadius.circular(AdminSize.panel + 4),
+            border: Border.all(color: c.hairline),
+            boxShadow: [BoxShadow(color: c.accentDeep.withValues(alpha: 0.07), blurRadius: 18, offset: const Offset(0, 6))],
+          ),
           child: Row(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
@@ -135,7 +140,10 @@ class AdminOverviewScreen extends ConsumerWidget {
               Container(
                 width: 34,
                 height: 34,
-                decoration: BoxDecoration(color: c.surfaceSelected, shape: BoxShape.circle),
+                decoration: BoxDecoration(
+                  shape: BoxShape.circle,
+                  gradient: LinearGradient(begin: Alignment.topLeft, end: Alignment.bottomRight, colors: [c.surfaceSelected, Color.alphaBlend(c.accent.withValues(alpha: 0.2), c.surfaceSelected)]),
+                ),
                 child: Center(
                   child: AQIcon(
                     switch (route) {
