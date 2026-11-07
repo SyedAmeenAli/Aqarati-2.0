@@ -837,8 +837,10 @@ class AdminTable extends StatelessWidget {
       return Column(
         children: [
           const SizedBox(height: 12),
-          for (final r in rows)
-            Padding(
+          for (final (ri, r) in rows.indexed)
+            _Rise(
+              index: ri % 8 + 1,
+              child: Padding(
               padding: const EdgeInsets.only(bottom: AQSpacing.x3),
               child: _rowSemantics(
                 r,
@@ -847,17 +849,20 @@ class AdminTable extends StatelessWidget {
                   child: Container(
                     padding: const EdgeInsets.all(14),
                     decoration: BoxDecoration(
-                      color: c.surfaceRaised,
-                      borderRadius: BorderRadius.circular(AdminSize.panel),
+                      gradient: LinearGradient(begin: Alignment.topLeft, end: Alignment.bottomRight, colors: [c.surfaceRaised, Color.alphaBlend(c.accent.withValues(alpha: 0.05), c.surfaceRaised)]),
+                      borderRadius: BorderRadius.circular(AdminSize.panel + 4),
                       border: Border.all(color: c.hairline),
+                      boxShadow: [BoxShadow(color: c.accentDeep.withValues(alpha: 0.07), blurRadius: 18, offset: const Offset(0, 6))],
                     ),
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
                         _cell(r, 0),
                         if (r.cells.length > 1)
-                          Padding(
-                            padding: const EdgeInsets.only(top: 10),
+                          Container(
+                            margin: const EdgeInsets.only(top: 12),
+                            padding: const EdgeInsets.all(12),
+                            decoration: BoxDecoration(color: c.accent.withValues(alpha: 0.06), borderRadius: BorderRadius.circular(AdminSize.panel)),
                             // Fields sit two to a row, label over value; a cell with its own buttons
                             // takes the full width under them.
                             child: LayoutBuilder(
@@ -895,6 +900,7 @@ class AdminTable extends StatelessWidget {
                 ),
               ),
             ),
+            ),
         ],
       );
     }
@@ -903,15 +909,16 @@ class AdminTable extends StatelessWidget {
       child: Container(
       decoration: BoxDecoration(
         color: c.surfaceRaised,
-        borderRadius: BorderRadius.circular(AdminSize.panel),
+        borderRadius: BorderRadius.circular(AdminSize.panel + 6),
         border: Border.all(color: c.hairline),
+        boxShadow: [BoxShadow(color: c.accentDeep.withValues(alpha: 0.08), blurRadius: 26, offset: const Offset(0, 10))],
       ),
       clipBehavior: Clip.antiAlias,
       child: Column(
         children: [
           Container(
-            color: c.surface,
-            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+            decoration: BoxDecoration(gradient: LinearGradient(colors: [c.surfaceSelected, c.surface])),
+            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
             child: Row(
               children: [
                 for (var i = 0; i < headers.length; i++)
@@ -932,13 +939,16 @@ class AdminTable extends StatelessWidget {
               ],
             ),
           ),
-          for (final r in rows)
-            _rowSemantics(
+          for (final (ri, r) in rows.indexed)
+            _Rise(
+              index: ri % 8 + 1,
+              child: _rowSemantics(
               r,
               AQPressable(
                 onTap: r.onTap,
                 pressedScale: 1,
-                child: Container(
+                child: _HoverTint(
+                  child: Container(
                   decoration: BoxDecoration(
                     border: Border(top: BorderSide(color: c.hairline)),
                   ),
@@ -962,11 +972,38 @@ class AdminTable extends StatelessWidget {
                     ],
                   ),
                 ),
+                ),
               ),
+            ),
             ),
         ],
       ),
     ),
+    );
+  }
+}
+
+/// A row that tints softly under the pointer.
+class _HoverTint extends StatefulWidget {
+  final Widget child;
+  const _HoverTint({required this.child});
+  @override
+  State<_HoverTint> createState() => _HoverTintState();
+}
+
+class _HoverTintState extends State<_HoverTint> {
+  bool _h = false;
+  @override
+  Widget build(BuildContext context) {
+    final c = AQColors.of(context);
+    return MouseRegion(
+      onEnter: (_) => setState(() => _h = true),
+      onExit: (_) => setState(() => _h = false),
+      child: AnimatedContainer(
+        duration: AQMotion.scaled(context, const Duration(milliseconds: 180)),
+        color: _h ? c.accent.withValues(alpha: 0.07) : Colors.transparent,
+        child: widget.child,
+      ),
     );
   }
 }
@@ -1144,22 +1181,24 @@ class AdminKeyValues extends StatelessWidget {
   Widget build(BuildContext context) {
     final c = AQColors.of(context);
     return AdminPanel(
-      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
+      padding: const EdgeInsets.symmetric(vertical: 6),
       child: Column(
         children: [
-          for (final (i, r) in rows.indexed) ...[
-            if (i > 0) Divider(height: 1, thickness: 1, color: c.hairline),
-            Padding(
-              padding: const EdgeInsets.symmetric(vertical: 10),
+          for (final (i, r) in rows.indexed)
+            Container(
+              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 11),
+              decoration: BoxDecoration(
+                color: i.isEven ? c.accent.withValues(alpha: 0.045) : Colors.transparent,
+                border: BorderDirectional(start: BorderSide(color: i.isEven ? c.accent.withValues(alpha: 0.5) : Colors.transparent, width: 3)),
+              ),
               child: Row(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  SizedBox(width: (MediaQuery.sizeOf(context).width * 0.36).clamp(96.0, 148.0), child: Padding(padding: const EdgeInsetsDirectional.only(end: 8), child: Text(r.$1, style: AQTypography.of(context, AQText.bodySmall, soft: true)))),
+                  SizedBox(width: (MediaQuery.sizeOf(context).width * 0.36).clamp(96.0, 148.0), child: Padding(padding: const EdgeInsetsDirectional.only(end: 8), child: Text(r.$1, style: AQTypography.of(context, AQText.labelMedium, color: c.inkSoft)))),
                   Expanded(child: Text(VFmt.iso(r.$2), style: AQTypography.of(context, AQText.bodyMedium))),
                 ],
               ),
             ),
-          ],
         ],
       ),
     );
@@ -1174,7 +1213,10 @@ Widget adminSection(BuildContext context, String title, {Widget? trailing}) =>
           Expanded(
             child: Semantics(
               header: true,
-              child: Text(title, style: AQTypography.of(context, AQText.headlineSmall)),
+              child: Row(children: [
+                Container(width: 4, height: 22, margin: const EdgeInsetsDirectional.only(end: 10), decoration: BoxDecoration(color: AQColors.of(context).accent, borderRadius: BorderRadius.circular(2))),
+                Expanded(child: Text(title, style: AQTypography.of(context, AQText.headlineSmall))),
+              ]),
             ),
           ),
           ?trailing,
