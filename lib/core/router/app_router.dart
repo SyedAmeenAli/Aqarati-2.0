@@ -2,6 +2,8 @@ import 'package:flutter/widgets.dart' show ValueKey;
 import 'package:go_router/go_router.dart';
 
 import '../../features/business/aq_business_profile.dart';
+import '../../features/business/aq_business_projects.dart' show AQProjectDetailScreen;
+import '../../features/contact/contact_actions.dart' show AQChatsScreen;
 import '../../features/business/aq_professionals.dart';
 import '../../features/property/property_detail_screen.dart';
 import '../../features/account/delete_account_screen.dart';
@@ -313,6 +315,17 @@ final appRouter = GoRouter(
         key: state.pageKey,
         child: AQBusinessProfileScreen(businessId: state.pathParameters['id']!),
       ),
+    ),
+    GoRoute(
+      path: '/business/:id/project/:pid',
+      pageBuilder: (context, state) => AQRoute.forward(
+        key: state.pageKey,
+        child: AQProjectDetailScreen(businessId: state.pathParameters['id']!, projectId: state.pathParameters['pid']!),
+      ),
+    ),
+    GoRoute(
+      path: '/chats',
+      pageBuilder: (context, state) => AQRoute.forward(key: state.pageKey, child: const AQChatsScreen()),
     ),
     GoRoute(
       path: '/calculators',
