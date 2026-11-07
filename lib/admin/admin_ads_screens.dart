@@ -155,6 +155,11 @@ class _AdsListScreenState extends ConsumerState<AdsListScreen> {
     final async = ref.watch(adminAdsProvider);
     return AdminFrame(
       section: '/ads',
+      stats: [
+        (tr('Live'), (async.valueOrNull ?? const <SponsoredAd>[]).where((a) => a.status == AdStatus.approved).length),
+        (tr('Paused'), (async.valueOrNull ?? const <SponsoredAd>[]).where((a) => a.status == AdStatus.paused).length),
+        (tr('Waiting'), (async.valueOrNull ?? const <SponsoredAd>[]).where((a) => a.status == AdStatus.pendingVerification).length),
+      ],
       title: tr('Ads & Sponsors'),
       subtitle: tr('Banners shown to signed-in customers. A banner is shown only after it is approved and while its schedule is open.'),
       actions: [
