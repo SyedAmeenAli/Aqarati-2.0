@@ -13,6 +13,7 @@ import '../../data/repositories/providers.dart';
 import '../viewing/widgets/viewing_format.dart';
 import '../viewing/widgets/viewing_scaffold.dart';
 import '../contact/contact_actions.dart';
+import 'aq_business_projects.dart' show AQProjectsSection;
 import '../workspace/aq_cards.dart' show aqListMaxWidth;
 import '../workspace/aq_thumb.dart' show AQThumb;
 import '../workspace/aq_home.dart' show aqImg, aqAllPropertiesProvider, AQResultCard, AQSkeletonBox;
@@ -140,6 +141,8 @@ class _Profile extends ConsumerWidget {
         Wrap(spacing: AQSpacing.x2, runSpacing: AQSpacing.x2, children: [
           for (final k in cats) Container(constraints: const BoxConstraints(minHeight: 40), padding: const EdgeInsets.symmetric(horizontal: AQSpacing.x4), decoration: BoxDecoration(color: c.surfaceRaised, borderRadius: BorderRadius.circular(20), border: Border.all(color: c.hairline)), child: Center(widthFactor: 1, child: Text(k, style: AQTypography.of(context, AQText.labelMedium, color: c.inkSoft)))),
         ]),
+        _head(context, f.t('bp.projects')),
+        AQProjectsSection(business: b),
         _head(context, f.t('bp.portfolio')),
         if (b.galleryUrls.isEmpty)
           Text(f.t('bp.noPortfolio'), style: AQTypography.of(context, AQText.bodyMedium, soft: true))

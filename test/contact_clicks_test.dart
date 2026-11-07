@@ -16,7 +16,7 @@ Widget _app(Widget child, {double width = 375}) => ProviderScope(
 
 void main() {
   for (final w in [320.0, 375.0]) {
-    testWidgets('Call, WhatsApp and Chat show in one row without overflow at ${w.toInt()} px', (t) async {
+    testWidgets('In-app chat, Call and WhatsApp show without overflow at ${w.toInt()} px', (t) async {
       t.view.physicalSize = Size(w, 900);
       t.view.devicePixelRatio = 1;
       addTearDown(t.view.reset);
@@ -24,7 +24,7 @@ void main() {
       await t.pump();
       expect(find.text('Call'), findsOneWidget);
       expect(find.text('WhatsApp'), findsOneWidget);
-      expect(find.text('Chat'), findsOneWidget);
+      expect(find.text('Message in the app'), findsOneWidget);
       expect(t.takeException(), isNull);
     });
   }
@@ -32,7 +32,7 @@ void main() {
   testWidgets('without a phone number Call and WhatsApp are off but Chat still works', (t) async {
     await t.pumpWidget(_app(const Padding(padding: EdgeInsets.all(24), child: AQContactButtons(name: 'Rawaq'))));
     await t.pump();
-    await t.tap(find.text('Chat'));
+    await t.tap(find.text('Message in the app'));
     await t.pumpAndSettle();
     expect(find.text('Chat with Rawaq'), findsOneWidget);
     expect(find.textContaining('not sent'), findsOneWidget, reason: 'the demo chat says nothing leaves the screen');
@@ -41,12 +41,16 @@ void main() {
   testWidgets('the demo chat shows what you type on the same screen', (t) async {
     await t.pumpWidget(_app(const Padding(padding: EdgeInsets.all(24), child: AQContactButtons(name: 'Rawaq', subject: 'Villa'))));
     await t.pump();
-    await t.tap(find.text('Chat'));
+    await t.tap(find.text('Message in the app'));
     await t.pumpAndSettle();
     await t.enterText(find.byType(TextField), 'Is it still available?');
     await t.tap(find.bySemanticsLabel('Send message'));
     await t.pump();
     expect(find.text('Is it still available?'), findsOneWidget);
+    // The demo business answers a moment later, in the same conversation.
+    await t.pump(const Duration(milliseconds: 1500));
+    expect(find.textContaining('demo reply'), findsOneWidget);
+    await t.pumpWidget(const SizedBox());
   });
 
   test('a sample number is stable and clearly Omani-formatted', () {
@@ -76,7 +80,14 @@ void main() {
   });
 
   testWidgets('the Chats list is empty at first and shows a conversation once you have typed in it', (t) async {
-    await t.pumpWidget(_app(const SizedBox(height: 700, child: ChatsView())));
+    await t.pumpWidget(ProviderScope(
+      overrides: [chatThreadsProvider.overrideWith((ref) => const [])],
+      child: MaterialApp(
+        localizationsDelegates: const [GlobalMaterialLocalizations.delegate, GlobalWidgetsLocalizations.delegate, GlobalCupertinoLocalizations.delegate],
+        supportedLocales: const [Locale('en'), Locale('ar')],
+        home: const Scaffold(body: ChatsView()),
+      ),
+    ));
     await t.pump();
     expect(find.text('No chats yet'), findsOneWidget);
 
@@ -95,5 +106,12 @@ void main() {
     await t.tap(find.text('Rawaq'));
     await t.pumpAndSettle();
     expect(find.text('Chat with Rawaq'), findsOneWidget);
+  });
+
+  testWidgets('the inbox starts with two sample conversations', (t) async {
+    await t.pumpWidget(_app(const SizedBox(height: 700, child: ChatsView())));
+    await t.pump();
+    expect(find.text('Rawaq Maintenance Services'), findsOneWidget);
+    expect(find.text('Wadi Architecture'), findsOneWidget);
   });
 }

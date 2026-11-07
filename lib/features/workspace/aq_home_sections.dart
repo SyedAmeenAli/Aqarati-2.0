@@ -10,6 +10,7 @@ import '../../core/aq/aq_typography.dart';
 import '../../core/localization/flow_strings.dart';
 import '../../data/repositories/providers.dart';
 import '../entry/widgets/entry_common.dart' show MasterLogo;
+import '../contact/contact_actions.dart' show chatThreadsProvider;
 import '../media/aq_media.dart';
 import '../viewing/widgets/viewing_format.dart';
 import 'aq_cards.dart';
@@ -29,6 +30,29 @@ class AQHomeHeader extends ConsumerWidget {
       children: [
         SizedBox(height: 40, child: FittedBox(fit: BoxFit.contain, child: MasterLogo(width: 80))),
         const Spacer(),
+        Semantics(
+          button: true,
+          focusable: true,
+          onFocus: () {},
+          label: f.t('nav.chats'),
+          excludeSemantics: true,
+          onTap: () => context.push('/chats'),
+          child: AQPressable(
+            onTap: () => context.push('/chats'),
+            pressedScale: 0.94,
+            child: SizedBox(
+              width: AQControl.tap,
+              height: AQControl.tap,
+              child: Center(
+                child: Stack(clipBehavior: Clip.none, children: [
+                  AQIcon('chat', size: 26, color: AQColors.of(context).accentDeep),
+                  if (ref.watch(chatThreadsProvider).isNotEmpty)
+                    PositionedDirectional(end: -2, top: -2, child: Container(width: 10, height: 10, decoration: BoxDecoration(color: AQColors.of(context).danger, shape: BoxShape.circle, border: Border.all(color: AQColors.of(context).background, width: 1.5)))),
+                ]),
+              ),
+            ),
+          ),
+        ),
         Semantics(
           button: true,
           focusable: true,
