@@ -308,18 +308,32 @@ class AdminOverviewScreen extends ConsumerWidget {
           builder: (context, box) {
             final cols = box.maxWidth >= 860 ? 3 : 2;
             const gap = 12.0;
-            final w = (box.maxWidth - gap * (cols - 1)) / cols;
-            Widget cell(Widget m) => SizedBox(width: w, child: m);
-            return Wrap(
-              spacing: gap,
-              runSpacing: gap,
+            final tiles = [
+              metric('Accounts', '${dir.accounts.length}', '/accounts'),
+              metric('Accounts under review', '${count(AcctStatus.underReview)}', '/accounts'),
+              metric('Applications in the verification queue', verif == null ? '...' : '${verif.length}', '/verification'),
+              metric('Listings waiting for moderation', pendingListings == null ? '...' : '$pendingListings', '/moderation'),
+              metric('Open reports and complaints', '$openReports', '/reports'),
+              metric('Sponsored placements', ads == null ? '...' : '${ads.length}', '/ads'),
+            ];
+            // Each row is as tall as its tallest tile, so the boxes line up.
+            return Column(
               children: [
-                cell(metric('Accounts', '${dir.accounts.length}', '/accounts')),
-                cell(metric('Accounts under review', '${count(AcctStatus.underReview)}', '/accounts')),
-                cell(metric('Applications in the verification queue', verif == null ? '...' : '${verif.length}', '/verification')),
-                cell(metric('Listings waiting for moderation', pendingListings == null ? '...' : '$pendingListings', '/moderation')),
-                cell(metric('Open reports and complaints', '$openReports', '/reports')),
-                cell(metric('Sponsored placements', ads == null ? '...' : '${ads.length}', '/ads')),
+                for (var i = 0; i < tiles.length; i += cols)
+                  Padding(
+                    padding: EdgeInsets.only(bottom: i + cols < tiles.length ? gap : 0),
+                    child: IntrinsicHeight(
+                      child: Row(
+                        crossAxisAlignment: CrossAxisAlignment.stretch,
+                        children: [
+                          for (var j = i; j < i + cols; j++) ...[
+                            if (j > i) const SizedBox(width: gap),
+                            Expanded(child: j < tiles.length ? tiles[j] : const SizedBox.shrink()),
+                          ],
+                        ],
+                      ),
+                    ),
+                  ),
               ],
             );
           },
