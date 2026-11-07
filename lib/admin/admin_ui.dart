@@ -410,9 +410,11 @@ class _AdminChipState extends State<AdminChip> {
             height: 30,
             padding: const EdgeInsets.symmetric(horizontal: 12),
             decoration: BoxDecoration(
-              color: sel ? c.accent : (_hover ? c.surfaceSelected : c.surfaceRaised),
-              borderRadius: BorderRadius.circular(AdminSize.control),
+              color: sel ? null : (_hover ? c.surfaceSelected : c.surfaceRaised),
+              gradient: sel ? LinearGradient(begin: Alignment.topLeft, end: Alignment.bottomRight, colors: [c.accent, c.accentDeep]) : null,
+              borderRadius: BorderRadius.circular(AdminSize.control + 6),
               border: Border.all(color: sel ? c.accent : c.hairline),
+              boxShadow: sel ? [BoxShadow(color: c.accent.withValues(alpha: 0.35), blurRadius: 12, offset: const Offset(0, 4))] : const [],
             ),
             child: Center(
               widthFactor: 1,

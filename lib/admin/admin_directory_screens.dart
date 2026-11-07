@@ -388,6 +388,11 @@ class _AccountsState extends ConsumerState<AdminAccountsScreen> {
       section: '/accounts',
       title: tr('Accounts and professionals'),
       subtitle: tr('Shoppers, agents, developers, builders, architects and designers.'),
+      stats: [
+        (tr('Accounts'), dir.accounts.length),
+        (tr('Active'), dir.accounts.where((a) => a.status == AcctStatus.active).length),
+        (tr('Under review'), dir.accounts.where((a) => a.status == AcctStatus.underReview).length),
+      ],
       children: [
         AdminSearchField(controller: _q, hint: tr('Search name, city or role'), onChanged: (_) => setState(() {})),
         const SizedBox(height: AQSpacing.x3),

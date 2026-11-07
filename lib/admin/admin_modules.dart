@@ -365,6 +365,7 @@ class _ListState extends ConsumerState<AdminModuleListScreen> {
       section: def.route,
       title: def.title,
       subtitle: def.subtitle,
+      stats: [(tr('Total'), all.length), (tr('Showing'), shown.length)],
       actions: [
         if (widget.modKey == ModKey.announcements && canWrite)
           AdminPrimaryButton(label: tr('New announcement'), leadingIcon: 'plus', trailingChevron: false, compact: true, onPressed: _newAnnouncement),

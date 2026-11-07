@@ -54,6 +54,7 @@ class _VerificationQueueScreenState
     final store = ref.watch(adminStoreProvider);
     return AdminFrame(
       section: '/verification',
+      stats: [(tr('In the queue'), async.valueOrNull?.length ?? 0)],
       title: tr('Verification queue'),
       subtitle: tr('Agents and companies waiting for review. Resubmissions come first, then the oldest.'),
       actions: [
