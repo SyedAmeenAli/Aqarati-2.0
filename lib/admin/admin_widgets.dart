@@ -139,6 +139,26 @@ bool endSessionIfExpired(WidgetRef ref, Object e) {
 
 // ------------------------------------------------------------------ frame
 
+/// Content rises and fades in, each block a beat after the one above. Off when motion is reduced.
+class _Rise extends StatelessWidget {
+  final int index;
+  final Widget child;
+  const _Rise({required this.index, required this.child});
+  @override
+  Widget build(BuildContext context) {
+    if (MediaQuery.disableAnimationsOf(context)) return child;
+    final delay = (index.clamp(0, 8)) * 60;
+    final total = 420 + delay;
+    return TweenAnimationBuilder<double>(
+      tween: Tween(begin: 0, end: 1),
+      duration: Duration(milliseconds: total),
+      curve: Interval(delay / total, 1, curve: Curves.easeOutCubic),
+      child: child,
+      builder: (context, v, child) => Opacity(opacity: v, child: Transform.translate(offset: Offset(0, 18 * (1 - v)), child: child)),
+    );
+  }
+}
+
 class _NavItem {
   final String label, icon, route;
   const _NavItem(this.label, this.icon, this.route);
@@ -440,7 +460,10 @@ class AdminFrame extends ConsumerWidget {
           padding: EdgeInsets.fromLTRB(side, wide ? 28 : 12, side, 56),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.stretch,
-            children: [header, ...children],
+            children: [
+              _Rise(index: 0, child: header),
+              for (var i = 0; i < children.length; i++) _Rise(index: i + 1, child: children[i]),
+            ],
           ),
         ),
       ),
@@ -477,8 +500,9 @@ class AdminFrame extends ConsumerWidget {
                 constraints: const BoxConstraints(minHeight: 52),
                 padding: const EdgeInsetsDirectional.fromSTEB(4, 4, 8, 4),
                 decoration: BoxDecoration(
-                  color: c.surfaceRaised,
+                  gradient: LinearGradient(begin: Alignment.topCenter, end: Alignment.bottomCenter, colors: [c.surfaceRaised, c.background]),
                   border: Border(bottom: BorderSide(color: c.hairline)),
+                  boxShadow: [BoxShadow(color: c.accentDeep.withValues(alpha: 0.08), blurRadius: 14, offset: const Offset(0, 4))],
                 ),
                 child: Row(
                   children: [
@@ -522,7 +546,7 @@ class _BottomNav extends StatelessWidget {
     final c = AQColors.of(context);
     final inPrimary = _primaryNav.any((n) => n.route == section);
     return Container(
-      decoration: BoxDecoration(color: c.surfaceRaised, border: Border(top: BorderSide(color: c.hairline))),
+      decoration: BoxDecoration(color: c.surfaceRaised, border: Border(top: BorderSide(color: c.hairline)), boxShadow: [BoxShadow(color: c.accentDeep.withValues(alpha: 0.10), blurRadius: 18, offset: const Offset(0, -4))]),
       child: SafeArea(
         top: false,
         child: SizedBox(
@@ -578,7 +602,11 @@ class _NavButton extends StatelessWidget {
             duration: AQMotion.scaled(context, AQMotion.fast),
             width: 52,
             height: 28,
-            decoration: BoxDecoration(color: selected ? c.surfaceSelected : Colors.transparent, borderRadius: BorderRadius.circular(14)),
+            decoration: BoxDecoration(
+              color: selected ? c.surfaceSelected : Colors.transparent,
+              borderRadius: BorderRadius.circular(14),
+              boxShadow: selected ? [BoxShadow(color: c.accent.withValues(alpha: 0.25), blurRadius: 12, offset: const Offset(0, 3))] : const [],
+            ),
             child: Center(child: AQIcon(icon, size: 20, color: selected ? c.accentDeep : c.inkSoft)),
           ),
           const SizedBox(height: 2),

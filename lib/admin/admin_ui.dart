@@ -440,9 +440,10 @@ class AdminPanel extends StatelessWidget {
     return Container(
       padding: padding,
       decoration: BoxDecoration(
-        color: c.surfaceRaised,
-        borderRadius: BorderRadius.circular(AdminSize.panel),
+        gradient: LinearGradient(begin: Alignment.topLeft, end: Alignment.bottomRight, colors: [c.surfaceRaised, Color.alphaBlend(c.accent.withValues(alpha: 0.05), c.surfaceRaised)]),
+        borderRadius: BorderRadius.circular(AdminSize.panel + 4),
         border: Border.all(color: c.hairline),
+        boxShadow: [BoxShadow(color: c.accentDeep.withValues(alpha: 0.07), blurRadius: 22, offset: const Offset(0, 8))],
       ),
       child: child,
     );
