@@ -1,6 +1,9 @@
 /// Properties hub, category and type steps, the Home module grid and the entry experiences.
 /// ARABIC IS DRAFT COPY and needs native review.
 const Map<String, (String, String)> hubStrings = {
+  'act.chats': ('Chats', 'المحادثات'),
+  'ct.chats.empty.t': ('No chats yet', 'لا محادثات بعد'),
+  'ct.chats.empty.b': ('Start a chat from a property, a professional or a business profile.', 'ابدأ محادثة من عقار أو مختص أو ملف نشاط تجاري.'),
   // Map results sheet
   'map.sheet.open': ('Show results', 'عرض النتائج'),
   'map.sheet.close': ('Hide results', 'إخفاء النتائج'),

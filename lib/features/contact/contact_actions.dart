@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:url_launcher/url_launcher.dart';
 
 import '../../core/aq/aq_primitives.dart';
@@ -7,7 +8,9 @@ import '../../core/aq/aq_tokens.dart';
 import '../../core/aq/aq_typography.dart';
 import '../../core/localization/flow_strings.dart';
 import '../devbuild/db_widgets.dart' show DbIcon;
+import '../../core/aq/aq_states.dart';
 import '../viewing/widgets/viewing_scaffold.dart';
+import '../workspace/aq_thumb.dart' show AQThumb;
 
 /// A sample phone number for a record that has none of its own (the same scheme the demo professionals use).
 /// It is a stand-in for demo data, never a real person's number.
@@ -86,7 +89,7 @@ class AQContactButtons extends StatelessWidget {
     final stacked = MediaQuery.textScalerOf(context).scale(14) > 18.5 || MediaQuery.sizeOf(context).width < 340;
     return Column(crossAxisAlignment: CrossAxisAlignment.stretch, children: [
       if (stacked) ...[call, const SizedBox(height: AQSpacing.x2), wa, const SizedBox(height: AQSpacing.x2), chat]
-      else Row(children: [Expanded(child: call), const SizedBox(width: AQSpacing.x2), Expanded(child: wa), const SizedBox(width: AQSpacing.x2), Expanded(child: chat)]),
+      else Row(children: [Expanded(flex: 10, child: call), const SizedBox(width: AQSpacing.x2), Expanded(flex: 15, child: wa), const SizedBox(width: AQSpacing.x2), Expanded(flex: 10, child: chat)]),
       if ((phone ?? '').isNotEmpty) ...[
         const SizedBox(height: AQSpacing.x1),
         Text('${phone!}  ·  ${f.t('ct.sample')}', style: AQTypography.of(context, AQText.labelSmall, color: c.inkFaint)),
@@ -95,24 +98,33 @@ class AQContactButtons extends StatelessWidget {
   }
 }
 
-class _Msg {
+class ChatMsg {
   final String text;
   final bool mine;
-  const _Msg(this.text, this.mine);
+  const ChatMsg(this.text, this.mine);
 }
 
-/// A demo in-app conversation. There is no chat service: your messages stay on this screen and are not sent.
-class AQChatScreen extends StatefulWidget {
+/// One conversation: who it is with, what it is about, and what was typed. Kept for the app session.
+class ChatThread {
+  final String name;
+  final String? subject;
+  final List<ChatMsg> messages;
+  const ChatThread(this.name, this.subject, this.messages);
+}
+
+final chatThreadsProvider = StateProvider<List<ChatThread>>((ref) => const []);
+
+/// A demo in-app conversation. There is no chat service: your messages stay on this device and are not sent.
+class AQChatScreen extends ConsumerStatefulWidget {
   final String name;
   final String? subject;
   const AQChatScreen({super.key, required this.name, this.subject});
   @override
-  State<AQChatScreen> createState() => _AQChatScreenState();
+  ConsumerState<AQChatScreen> createState() => _AQChatScreenState();
 }
 
-class _AQChatScreenState extends State<AQChatScreen> {
+class _AQChatScreenState extends ConsumerState<AQChatScreen> {
   final _ctl = TextEditingController();
-  final _msgs = <_Msg>[];
 
   @override
   void dispose() {
@@ -123,7 +135,12 @@ class _AQChatScreenState extends State<AQChatScreen> {
   void _send() {
     final t = _ctl.text.trim();
     if (t.isEmpty) return;
-    setState(() => _msgs.add(_Msg(t, true)));
+    ref.read(chatThreadsProvider.notifier).update((all) {
+      final i = all.indexWhere((x) => x.name == widget.name);
+      if (i < 0) return [ChatThread(widget.name, widget.subject, [ChatMsg(t, true)]), ...all];
+      final cur = all[i];
+      return [ChatThread(cur.name, cur.subject, [...cur.messages, ChatMsg(t, true)]), ...all.where((x) => x.name != widget.name)];
+    });
     _ctl.clear();
   }
 
@@ -131,7 +148,9 @@ class _AQChatScreenState extends State<AQChatScreen> {
   Widget build(BuildContext context) {
     final f = FlowStrings.of(context);
     final c = AQColors.of(context);
-    Widget bubble(_Msg m) => Align(
+    final threads = ref.watch(chatThreadsProvider);
+    final msgs = threads.where((x) => x.name == widget.name).firstOrNull?.messages ?? const <ChatMsg>[];
+    Widget bubble(ChatMsg m) => Align(
           alignment: m.mine ? AlignmentDirectional.centerEnd : AlignmentDirectional.centerStart,
           child: Container(
             margin: const EdgeInsets.only(bottom: AQSpacing.x2),
@@ -180,9 +199,64 @@ class _AQChatScreenState extends State<AQChatScreen> {
         ]),
       ),
       children: [
-        bubble(_Msg(hello, false)),
-        for (final m in _msgs) bubble(m),
+        bubble(ChatMsg(hello, false)),
+        for (final m in msgs) bubble(m),
       ],
+    );
+  }
+}
+
+/// The Chats tab of Activity: every conversation you have started, newest first.
+class ChatsView extends ConsumerWidget {
+  const ChatsView({super.key});
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final f = FlowStrings.of(context);
+    final c = AQColors.of(context);
+    final threads = ref.watch(chatThreadsProvider);
+    void open(ChatThread t) => Navigator.of(context).push(AQRoute.route<void>(AQChatScreen(name: t.name, subject: t.subject)));
+    return SingleChildScrollView(
+      padding: const EdgeInsets.fromLTRB(AQSpacing.gutter, AQSpacing.x4, AQSpacing.gutter, 128),
+      child: Column(crossAxisAlignment: CrossAxisAlignment.stretch, children: [
+        Semantics(header: true, child: Text(f.t('act.chats'), style: AQTypography.of(context, AQText.displaySmall))),
+        const SizedBox(height: AQSpacing.x1),
+        Text(f.t('ct.chat.demo'), style: AQTypography.of(context, AQText.bodyMedium, soft: true)),
+        const SizedBox(height: AQSpacing.x4),
+        if (threads.isEmpty)
+          AQEmptyState(icon: 'send', title: f.t('ct.chats.empty.t'), body: f.t('ct.chats.empty.b'))
+        else
+          for (final t in threads)
+            Padding(
+              padding: const EdgeInsets.only(bottom: AQSpacing.x3),
+              child: Semantics(
+                button: true,
+                focusable: true,
+                onFocus: () {},
+                label: '${t.name}. ${t.messages.isEmpty ? '' : t.messages.last.text}',
+                excludeSemantics: true,
+                onTap: () => open(t),
+                child: AQPressable(
+                  onTap: () => open(t),
+                  child: Container(
+                    padding: const EdgeInsets.all(AQSpacing.x3),
+                    decoration: BoxDecoration(color: c.surfaceRaised, borderRadius: BorderRadius.circular(AQRadius.medium), border: Border.all(color: c.hairline)),
+                    child: Row(children: [
+                      AQThumb(monogramOf: t.name, size: 48),
+                      const SizedBox(width: AQSpacing.x3),
+                      Expanded(
+                        child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+                          Text(t.name, maxLines: 1, overflow: TextOverflow.ellipsis, style: AQTypography.of(context, AQText.titleSmall)),
+                          Text(t.messages.isEmpty ? (t.subject ?? '') : t.messages.last.text, maxLines: 1, overflow: TextOverflow.ellipsis, style: AQTypography.of(context, AQText.bodySmall, soft: true)),
+                        ]),
+                      ),
+                      AQIcon('chevron-right', size: 16, color: c.inkSoft, directional: true),
+                    ]),
+                  ),
+                ),
+              ),
+            ),
+      ]),
     );
   }
 }

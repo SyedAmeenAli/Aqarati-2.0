@@ -278,6 +278,8 @@ class _PropertyDetailScreenState extends ConsumerState<PropertyDetailScreen> {
       ]),
       if (p.verification.isVerified)
         Padding(padding: const EdgeInsets.only(top: AQSpacing.x1), child: Row(mainAxisSize: MainAxisSize.min, children: [AQIcon('verified', size: 18, color: c.accent), const SizedBox(width: 6), Flexible(child: Text(f.t('pd.verifiedListing'), style: AQTypography.of(context, AQText.labelMedium, color: c.accentDeep)))])),
+      const SizedBox(height: AQSpacing.x3),
+      AQContactButtons(name: lister?.name ?? f.t('pd.unknownLister'), phone: lister == null ? null : aqDemoPhoneFor(lister.id), subject: VFmt.iso(p.title)),
     ]);
 
     final wide = MediaQuery.sizeOf(context).width >= kPropertyWideFrom;

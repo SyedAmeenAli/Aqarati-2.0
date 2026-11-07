@@ -74,4 +74,26 @@ void main() {
       await t.pumpWidget(const SizedBox());
     }
   });
+
+  testWidgets('the Chats list is empty at first and shows a conversation once you have typed in it', (t) async {
+    await t.pumpWidget(_app(const SizedBox(height: 700, child: ChatsView())));
+    await t.pump();
+    expect(find.text('No chats yet'), findsOneWidget);
+
+    await t.pumpWidget(const SizedBox());
+    await t.pumpWidget(ProviderScope(
+      overrides: [chatThreadsProvider.overrideWith((ref) => const [ChatThread('Rawaq', 'Villa', [ChatMsg('Is it available?', true)])])],
+      child: MaterialApp(
+        localizationsDelegates: const [GlobalMaterialLocalizations.delegate, GlobalWidgetsLocalizations.delegate, GlobalCupertinoLocalizations.delegate],
+        supportedLocales: const [Locale('en'), Locale('ar')],
+        home: const Scaffold(body: ChatsView()),
+      ),
+    ));
+    await t.pump();
+    expect(find.text('Rawaq'), findsOneWidget);
+    expect(find.text('Is it available?'), findsOneWidget);
+    await t.tap(find.text('Rawaq'));
+    await t.pumpAndSettle();
+    expect(find.text('Chat with Rawaq'), findsOneWidget);
+  });
 }
