@@ -139,7 +139,7 @@ class AdminOverviewScreen extends ConsumerWidget {
                             builder: (context, v, _) => Text('${v.round()}', style: AQTypography.of(context, AQText.headlineLarge)),
                           ),
                     const SizedBox(height: 2),
-                    Text(label, maxLines: 2, overflow: TextOverflow.ellipsis, style: AQTypography.of(context, AQText.bodySmall, soft: true)),
+                    Text(label, maxLines: 4, style: AQTypography.of(context, AQText.bodySmall, soft: true)),
                   ],
                 ),
               ),
