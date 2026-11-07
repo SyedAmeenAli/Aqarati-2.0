@@ -1,3 +1,4 @@
+import '../core/aq/aq_glass.dart';
 import 'package:flutter/material.dart' hide Text;
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
@@ -12,6 +13,7 @@ import 'admin_auth.dart';
 import 'admin_models.dart';
 import 'admin_repository.dart';
 import 'admin_ui.dart';
+import 'admin_widgets.dart' show AdminAmbient;
 import 'admin_widgets.dart' show AdminLangButton;
 import 'admin_l10n.dart';
 
@@ -29,7 +31,8 @@ class _AuthFrame extends StatelessWidget {
     final c = AQColors.of(context);
     return Scaffold(
       backgroundColor: c.background,
-      body: SafeArea(
+      body: AdminAmbient(
+        child: SafeArea(
         child: Center(
           child: SingleChildScrollView(
             padding: const EdgeInsets.all(AQSpacing.gutter),
@@ -42,18 +45,25 @@ class _AuthFrame extends StatelessWidget {
                     alignment: AlignmentDirectional.centerEnd,
                     child: AdminLangButton(),
                   ),
-                  Align(
-                    alignment: Alignment.center,
-                    child: MasterLogo(width: 96),
+                  // The logo settles in, then the card rises under it.
+                  TweenAnimationBuilder<double>(
+                    tween: Tween(begin: 0, end: 1),
+                    duration: MediaQuery.disableAnimationsOf(context) ? Duration.zero : const Duration(milliseconds: 800),
+                    curve: Curves.easeOutBack,
+                    builder: (context, v, child) => Opacity(opacity: v.clamp(0.0, 1.0), child: Transform.scale(scale: 0.85 + 0.15 * v, child: child)),
+                    child: const Align(alignment: Alignment.center, child: MasterLogo(width: 104)),
                   ),
-                  const SizedBox(height: 20),
-                  Container(
+                  const SizedBox(height: 22),
+                  TweenAnimationBuilder<double>(
+                    tween: Tween(begin: 0, end: 1),
+                    duration: MediaQuery.disableAnimationsOf(context) ? Duration.zero : const Duration(milliseconds: 700),
+                    curve: Curves.easeOutCubic,
+                    builder: (context, v, child) => Opacity(opacity: v, child: Transform.translate(offset: Offset(0, 28 * (1 - v)), child: child)),
+                    child: AQGlass(
+                    radius: 32,
+                    blur: 18,
+                    fill: 0.72,
                     padding: const EdgeInsets.all(28),
-                    decoration: BoxDecoration(
-                      color: c.surfaceRaised,
-                      borderRadius: BorderRadius.circular(AdminSize.panel),
-                      border: Border.all(color: c.hairline),
-                    ),
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.stretch,
                       children: [
@@ -90,12 +100,13 @@ class _AuthFrame extends StatelessWidget {
                       ],
                     ),
                   ),
+                  ),
                 ],
               ),
             ),
           ),
         ),
-      ),
+      )),
     );
   }
 }

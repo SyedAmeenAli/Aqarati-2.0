@@ -553,6 +553,8 @@ class AdminSettingsScreen extends ConsumerWidget {
       title: tr('Profile and settings'),
       subtitle: tr('Your demo admin profile.'),
       children: [
+        AdminProfileHeader(name: s?.name ?? '-', role: s == null ? '-' : roleLabel(s.role)),
+        const SizedBox(height: AQSpacing.x4),
         AdminKeyValues([
           ('Name', s?.name ?? '-'),
           ('Role', s == null ? '-' : roleLabel(s.role)),
