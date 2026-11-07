@@ -7,7 +7,7 @@ import '../../core/localization/flow_strings.dart';
 import '../workspace/aq_action_card.dart';
 import '../workspace/aq_home.dart';
 
-/// The Properties landing page: Buy, Rent, Sell with Aqary e-Broker and My Favorites. It sits
+/// The Properties landing page: Buy, Rent, Sell your property and My Favorites. It sits
 /// inside the customer shell, so the four-tab bar stays in place.
 class AQPropertiesHubScreen extends StatelessWidget {
   const AQPropertiesHubScreen({super.key});
@@ -39,18 +39,10 @@ class AQPropertiesHubScreen extends StatelessWidget {
           ],
         ),
         const SizedBox(height: AQSpacing.x4),
-        // Selling is its own destination: a full-width card, not a fourth tile.
-        AQBanner(
-          image: 'assets/location/09_Modern_villa_exterior_in_Seeb.jpg',
-          eyebrow: f.t('hub.sell.eyebrow'),
-          title: f.t('hub.sell.t'),
-          body: f.t('hub.sell.b'),
-          cta: f.t('hub.sell.cta'),
-          onTap: () => context.push('/sell'),
-        ),
-        const SizedBox(height: AQSpacing.x4),
+        // Sell your property and My Favorites sit next to each other.
         AQActionGrid(
           cards: [
+            card('key', 'sell', 'assets/location/09_Modern_villa_exterior_in_Seeb.jpg', '/sell'),
             card('bookmark', 'fav', 'assets/location/10_Muscat_corniche_at_warm_evening.jpg', '/saved'),
           ],
         ),

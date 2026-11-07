@@ -21,6 +21,7 @@ import '../enquiry/make_offer_screen.dart';
 import '../viewing/widgets/viewing_format.dart';
 import '../viewing/widgets/viewing_scaffold.dart';
 import '../workspace/aq_home.dart' show aqImg, AQSkeletonBox;
+import '../contact/contact_actions.dart';
 import '../workspace/aq_cards.dart' show AQPhotoTag;
 import '../workspace/aq_thumb.dart' show AQThumb;
 import 'property_gallery_screen.dart';
@@ -468,6 +469,8 @@ class _PropertyDetailScreenState extends ConsumerState<PropertyDetailScreen> {
             ),
           ),
         ]),
+        const SizedBox(height: AQSpacing.x3),
+        AQContactButtons(name: name, phone: b == null ? null : aqDemoPhoneFor(b.id), subject: VFmt.iso(p.title)),
       ]),
     );
   }

@@ -156,15 +156,14 @@ void main() {
       _phone(t, h: 2600);
       await t.pumpWidget(_app(_router()));
       await _settle(t);
-      // Buy and Rent side by side; Sell is its own full-width destination below them; Favorites follows.
-      final titles = ['Buy', 'Rent', 'Sell your property with Aqary e-Broker', 'My Favorites'];
+      // Buy and Rent side by side; Sell your property and My Favorites side by side below them.
+      final titles = ['Buy', 'Rent', 'Sell your property', 'My Favorites'];
       final rects = [for (final x in titles) t.getRect(find.text(x))];
       expect(rects[0].top, rects[1].top);
+      expect(rects[2].top, rects[3].top, reason: 'Sell and My Favorites are next to each other');
       expect(rects[2].top, greaterThan(rects[0].top));
-      expect(rects[3].top, greaterThan(rects[2].top));
-      expect(find.text('Start selling'), findsOneWidget, reason: 'a clear Sell action');
       final cards = find.byType(AQActionCard);
-      expect(cards, findsNWidgets(3));
+      expect(cards, findsNWidgets(4));
       expect(t.getSize(cards.at(0)), t.getSize(cards.at(1)), reason: 'Buy and Rent are equal');
       expect(find.descendant(of: cards.first, matching: find.byType(Image)), findsWidgets);
     });
@@ -251,7 +250,7 @@ void main() {
       final r = _router();
       await t.pumpWidget(_app(r));
       await _settle(t);
-      await t.tap(find.text('Start selling'));
+      await t.tap(find.text('Sell your property'));
       await _settle(t);
       expect(find.text('SELL'), findsOneWidget);
       r.pop();

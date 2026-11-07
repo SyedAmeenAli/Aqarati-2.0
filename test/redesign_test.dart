@@ -85,11 +85,11 @@ void main() {
       await t.pumpWidget(_host(Align(alignment: Alignment.centerRight, child: RoleWorkspaceSwitcher(selected: HomeWorkspace.buyer, onChanged: calls.add))));
       await t.pump();
       expect(find.text('Shop'), findsOneWidget);
-      expect(find.text('Work'), findsOneWidget);
+      expect(find.text('Listing'), findsOneWidget);
       expect(t.getSize(find.byType(RoleWorkspaceSwitcher)).width, lessThan(200), reason: 'a capsule, not a full-width bar');
       await t.tap(find.text('Shop'));
       expect(calls, isEmpty, reason: 'the current mode is not a change');
-      await t.tap(find.text('Work'));
+      await t.tap(find.text('Listing'));
       expect(calls, [HomeWorkspace.agent]);
     });
 

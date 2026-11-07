@@ -22,6 +22,7 @@ import '../viewing/domain/viewing_presentation.dart' show AQTone;
 import '../viewing/widgets/viewing_components.dart';
 import '../viewing/widgets/viewing_format.dart';
 import '../viewing/widgets/viewing_scaffold.dart' show AQShellInset;
+import '../contact/contact_actions.dart';
 import 'agent_crm.dart';
 import '../ads/ad_models.dart' show AdAudience;
 import '../role_home/role_home_model.dart' show HomeRole;
@@ -722,6 +723,8 @@ class _ContactState extends ConsumerState<AgentContactScreen> {
       eyebrow: f.t('ag.d.title').toUpperCase(),
       action: _StatusPill(contact.status),
       children: [
+        AQContactButtons(name: contact.name, phone: contact.phone),
+        const SizedBox(height: AQSpacing.x3),
         Row(
           children: [
             Expanded(

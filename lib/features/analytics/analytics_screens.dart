@@ -261,10 +261,10 @@ class _RoleAnalyticsState extends ConsumerState<RoleAnalyticsScreen> {
     // The time series of this role: one or two measures, twenty-four sample weeks each so the previous
     // period can be compared. They are invented sample events, said so on the card.
     final series = switch (role) {
-      HomeRole.agent => const [('leads', 'leads', 6.0, 6.0), ('listingViews', 'views', 40.0, 30.0)],
-      HomeRole.developer => const [('enquiries', 'enq', 7.0, 7.0), ('projectInterest', 'interest', 30.0, 25.0)],
-      HomeRole.construction => const [('requests', 'req', 5.0, 5.0)],
-      HomeRole.architecture || HomeRole.interiorExterior => const [('portfolioViews', 'pviews', 25.0, 20.0), ('enquiries', 'enq', 4.0, 5.0)],
+      HomeRole.agent => const [('leads', 'leads', 6.0, 6.0), ('listingViews', 'views', 40.0, 30.0), ('clicks', 'clicks', 55.0, 35.0)],
+      HomeRole.developer => const [('enquiries', 'enq', 7.0, 7.0), ('projectInterest', 'interest', 30.0, 25.0), ('clicks', 'clicks', 45.0, 30.0)],
+      HomeRole.construction => const [('requests', 'req', 5.0, 5.0), ('clicks', 'clicks', 30.0, 20.0)],
+      HomeRole.architecture || HomeRole.interiorExterior => const [('portfolioViews', 'pviews', 25.0, 20.0), ('enquiries', 'enq', 4.0, 5.0), ('clicks', 'clicks', 38.0, 25.0)],
       HomeRole.buyer => const <(String, String, double, double)>[],
     };
     final mi = _metric.clamp(0, series.isEmpty ? 0 : series.length - 1);

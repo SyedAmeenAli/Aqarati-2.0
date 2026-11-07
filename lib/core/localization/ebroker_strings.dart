@@ -1,12 +1,12 @@
 /// Aqary e-Broker (customer side) copy. ARABIC IS DRAFT COPY and needs native review.
 /// The fee sentence is the only approved wording; no rate is calculated here.
 const Map<String, (String, String)> eBrokerStrings = {
-  'eb.row': ('Sell with Aqary e-Broker', 'البيع عبر وسيط عقاري'),
+  'eb.row': ('Sell your property', 'بيع عقارك'),
   'eb.row.sub': (
     'Offer a property you own. It is reviewed before buyers see it.',
     'اعرض عقاراً تملكه. تتم مراجعته قبل أن يراه المشترون.',
   ),
-  'eb.title': ('Sell with Aqary e-Broker', 'البيع عبر وسيط عقاري'),
+  'eb.title': ('Sell your property', 'بيع عقارك'),
   'eb.sub': ('For owners selling a property.', 'للملّاك الذين يبيعون عقاراً.'),
   'eb.how.t': ('How it works', 'كيف يعمل'),
   'eb.how.1': (

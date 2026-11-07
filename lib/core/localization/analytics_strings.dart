@@ -41,6 +41,8 @@ const Map<String, (String, String)> analyticsStrings = {
   'an.c.viewings.s': ('Scheduled, done and cancelled', 'مجدولة ومنجزة وملغاة'),
   'an.c.followups': ('Follow-up completion', 'إنجاز المتابعات'),
   'an.c.followups.s': ('Follow-up appointments', 'مواعيد المتابعة'),
+  'an.c.clicks': ('Clicks by week', 'النقرات أسبوعيًا'),
+  'an.c.clicks.s': ('How many times people tapped your listings and profile', 'عدد مرات النقر على قوائمك وملفك'),
   'an.c.listingViews': ('Listing views by week', 'مشاهدات الإعلانات أسبوعيًا'),
   'an.c.listingViews.s': ('Views of your listings', 'مشاهدات إعلاناتك'),
   'an.c.enquiries': ('Enquiries by week', 'الاستفسارات أسبوعيًا'),
