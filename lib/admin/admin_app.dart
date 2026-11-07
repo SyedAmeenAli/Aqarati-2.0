@@ -3,7 +3,6 @@ import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
-import '../core/aq/aq_scene.dart';
 import '../core/aq/aq_tokens.dart';
 import '../core/localization/entry_strings.dart' show localeProvider;
 import '../core/theme/app_theme.dart';
@@ -42,8 +41,18 @@ String? adminRedirect(AdminAuthStage stage, String location) {
 }
 
 GoRouter buildAdminRouter(WidgetRef ref, AdminAuthListenable listenable) {
-  Page<void> page(GoRouterState s, Widget child) =>
-      AQRoute.fade(key: s.pageKey, child: child);
+  Page<void> page(GoRouterState s, Widget child) => CustomTransitionPage<void>(
+    key: s.pageKey,
+    child: child,
+    transitionDuration: const Duration(milliseconds: 420),
+    transitionsBuilder: (context, animation, secondary, child) {
+      final a = CurvedAnimation(parent: animation, curve: Curves.easeOutCubic);
+      return FadeTransition(
+        opacity: a,
+        child: SlideTransition(position: Tween(begin: const Offset(0, 0.03), end: Offset.zero).animate(a), child: child),
+      );
+    },
+  );
   return GoRouter(
     initialLocation: '/login',
     refreshListenable: listenable,

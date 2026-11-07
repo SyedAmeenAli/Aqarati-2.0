@@ -242,6 +242,11 @@ class _Sidebar extends ConsumerWidget {
                 ],
               ),
             ),
+            if (inDrawer)
+              Padding(
+                padding: const EdgeInsetsDirectional.fromSTEB(16, 0, 16, 10),
+                child: _ProfileCard(name: s?.name ?? '', role: s == null ? '' : roleLabel(s.role)),
+              ),
             Divider(height: 1, thickness: 1, color: c.hairline),
             Expanded(
               child: SingleChildScrollView(
@@ -388,6 +393,7 @@ class AdminFrame extends ConsumerWidget {
   final VoidCallback? onBack;
   final String? backLabel;
   final List<Widget> children;
+  final List<(String, int)> stats;
   const AdminFrame({
     super.key,
     required this.section,
@@ -397,6 +403,7 @@ class AdminFrame extends ConsumerWidget {
     this.onBack,
     this.backLabel,
     required this.children,
+    this.stats = const [],
   });
 
   @override
@@ -436,7 +443,23 @@ class AdminFrame extends ConsumerWidget {
                 children: [
                   Semantics(
                     header: true,
-                    child: Text(title, style: AQTypography.of(context, AQText.headlineMedium)),
+                    child: ShaderMask(
+                      blendMode: BlendMode.srcIn,
+                      shaderCallback: (r) => LinearGradient(colors: [c.ink, c.accentDeep]).createShader(r),
+                      child: Text(title, style: AQTypography.of(context, AQText.headlineMedium, color: Colors.white)),
+                    ),
+                  ),
+                  // A short accent line that draws itself in.
+                  TweenAnimationBuilder<double>(
+                    tween: Tween(begin: 0, end: 1),
+                    duration: MediaQuery.disableAnimationsOf(context) ? Duration.zero : const Duration(milliseconds: 700),
+                    curve: Curves.easeOutCubic,
+                    builder: (context, v, _) => Container(
+                      margin: const EdgeInsets.only(top: 8),
+                      width: 56 * v,
+                      height: 3,
+                      decoration: BoxDecoration(gradient: LinearGradient(colors: [c.accent, const Color(0xFFE9C9A0)]), borderRadius: BorderRadius.circular(2)),
+                    ),
                   ),
                   if (subtitle != null)
                     Padding(
@@ -463,6 +486,7 @@ class AdminFrame extends ConsumerWidget {
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
               _Rise(index: 0, child: header),
+              if (stats.isNotEmpty) _Rise(index: 1, child: AdminStatStrip(stats)),
               for (var i = 0; i < children.length; i++) _Rise(index: i + 1, child: children[i]),
             ],
           ),
@@ -1085,17 +1109,7 @@ class _Skeleton extends StatelessWidget {
   const _Skeleton({required this.height});
   @override
   Widget build(BuildContext context) {
-    final c = AQColors.of(context);
-    return ExcludeSemantics(
-      child: Container(
-        height: height,
-        margin: const EdgeInsets.only(bottom: AQSpacing.x3),
-        decoration: BoxDecoration(
-          color: c.ink.withValues(alpha: c.isDark ? 0.08 : 0.05),
-          borderRadius: BorderRadius.circular(AQRadius.medium),
-        ),
-      ),
-    );
+    return _Shimmer(height: height);
   }
 }
 
@@ -1988,4 +2002,130 @@ class _AdminHeroState extends State<AdminHero> with SingleTickerProviderStateMix
   Widget _orb(double size, Color color) => IgnorePointer(
     child: Container(width: size, height: size, decoration: BoxDecoration(shape: BoxShape.circle, gradient: RadialGradient(colors: [color, color.withValues(alpha: 0)]))),
   );
+}
+
+/// A strip of frosted tiles with numbers that count up. Sits under a screen's title.
+class AdminStatStrip extends StatelessWidget {
+  final List<(String, int)> stats;
+  const AdminStatStrip(this.stats, {super.key});
+  @override
+  Widget build(BuildContext context) {
+    final c = AQColors.of(context);
+    final still = MediaQuery.disableAnimationsOf(context);
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 16),
+      child: Row(children: [
+        for (final (i, s) in stats.indexed) ...[
+          if (i > 0) const SizedBox(width: 10),
+          Expanded(
+            child: AQGlass(
+              radius: 20,
+              blur: 12,
+              fill: 0.62,
+              padding: const EdgeInsets.fromLTRB(14, 12, 12, 12),
+              child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+                TweenAnimationBuilder<double>(
+                  tween: Tween(begin: 0, end: s.$2.toDouble()),
+                  duration: still ? Duration.zero : Duration(milliseconds: 800 + 120 * i),
+                  curve: Curves.easeOutCubic,
+                  builder: (context, v, _) => Text('${v.round()}', style: AQTypography.of(context, AQText.headlineLarge, color: c.accentDeep)),
+                ),
+                const SizedBox(height: 2),
+                Text(s.$1, maxLines: 2, style: AQTypography.of(context, AQText.labelSmall, color: c.inkSoft)),
+              ]),
+            ),
+          ),
+        ],
+      ]),
+    );
+  }
+}
+
+/// The signed-in person as a small glass card with a gradient monogram.
+class _ProfileCard extends StatelessWidget {
+  final String name, role;
+  const _ProfileCard({required this.name, required this.role});
+  @override
+  Widget build(BuildContext context) {
+    final c = AQColors.of(context);
+    final initials = name.trim().isEmpty ? 'A' : name.trim().split(RegExp(r'\s+')).take(2).map((w) => w[0].toUpperCase()).join();
+    return _Rise(
+      index: 1,
+      child: AQGlass(
+        radius: 22,
+        blur: 10,
+        fill: 0.7,
+        padding: const EdgeInsets.all(12),
+        child: Row(children: [
+          Container(
+            width: 44,
+            height: 44,
+            decoration: BoxDecoration(
+              shape: BoxShape.circle,
+              gradient: LinearGradient(begin: Alignment.topLeft, end: Alignment.bottomRight, colors: [c.accent, c.accentDeep]),
+              boxShadow: [BoxShadow(color: c.accent.withValues(alpha: 0.4), blurRadius: 12, offset: const Offset(0, 4))],
+            ),
+            alignment: Alignment.center,
+            child: Text(initials, style: AQTypography.of(context, AQText.titleSmall, color: c.onAccent)),
+          ),
+          const SizedBox(width: 12),
+          Expanded(
+            child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+              Text(name, maxLines: 1, overflow: TextOverflow.ellipsis, style: AQTypography.of(context, AQText.titleSmall)),
+              Text(role, maxLines: 1, overflow: TextOverflow.ellipsis, style: AQTypography.of(context, AQText.bodySmall, soft: true)),
+            ]),
+          ),
+        ]),
+      ),
+    );
+  }
+}
+
+/// Loading placeholder with a light sweeping across it.
+class _Shimmer extends StatefulWidget {
+  final double height;
+  const _Shimmer({required this.height});
+  @override
+  State<_Shimmer> createState() => _ShimmerState();
+}
+
+class _ShimmerState extends State<_Shimmer> with SingleTickerProviderStateMixin {
+  late final AnimationController _ctl = AnimationController(vsync: this, duration: const Duration(milliseconds: 1400));
+  bool _started = false;
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    if (!_started && !MediaQuery.disableAnimationsOf(context)) {
+      _started = true;
+      _ctl.repeat(count: 40);
+    }
+  }
+
+  @override
+  void dispose() {
+    _ctl.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final c = AQColors.of(context);
+    return ExcludeSemantics(
+      child: AnimatedBuilder(
+        animation: _ctl,
+        builder: (context, _) => Container(
+          height: widget.height,
+          margin: const EdgeInsets.only(bottom: AQSpacing.x3),
+          decoration: BoxDecoration(
+            borderRadius: BorderRadius.circular(22),
+            gradient: LinearGradient(
+              begin: Alignment(-1.6 + 3.2 * _ctl.value, 0),
+              end: Alignment(-0.6 + 3.2 * _ctl.value, 0),
+              colors: [c.accent.withValues(alpha: 0.06), c.accent.withValues(alpha: 0.16), c.accent.withValues(alpha: 0.06)],
+            ),
+          ),
+        ),
+      ),
+    );
+  }
 }
