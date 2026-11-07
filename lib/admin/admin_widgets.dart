@@ -160,13 +160,25 @@ class _Rise extends StatelessWidget {
   }
 }
 
+String _sectionIcon(String section) => switch (section) {
+  '/ads' => 'megaphone',
+  '/verification' => 'verified',
+  '/moderation' => 'shield',
+  '/reports' => 'flag',
+  '/accounts' => 'account',
+  '/analytics' => 'chart',
+  '/audit' => 'clock',
+  _ => 'listings',
+};
+
 /// Header of a detail page: a back pill, a monogram, the name and its status, on one glass card.
 class _DetailHeader extends StatelessWidget {
   final String title, backLabel;
   final String? subtitle;
   final List<Widget> actions;
   final VoidCallback onBack;
-  const _DetailHeader({required this.title, required this.subtitle, required this.actions, required this.onBack, required this.backLabel});
+  final String icon;
+  const _DetailHeader({required this.title, required this.subtitle, required this.actions, required this.onBack, required this.backLabel, required this.icon});
   @override
   Widget build(BuildContext context) {
     final c = AQColors.of(context);
@@ -209,7 +221,7 @@ class _DetailHeader extends StatelessWidget {
               boxShadow: [BoxShadow(color: c.accent.withValues(alpha: 0.4), blurRadius: 16, offset: const Offset(0, 6))],
             ),
             alignment: Alignment.center,
-            child: AQIcon('account', size: 28, color: c.onAccent),
+            child: AQIcon(icon, size: 28, color: c.onAccent),
           ),
           const SizedBox(width: 14),
           Expanded(
@@ -470,7 +482,7 @@ class AdminFrame extends ConsumerWidget {
     final side = wide ? 32.0 : AQSpacing.gutter;
 
     final detail = onBack != null
-        ? _DetailHeader(title: title, subtitle: subtitle, actions: actions, onBack: onBack!, backLabel: backLabel ?? 'Back')
+        ? _DetailHeader(title: title, subtitle: subtitle, actions: actions, onBack: onBack!, backLabel: backLabel ?? 'Back', icon: _sectionIcon(section))
         : null;
     final header = detail != null
         ? Padding(padding: const EdgeInsets.only(bottom: 20), child: detail)
@@ -579,7 +591,7 @@ class AdminFrame extends ConsumerWidget {
       ),
       extendBody: !rail,
       bottomNavigationBar: rail ? null : _BottomNav(section: section),
-      body: _Ambient(child: SafeArea(
+      body: AdminAmbient(child: SafeArea(
         bottom: false,
         child: Builder(
           builder: (context) => Column(
@@ -620,9 +632,9 @@ class AdminFrame extends ConsumerWidget {
 }
 
 /// Soft warm light behind the content, so frosted surfaces have something to blur.
-class _Ambient extends StatelessWidget {
+class AdminAmbient extends StatelessWidget {
   final Widget child;
-  const _Ambient({required this.child});
+  const AdminAmbient({super.key, required this.child});
   @override
   Widget build(BuildContext context) {
     final c = AQColors.of(context);
@@ -2325,6 +2337,46 @@ class AdminProgressCard extends StatelessWidget {
             curve: Curves.easeOutCubic,
             builder: (context, v, _) => LinearProgressIndicator(value: v, minHeight: 10, color: done == total ? c.success : c.accent, backgroundColor: c.accent.withValues(alpha: 0.14)),
           ),
+        ),
+      ]),
+    );
+  }
+}
+
+/// Big profile header for Settings: gradient badge, name, role, on a glass card.
+class AdminProfileHeader extends StatelessWidget {
+  final String name, role;
+  const AdminProfileHeader({super.key, required this.name, required this.role});
+  @override
+  Widget build(BuildContext context) {
+    final c = AQColors.of(context);
+    return AQGlass(
+      radius: 30,
+      blur: 14,
+      fill: 0.68,
+      padding: const EdgeInsets.all(20),
+      child: Row(children: [
+        Container(
+          width: 72,
+          height: 72,
+          decoration: BoxDecoration(
+            shape: BoxShape.circle,
+            gradient: LinearGradient(begin: Alignment.topLeft, end: Alignment.bottomRight, colors: [c.accent, c.accentDeep]),
+            boxShadow: [BoxShadow(color: c.accent.withValues(alpha: 0.45), blurRadius: 20, offset: const Offset(0, 8))],
+          ),
+          child: Center(child: AQIcon('account', size: 34, color: c.onAccent)),
+        ),
+        const SizedBox(width: 16),
+        Expanded(
+          child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+            Text(name, maxLines: 2, overflow: TextOverflow.ellipsis, style: AQTypography.of(context, AQText.headlineSmall)),
+            const SizedBox(height: 4),
+            Container(
+              padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 3),
+              decoration: BoxDecoration(color: c.accent.withValues(alpha: 0.14), borderRadius: BorderRadius.circular(12)),
+              child: Text(role, style: AQTypography.of(context, AQText.labelMedium, color: c.accentDeep).copyWith(letterSpacing: 0.1)),
+            ),
+          ]),
         ),
       ]),
     );

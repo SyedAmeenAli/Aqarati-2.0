@@ -128,9 +128,13 @@ class _AdminButtonState extends State<AdminButton> {
               constraints: BoxConstraints(minHeight: h, minWidth: k == AdminButtonKind.text ? 0 : (widget.compact ? 56 : 84)),
               padding: EdgeInsets.symmetric(horizontal: k == AdminButtonKind.text ? 8 : (widget.compact ? 12 : 16)),
               decoration: BoxDecoration(
-                color: bg,
-                borderRadius: BorderRadius.circular(AdminSize.control),
+                color: k == AdminButtonKind.primary ? null : bg,
+                gradient: k == AdminButtonKind.primary ? LinearGradient(begin: Alignment.topLeft, end: Alignment.bottomRight, colors: [bg, c.accentDeep]) : null,
+                borderRadius: BorderRadius.circular(AdminSize.control + 6),
                 border: Border.all(color: border),
+                boxShadow: enabled && k == AdminButtonKind.primary
+                    ? [BoxShadow(color: c.accent.withValues(alpha: _hover ? 0.5 : 0.32), blurRadius: _hover ? 18 : 12, offset: const Offset(0, 5))]
+                    : (enabled && k == AdminButtonKind.secondary ? [BoxShadow(color: c.accentDeep.withValues(alpha: 0.08), blurRadius: 8, offset: const Offset(0, 2))] : const []),
               ),
               child: content,
             ),
@@ -283,7 +287,7 @@ class AdminField extends StatelessWidget {
   Widget build(BuildContext context) {
     final c = AQColors.of(context);
     OutlineInputBorder b(Color col, [double w = 1]) => OutlineInputBorder(
-      borderRadius: BorderRadius.circular(AdminSize.control),
+      borderRadius: BorderRadius.circular(AdminSize.control + 6),
       borderSide: BorderSide(color: col, width: w),
     );
     return TextField(
@@ -313,7 +317,7 @@ class AdminField extends StatelessWidget {
         errorText: error == null ? null : tr(error!),
         errorMaxLines: 2,
         filled: true,
-        fillColor: enabled ? c.surface : c.surface.withValues(alpha: 0.5),
+        fillColor: enabled ? c.surfaceRaised.withValues(alpha: 0.92) : c.surface.withValues(alpha: 0.5),
         contentPadding: EdgeInsets.symmetric(horizontal: 12, vertical: (AdminSize.field - 20) / 2),
         constraints: const BoxConstraints(minHeight: AdminSize.field),
         prefixIcon: prefix,
@@ -322,7 +326,7 @@ class AdminField extends StatelessWidget {
         suffixIconConstraints: const BoxConstraints(minWidth: 40, minHeight: AdminSize.field),
         enabledBorder: b(c.hairline),
         disabledBorder: b(c.hairline.withValues(alpha: 0.6)),
-        focusedBorder: b(c.accent, 1.5),
+        focusedBorder: b(c.accent, 2),
         errorBorder: b(c.danger),
         focusedErrorBorder: b(c.danger, 1.5),
       ),
