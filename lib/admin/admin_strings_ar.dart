@@ -91,6 +91,7 @@ final Map<String, String> kAdminArPatterns = {
 /// Exact strings.
 final Map<String, String> kAdminAr = {
   // ---- navigation and shell
+  'Today at AQARATI': 'اليوم في عقاراتي', 'items need a decision': 'عناصر تنتظر قراراً', 'Everything waiting for you, in one place. Demo data only.': 'كل ما ينتظرك في مكان واحد. بيانات تجريبية فقط.',
   'Overview': 'نظرة عامة', 'People': 'الأشخاص', 'Accounts': 'الحسابات', 'Verification': 'التحقق',
   'Agents and brokers': 'الوكلاء والوسطاء', 'Listings': 'العقارات', 'Listing moderation': 'مراجعة العقارات',
   'Property listings': 'العقارات المعروضة', 'Development projects': 'مشاريع التطوير', 'Construction': 'المقاولات',

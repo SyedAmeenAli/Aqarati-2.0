@@ -130,7 +130,14 @@ class AdminOverviewScreen extends ConsumerWidget {
                   crossAxisAlignment: CrossAxisAlignment.start,
                   mainAxisSize: MainAxisSize.min,
                   children: [
-                    Text(value, style: AQTypography.of(context, AQText.headlineLarge)),
+                    int.tryParse(value) == null
+                        ? Text(value, style: AQTypography.of(context, AQText.headlineLarge))
+                        : TweenAnimationBuilder<double>(
+                            tween: Tween(begin: 0, end: int.parse(value).toDouble()),
+                            duration: MediaQuery.disableAnimationsOf(context) ? Duration.zero : const Duration(milliseconds: 900),
+                            curve: Curves.easeOutCubic,
+                            builder: (context, v, _) => Text('${v.round()}', style: AQTypography.of(context, AQText.headlineLarge)),
+                          ),
                     const SizedBox(height: 2),
                     Text(label, maxLines: 2, overflow: TextOverflow.ellipsis, style: AQTypography.of(context, AQText.bodySmall, soft: true)),
                   ],
@@ -284,6 +291,19 @@ class AdminOverviewScreen extends ConsumerWidget {
       title: tr('Overview'),
       subtitle: tr('What needs attention across AQARATI. Demo data only.'),
       children: [
+        AdminHero(
+          eyebrow: tr('Today at AQARATI'),
+          number: count(AcctStatus.underReview) + (verif?.length ?? 0) + (pendingListings ?? 0) + openReports,
+          headline: tr('items need a decision'),
+          caption: tr('Everything waiting for you, in one place. Demo data only.'),
+          links: [
+            (tr('Accounts'), '${count(AcctStatus.underReview)}', () => context.go('/accounts')),
+            (tr('Verification'), '${verif?.length ?? 0}', () => context.go('/verification')),
+            (tr('Listings'), '${pendingListings ?? 0}', () => context.go('/moderation')),
+            (tr('Reports'), '$openReports', () => context.go('/reports')),
+          ],
+        ),
+        const SizedBox(height: 16),
         LayoutBuilder(
           builder: (context, box) {
             final cols = box.maxWidth >= 860 ? 3 : 2;

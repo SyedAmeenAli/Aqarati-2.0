@@ -1097,7 +1097,7 @@ class _GlowIconState extends State<_GlowIcon> with SingleTickerProviderStateMixi
     super.didChangeDependencies();
     if (!_started && !MediaQuery.disableAnimationsOf(context)) {
       _started = true;
-      _ctl.repeat(reverse: true);
+      _ctl.repeat(reverse: true, count: 20);
     }
   }
 
@@ -1852,4 +1852,122 @@ class AdminLangButton extends ConsumerWidget {
       onPressed: () => ref.read(localeProvider.notifier).state = Locale(ar ? 'en' : 'ar'),
     );
   }
+}
+
+/// A rich header card: deep espresso gradient, slow drifting light, a big counting number and quick links.
+class AdminHero extends StatefulWidget {
+  final String eyebrow, headline, caption;
+  final int number;
+  final List<(String, String, VoidCallback)> links;
+  const AdminHero({super.key, required this.eyebrow, required this.headline, required this.caption, required this.number, this.links = const []});
+  @override
+  State<AdminHero> createState() => _AdminHeroState();
+}
+
+class _AdminHeroState extends State<AdminHero> with SingleTickerProviderStateMixin {
+  late final AnimationController _ctl = AnimationController(vsync: this, duration: const Duration(seconds: 9));
+  bool _started = false;
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    if (!_started && !MediaQuery.disableAnimationsOf(context)) {
+      _started = true;
+      _ctl.repeat(reverse: true, count: 12);
+    }
+  }
+
+  @override
+  void dispose() {
+    _ctl.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    const gold = Color(0xFFE9C9A0);
+    return ClipRRect(
+      borderRadius: BorderRadius.circular(28),
+      child: Container(
+        decoration: const BoxDecoration(
+          gradient: LinearGradient(begin: Alignment.topLeft, end: Alignment.bottomRight, colors: [Color(0xFF2B1F16), Color(0xFF5A3F2A), Color(0xFF825C3F)]),
+        ),
+        child: Stack(children: [
+          // Two soft lights that drift, so the card is never still.
+          Positioned.fill(
+            child: AnimatedBuilder(
+              animation: _ctl,
+              builder: (context, _) {
+                final t = Curves.easeInOut.transform(_ctl.value);
+                return Stack(children: [
+                  Positioned(right: -60 + 50 * t, top: -70 + 30 * t, child: _orb(220, gold.withValues(alpha: 0.30))),
+                  Positioned(left: -80 + 40 * (1 - t), bottom: -110 + 20 * t, child: _orb(240, const Color(0xFFB8845A).withValues(alpha: 0.35))),
+                ]);
+              },
+            ),
+          ),
+          Padding(
+            padding: const EdgeInsets.all(22),
+            child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+              Text(widget.eyebrow.toUpperCase(), style: AQTypography.of(context, AQText.labelSmall, color: gold).copyWith(letterSpacing: 1.6)),
+              const SizedBox(height: 10),
+              Row(crossAxisAlignment: CrossAxisAlignment.end, children: [
+                TweenAnimationBuilder<double>(
+                  tween: Tween(begin: 0, end: widget.number.toDouble()),
+                  duration: MediaQuery.disableAnimationsOf(context) ? Duration.zero : const Duration(milliseconds: 1100),
+                  curve: Curves.easeOutCubic,
+                  builder: (context, v, _) => Text('${v.round()}', style: AQTypography.of(context, AQText.displayLarge, color: Colors.white).copyWith(height: 1)),
+                ),
+                const SizedBox(width: 12),
+                Expanded(
+                  child: Padding(
+                    padding: const EdgeInsets.only(bottom: 6),
+                    child: Text(widget.headline, style: AQTypography.of(context, AQText.titleMedium, color: Colors.white)),
+                  ),
+                ),
+              ]),
+              const SizedBox(height: 8),
+              Text(widget.caption, style: AQTypography.of(context, AQText.bodySmall, color: Colors.white.withValues(alpha: 0.78))),
+              if (widget.links.isNotEmpty) ...[
+                const SizedBox(height: 18),
+                Wrap(spacing: 8, runSpacing: 8, children: [
+                  for (final l in widget.links)
+                    Semantics(
+                      button: true,
+                      label: l.$1,
+                      excludeSemantics: true,
+                      onTap: l.$3,
+                      child: AQPressable(
+                        onTap: l.$3,
+                        child: Container(
+                          constraints: const BoxConstraints(minHeight: 40),
+                          padding: const EdgeInsets.symmetric(horizontal: 14),
+                          decoration: BoxDecoration(
+                            color: Colors.white.withValues(alpha: 0.14),
+                            borderRadius: BorderRadius.circular(20),
+                            border: Border.all(color: Colors.white.withValues(alpha: 0.28)),
+                          ),
+                          child: Row(mainAxisSize: MainAxisSize.min, children: [
+                            Text(l.$1, style: AQTypography.of(context, AQText.labelMedium, color: Colors.white)),
+                            const SizedBox(width: 8),
+                            Container(
+                              padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 1),
+                              decoration: BoxDecoration(color: gold, borderRadius: BorderRadius.circular(10)),
+                              child: Text(l.$2, style: AQTypography.of(context, AQText.labelSmall, color: const Color(0xFF2B1F16))),
+                            ),
+                          ]),
+                        ),
+                      ),
+                    ),
+                ]),
+              ],
+            ]),
+          ),
+        ]),
+      ),
+    );
+  }
+
+  Widget _orb(double size, Color color) => IgnorePointer(
+    child: Container(width: size, height: size, decoration: BoxDecoration(shape: BoxShape.circle, gradient: RadialGradient(colors: [color, color.withValues(alpha: 0)]))),
+  );
 }
