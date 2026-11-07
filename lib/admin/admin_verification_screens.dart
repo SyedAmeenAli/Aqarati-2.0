@@ -376,6 +376,8 @@ class _VerificationDetailScreenState
                   crossAxisAlignment: CrossAxisAlignment.stretch,
                   children: [
                     adminSection(context, 'Checklist'),
+                    AdminProgressCard(label: tr('Checks completed'), done: _checks.length, total: kApplicantChecklist.length),
+                    const SizedBox(height: AQSpacing.x3),
                     AdminChecklist(
                       items: const [
                         ('registry', 'Registry lookup done'),

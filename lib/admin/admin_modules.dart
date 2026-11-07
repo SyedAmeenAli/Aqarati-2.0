@@ -492,59 +492,47 @@ class AdminAnalyticsScreen extends ConsumerWidget {
   const AdminAnalyticsScreen({super.key});
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final c = AQColors.of(context);
     final mods = ref.watch(adminModulesProvider);
     final dir = ref.watch(adminDirectoryProvider);
     int n(ModKey k, String s) => (mods[k] ?? const []).where((r) => r.status == s).length;
     final phone = MediaQuery.sizeOf(context).width < 640;
     final tileWidth = phone ? (MediaQuery.sizeOf(context).width - AQSpacing.gutter * 2 - AQSpacing.x3) / 2 : 240.0;
-    Widget tile(String label, String value, {bool sample = false}) => SizedBox(
-      width: tileWidth,
-      child: AdminPanel(
-        padding: EdgeInsets.all(phone ? AQSpacing.x3 : AQSpacing.x4),
-        child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-          Text(value, style: AQTypography.of(context, phone ? AQText.headlineMedium : AQText.displaySmall)),
-          Text(label, style: AQTypography.of(context, AQText.bodySmall, soft: true)),
-          if (sample) Text('Sample figure', style: AQTypography.of(context, AQText.labelSmall, color: c.accentDeep)),
-        ]),
-      ),
-    );
+    Widget tile(String label, String value, String icon, {bool sample = false}) =>
+        SizedBox(width: tileWidth, child: AdminMetricTile(label: label, value: value, icon: icon, sample: sample));
     const weeks = [38, 44, 41, 52, 57, 63, 71];
     return AdminFrame(
       section: '/analytics',
       title: tr('Analytics'),
       subtitle: tr('Counts come from the records in this demo. Anything marked Sample figure is invented and measures nothing.'),
       children: [
+        AdminHero(
+          eyebrow: tr('Sample visits this week'),
+          number: 4820,
+          headline: tr('visits (sample)'),
+          caption: tr('Sample figures are invented and measure nothing.'),
+        ),
         adminSection(context, 'From the demo records'),
         Wrap(spacing: AQSpacing.x3, runSpacing: AQSpacing.x3, children: [
-          tile('Accounts', '${dir.accounts.length}'),
-          tile('Live listings', '${n(ModKey.listings, 'Live')}'),
-          tile('Trusted brokers', '${n(ModKey.brokers, 'Trusted')}'),
-          tile('Published projects', '${n(ModKey.projects, 'Published')}'),
-          tile('Open maintenance requests', '${n(ModKey.maintenance, 'New') + n(ModKey.maintenance, 'Scheduled')}'),
-          tile('Viewings waiting', '${n(ModKey.viewings, 'Requested')}'),
+          tile('Accounts', '${dir.accounts.length}', 'account'),
+          tile('Live listings', '${n(ModKey.listings, 'Live')}', 'listings'),
+          tile('Trusted brokers', '${n(ModKey.brokers, 'Trusted')}', 'verified'),
+          tile('Published projects', '${n(ModKey.projects, 'Published')}', 'development'),
+          tile('Open maintenance requests', '${n(ModKey.maintenance, 'New') + n(ModKey.maintenance, 'Scheduled')}', 'wrench'),
+          tile('Viewings waiting', '${n(ModKey.viewings, 'Requested')}', 'calendar'),
         ]),
         adminSection(context, 'Sample figures'),
         Wrap(spacing: AQSpacing.x3, runSpacing: AQSpacing.x3, children: [
-          tile('Sample visits this week', '4,820', sample: true),
-          tile('Sample enquiries this week', '312', sample: true),
-          tile('Sample banner taps this week', '146', sample: true),
+          tile('Sample visits this week', '4,820', 'eye', sample: true),
+          tile('Sample enquiries this week', '312', 'send', sample: true),
+          tile('Sample banner taps this week', '146', 'megaphone', sample: true),
         ]),
         const SizedBox(height: AQSpacing.x4),
         AdminPanel(
           padding: const EdgeInsets.all(AQSpacing.x4),
-          child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+          child: Column(crossAxisAlignment: CrossAxisAlignment.stretch, children: [
             Semantics(header: true, child: Text('Sample enquiries by week', style: AQTypography.of(context, AQText.titleSmall))),
-            const SizedBox(height: AQSpacing.x3),
-            for (final (i, w) in weeks.indexed)
-              Padding(
-                padding: const EdgeInsets.symmetric(vertical: 3),
-                child: Row(children: [
-                  SizedBox(width: 72, child: Text('Week ${i + 1}', style: AQTypography.of(context, AQText.bodySmall))),
-                  Expanded(child: ClipRRect(borderRadius: BorderRadius.circular(4), child: LinearProgressIndicator(value: w / 80, minHeight: 8, color: c.accent, backgroundColor: c.hairline))),
-                  SizedBox(width: 36, child: Text('$w', textAlign: TextAlign.end, style: AQTypography.of(context, AQText.labelMedium))),
-                ]),
-              ),
+            const SizedBox(height: AQSpacing.x4),
+            AdminBarChart(values: weeks, labelOf: (i) => '${i + 1}'),
           ]),
         ),
         adminDemoNotice(),

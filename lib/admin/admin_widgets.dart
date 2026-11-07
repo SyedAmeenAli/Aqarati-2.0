@@ -763,7 +763,7 @@ class _NavButton extends StatelessWidget {
             child: Center(child: AQIcon(icon, size: 20, color: selected ? c.accentDeep : c.inkSoft)),
           ),
           const SizedBox(height: 2),
-          Text(label, maxLines: 1, overflow: TextOverflow.ellipsis, style: AQTypography.of(context, AQText.labelSmall, color: selected ? c.accentDeep : c.inkSoft)),
+          Text(label, maxLines: 1, overflow: TextOverflow.ellipsis, style: AQTypography.of(context, AQText.labelSmall, color: selected ? c.accentDeep : c.inkSoft).copyWith(letterSpacing: 0, wordSpacing: 0, fontWeight: selected ? FontWeight.w700 : FontWeight.w500)),
         ]),
       ),
     );
@@ -2063,7 +2063,7 @@ class _AdminHeroState extends State<AdminHero> with SingleTickerProviderStateMix
                             Container(
                               padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 1),
                               decoration: BoxDecoration(color: gold, borderRadius: BorderRadius.circular(10)),
-                              child: Text(l.$2, style: AQTypography.of(context, AQText.labelSmall, color: const Color(0xFF2B1F16))),
+                              child: Text(l.$2, style: AQTypography.of(context, AQText.labelSmall, color: const Color(0xFF2B1F16)).copyWith(letterSpacing: 0.2)),
                             ),
                           ]),
                         ),
@@ -2110,7 +2110,7 @@ class AdminStatStrip extends StatelessWidget {
                   builder: (context, v, _) => Text('${v.round()}', style: AQTypography.of(context, AQText.headlineLarge, color: c.accentDeep)),
                 ),
                 const SizedBox(height: 2),
-                Text(s.$1, maxLines: 2, style: AQTypography.of(context, AQText.labelSmall, color: c.inkSoft)),
+                Text(s.$1, maxLines: 2, style: AQTypography.of(context, AQText.labelMedium, color: c.inkSoft).copyWith(letterSpacing: 0.1)),
               ]),
             ),
           ),
@@ -2204,6 +2204,129 @@ class _ShimmerState extends State<_Shimmer> with SingleTickerProviderStateMixin 
           ),
         ),
       ),
+    );
+  }
+}
+
+/// A frosted metric tile: icon, a number that counts up, a label.
+class AdminMetricTile extends StatelessWidget {
+  final String label, value, icon;
+  final bool sample;
+  const AdminMetricTile({super.key, required this.label, required this.value, required this.icon, this.sample = false});
+  @override
+  Widget build(BuildContext context) {
+    final c = AQColors.of(context);
+    final n = int.tryParse(value.replaceAll(',', ''));
+    final still = MediaQuery.disableAnimationsOf(context);
+    return AQGlass(
+      radius: 24,
+      blur: 12,
+      fill: 0.66,
+      padding: const EdgeInsets.all(16),
+      child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+        Container(
+          width: 38,
+          height: 38,
+          decoration: BoxDecoration(
+            borderRadius: BorderRadius.circular(13),
+            gradient: LinearGradient(begin: Alignment.topLeft, end: Alignment.bottomRight, colors: [c.accent.withValues(alpha: 0.22), c.accent.withValues(alpha: 0.08)]),
+          ),
+          child: Center(child: AQIcon(icon, size: 18, color: c.accentDeep)),
+        ),
+        const SizedBox(height: 12),
+        n == null
+            ? Text(value, style: AQTypography.of(context, AQText.headlineMedium))
+            : TweenAnimationBuilder<double>(
+                tween: Tween(begin: 0, end: n.toDouble()),
+                duration: still ? Duration.zero : const Duration(milliseconds: 1000),
+                curve: Curves.easeOutCubic,
+                builder: (context, v, _) {
+                  final t = v.round().toString();
+                  final shown = value.contains(',') ? t.replaceAllMapped(RegExp(r'\B(?=(\d{3})+(?!\d))'), (_) => ',') : t;
+                  return Text(shown, style: AQTypography.of(context, AQText.headlineMedium));
+                },
+              ),
+        const SizedBox(height: 2),
+        Text(label, style: AQTypography.of(context, AQText.bodySmall, soft: true)),
+        if (sample) Padding(padding: const EdgeInsets.only(top: 4), child: Text('Sample figure', style: AQTypography.of(context, AQText.labelSmall, color: c.accentDeep).copyWith(letterSpacing: 0.2))),
+      ]),
+    );
+  }
+}
+
+/// Columns that grow up from the baseline, one after another.
+class AdminBarChart extends StatelessWidget {
+  final List<int> values;
+  final String Function(int index) labelOf;
+  const AdminBarChart({super.key, required this.values, required this.labelOf});
+  @override
+  Widget build(BuildContext context) {
+    final c = AQColors.of(context);
+    final still = MediaQuery.disableAnimationsOf(context);
+    final max = values.fold<int>(1, (m, v) => v > m ? v : m);
+    return SizedBox(
+      height: 190,
+      child: Row(crossAxisAlignment: CrossAxisAlignment.end, children: [
+        for (final (i, v) in values.indexed)
+          Expanded(
+            child: Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 4),
+              child: TweenAnimationBuilder<double>(
+                tween: Tween(begin: 0, end: v / max),
+                duration: still ? Duration.zero : Duration(milliseconds: 700 + 90 * i),
+                curve: Curves.easeOutBack,
+                builder: (context, f, _) => Column(mainAxisAlignment: MainAxisAlignment.end, children: [
+                  Text('$v', style: AQTypography.of(context, AQText.labelSmall, color: c.accentDeep).copyWith(letterSpacing: 0.2)),
+                  const SizedBox(height: 4),
+                  Container(
+                    height: 130 * f.clamp(0.0, 1.1),
+                    decoration: BoxDecoration(
+                      borderRadius: BorderRadius.circular(10),
+                      gradient: LinearGradient(begin: Alignment.topCenter, end: Alignment.bottomCenter, colors: [c.accent, c.accentDeep]),
+                      boxShadow: [BoxShadow(color: c.accent.withValues(alpha: 0.3), blurRadius: 10, offset: const Offset(0, 4))],
+                    ),
+                  ),
+                  const SizedBox(height: 6),
+                  Text(labelOf(i), style: AQTypography.of(context, AQText.labelSmall, color: c.inkSoft).copyWith(letterSpacing: 0.2)),
+                ]),
+              ),
+            ),
+          ),
+      ]),
+    );
+  }
+}
+
+/// "3 of 4" with a bar that fills smoothly.
+class AdminProgressCard extends StatelessWidget {
+  final String label;
+  final int done, total;
+  const AdminProgressCard({super.key, required this.label, required this.done, required this.total});
+  @override
+  Widget build(BuildContext context) {
+    final c = AQColors.of(context);
+    final still = MediaQuery.disableAnimationsOf(context);
+    return AQGlass(
+      radius: 22,
+      blur: 10,
+      fill: 0.68,
+      padding: const EdgeInsets.all(16),
+      child: Column(crossAxisAlignment: CrossAxisAlignment.stretch, children: [
+        Row(children: [
+          Expanded(child: Text(label, style: AQTypography.of(context, AQText.titleSmall))),
+          Text('$done / $total', style: AQTypography.of(context, AQText.titleSmall, color: c.accentDeep)),
+        ]),
+        const SizedBox(height: 10),
+        ClipRRect(
+          borderRadius: BorderRadius.circular(6),
+          child: TweenAnimationBuilder<double>(
+            tween: Tween(begin: 0, end: total == 0 ? 0 : done / total),
+            duration: still ? Duration.zero : const Duration(milliseconds: 500),
+            curve: Curves.easeOutCubic,
+            builder: (context, v, _) => LinearProgressIndicator(value: v, minHeight: 10, color: done == total ? c.success : c.accent, backgroundColor: c.accent.withValues(alpha: 0.14)),
+          ),
+        ),
+      ]),
     );
   }
 }

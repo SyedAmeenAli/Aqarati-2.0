@@ -554,6 +554,11 @@ class _ReportsState extends ConsumerState<AdminReportsScreen> {
       section: '/reports',
       title: tr('Reports and complaints'),
       subtitle: tr('Illustrative reports from shoppers and businesses.'),
+      stats: [
+        (tr('Open'), dir.reports.where((r) => r.status == ReportStatus.open).length),
+        (tr('In review'), dir.reports.where((r) => r.status == ReportStatus.inReview).length),
+        (tr('Resolved'), dir.reports.where((r) => r.status == ReportStatus.resolved).length),
+      ],
       children: [
         AdminSearchField(controller: _q, hint: tr('Search subject or summary'), onChanged: (_) => setState(() {})),
         const SizedBox(height: AQSpacing.x3),

@@ -91,6 +91,8 @@ final Map<String, String> kAdminArPatterns = {
 /// Exact strings.
 final Map<String, String> kAdminAr = {
   // ---- navigation and shell
+  'Waiting': 'بالانتظار',
+  'visits (sample)': 'زيارة (تجريبية)', 'Sample figures are invented and measure nothing.': 'الأرقام التجريبية مختلقة ولا تقيس شيئاً.', 'Checks completed': 'الفحوصات المكتملة',
   'Total': 'الإجمالي', 'Showing': 'المعروض', 'In the queue': 'في قائمة الانتظار',
   'Today at AQARATI': 'اليوم في عقاراتي', 'items need a decision': 'عناصر تنتظر قراراً', 'Everything waiting for you, in one place. Demo data only.': 'كل ما ينتظرك في مكان واحد. بيانات تجريبية فقط.',
   'Overview': 'نظرة عامة', 'People': 'الأشخاص', 'Accounts': 'الحسابات', 'Verification': 'التحقق',
