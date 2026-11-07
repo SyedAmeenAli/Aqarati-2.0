@@ -1,3 +1,4 @@
+import '../core/aq/aq_glass.dart';
 import 'package:flutter/material.dart' hide Text;
 import 'package:flutter/services.dart';
 
@@ -438,16 +439,6 @@ class AdminPanel extends StatelessWidget {
   const AdminPanel({super.key, required this.child, this.padding = const EdgeInsets.all(16)});
   @override
   Widget build(BuildContext context) {
-    final c = AQColors.of(context);
-    return Container(
-      padding: padding,
-      decoration: BoxDecoration(
-        gradient: LinearGradient(begin: Alignment.topLeft, end: Alignment.bottomRight, colors: [c.surfaceRaised, Color.alphaBlend(c.accent.withValues(alpha: 0.05), c.surfaceRaised)]),
-        borderRadius: BorderRadius.circular(AdminSize.panel + 4),
-        border: Border.all(color: c.hairline),
-        boxShadow: [BoxShadow(color: c.accentDeep.withValues(alpha: 0.07), blurRadius: 22, offset: const Offset(0, 8))],
-      ),
-      child: child,
-    );
+    return AQGlass(radius: 26, blur: 12, fill: 0.68, padding: padding, child: child);
   }
 }
