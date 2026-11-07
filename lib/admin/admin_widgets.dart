@@ -544,16 +544,48 @@ class _BottomNav extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final c = AQColors.of(context);
-    final inPrimary = _primaryNav.any((n) => n.route == section);
-    return Container(
-      decoration: BoxDecoration(color: c.surfaceRaised, border: Border(top: BorderSide(color: c.hairline)), boxShadow: [BoxShadow(color: c.accentDeep.withValues(alpha: 0.10), blurRadius: 18, offset: const Offset(0, -4))]),
-      child: SafeArea(
-        top: false,
-        child: SizedBox(
-          height: 60,
-          child: Row(children: [
-            for (final n in _primaryNav) Expanded(child: _NavButton(icon: n.icon, label: tr(n.label == 'Property listings' ? 'Listings' : n.label), selected: section == n.route, onTap: () => context.go(n.route))),
-            Expanded(child: _NavButton(icon: 'more', label: tr('More'), selected: !inPrimary, onTap: () => Scaffold.of(context).openDrawer())),
+    final idx = _primaryNav.indexWhere((n) => n.route == section);
+    final sel = idx < 0 ? _primaryNav.length : idx;
+    final count = _primaryNav.length + 1;
+    final rtl = Directionality.of(context) == TextDirection.rtl;
+    final dx = (-1 + 2 * sel / (count - 1)) * (rtl ? -1 : 1);
+    return SafeArea(
+      top: false,
+      child: Padding(
+        padding: const EdgeInsets.fromLTRB(12, 6, 12, 10),
+        child: Container(
+          height: 64,
+          decoration: BoxDecoration(
+            gradient: LinearGradient(begin: Alignment.topCenter, end: Alignment.bottomCenter, colors: [c.surfaceRaised, Color.alphaBlend(c.accent.withValues(alpha: 0.06), c.surfaceRaised)]),
+            borderRadius: BorderRadius.circular(32),
+            border: Border.all(color: c.hairline),
+            boxShadow: [BoxShadow(color: c.accentDeep.withValues(alpha: 0.18), blurRadius: 26, offset: const Offset(0, 10))],
+          ),
+          child: Stack(children: [
+            // The highlight slides to the chosen destination.
+            AnimatedAlign(
+              duration: AQMotion.scaled(context, const Duration(milliseconds: 380)),
+              curve: Curves.easeOutBack,
+              alignment: Alignment(dx, 0),
+              child: FractionallySizedBox(
+                widthFactor: 1 / count,
+                heightFactor: 1,
+                child: Padding(
+                  padding: const EdgeInsets.all(6),
+                  child: DecoratedBox(
+                    decoration: BoxDecoration(
+                      gradient: LinearGradient(begin: Alignment.topLeft, end: Alignment.bottomRight, colors: [c.surfaceSelected, Color.alphaBlend(c.accent.withValues(alpha: 0.22), c.surfaceSelected)]),
+                      borderRadius: BorderRadius.circular(26),
+                      boxShadow: [BoxShadow(color: c.accent.withValues(alpha: 0.28), blurRadius: 14, offset: const Offset(0, 4))],
+                    ),
+                  ),
+                ),
+              ),
+            ),
+            Row(children: [
+              for (final n in _primaryNav) Expanded(child: _NavButton(icon: n.icon, label: tr(n.label == 'Property listings' ? 'Listings' : n.label), selected: section == n.route, onTap: () => context.go(n.route), bar: true)),
+              Expanded(child: _NavButton(icon: 'more', label: tr('More'), selected: idx < 0, onTap: () => Scaffold.of(context).openDrawer(), bar: true)),
+            ]),
           ]),
         ),
       ),
@@ -585,7 +617,8 @@ class _NavButton extends StatelessWidget {
   final String icon, label;
   final bool selected;
   final VoidCallback onTap;
-  const _NavButton({required this.icon, required this.label, required this.selected, required this.onTap});
+  final bool bar;
+  const _NavButton({required this.icon, required this.label, required this.selected, required this.onTap, this.bar = false});
   @override
   Widget build(BuildContext context) {
     final c = AQColors.of(context);
@@ -598,6 +631,19 @@ class _NavButton extends StatelessWidget {
       child: AQPressable(
         onTap: onTap,
         child: Column(mainAxisAlignment: MainAxisAlignment.center, children: [
+          if (bar)
+            AnimatedScale(
+              scale: selected ? 1.18 : 1,
+              duration: AQMotion.scaled(context, const Duration(milliseconds: 320)),
+              curve: Curves.easeOutBack,
+              child: AnimatedSlide(
+                offset: Offset(0, selected ? -0.08 : 0),
+                duration: AQMotion.scaled(context, const Duration(milliseconds: 320)),
+                curve: Curves.easeOutCubic,
+                child: AQIcon(icon, size: 22, color: selected ? c.accentDeep : c.inkSoft),
+              ),
+            )
+          else
           AnimatedContainer(
             duration: AQMotion.scaled(context, AQMotion.fast),
             width: 52,
@@ -1628,7 +1674,7 @@ String shortDate(BuildContext context, DateTime d) =>
     '${VFmt.shortDate(context, d)} · ${VFmt.time(context, d)}';
 
 /// Used by the queue pages: a simple text filter field.
-class AdminSearchField extends StatelessWidget {
+class AdminSearchField extends StatefulWidget {
   final TextEditingController controller;
   final String hint;
   final ValueChanged<String> onChanged;
@@ -1639,23 +1685,46 @@ class AdminSearchField extends StatelessWidget {
     required this.onChanged,
   });
   @override
-  Widget build(BuildContext context) => Align(
-    alignment: AlignmentDirectional.centerStart,
-    child: ConstrainedBox(
-    constraints: const BoxConstraints(maxWidth: 520),
-    child: AdminField(
-      label: hint,
-      controller: controller,
-      hint: tr('Type to search'),
-      action: TextInputAction.search,
-      prefix: Padding(
-        padding: const EdgeInsetsDirectional.only(start: 12),
-        child: AQIcon('search', size: 16, color: AQColors.of(context).inkSoft),
+  State<AdminSearchField> createState() => _AdminSearchFieldState();
+}
+
+class _AdminSearchFieldState extends State<AdminSearchField> {
+  bool _focus = false;
+  @override
+  Widget build(BuildContext context) {
+    final c = AQColors.of(context);
+    return Align(
+      alignment: AlignmentDirectional.centerStart,
+      child: ConstrainedBox(
+        constraints: const BoxConstraints(maxWidth: 520),
+        // The field lifts and glows while you type.
+        child: Focus(
+          canRequestFocus: false,
+          skipTraversal: true,
+          onFocusChange: (v) => setState(() => _focus = v),
+          child: AnimatedContainer(
+            duration: AQMotion.scaled(context, const Duration(milliseconds: 260)),
+            curve: Curves.easeOutCubic,
+            decoration: BoxDecoration(
+              borderRadius: BorderRadius.circular(16),
+              boxShadow: [BoxShadow(color: c.accent.withValues(alpha: _focus ? 0.30 : 0.08), blurRadius: _focus ? 22 : 10, offset: Offset(0, _focus ? 8 : 3))],
+            ),
+            child: AdminField(
+              label: widget.hint,
+              controller: widget.controller,
+              hint: tr('Type to search'),
+              action: TextInputAction.search,
+              prefix: Padding(
+                padding: const EdgeInsetsDirectional.only(start: 12),
+                child: AQIcon('search', size: 18, color: _focus ? c.accentDeep : c.inkSoft),
+              ),
+              onChanged: widget.onChanged,
+            ),
+          ),
+        ),
       ),
-      onChanged: onChanged,
-    ),
-    ),
-  );
+    );
+  }
 }
 
 /// A labelled row of small filter chips. The label sits beside the chips, so a toolbar of several
