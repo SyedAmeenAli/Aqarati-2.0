@@ -2382,3 +2382,34 @@ class AdminProfileHeader extends StatelessWidget {
     );
   }
 }
+
+/// A numbered step heading for long forms: a gradient number and a title, with a hairline after it.
+class AdminStepHeader extends StatelessWidget {
+  final int number;
+  final String title;
+  const AdminStepHeader({super.key, required this.number, required this.title});
+  @override
+  Widget build(BuildContext context) {
+    final c = AQColors.of(context);
+    return Padding(
+      padding: const EdgeInsets.only(top: 8, bottom: 14),
+      child: Row(children: [
+        Container(
+          width: 30,
+          height: 30,
+          decoration: BoxDecoration(
+            shape: BoxShape.circle,
+            gradient: LinearGradient(begin: Alignment.topLeft, end: Alignment.bottomRight, colors: [c.accent, c.accentDeep]),
+            boxShadow: [BoxShadow(color: c.accent.withValues(alpha: 0.35), blurRadius: 10, offset: const Offset(0, 3))],
+          ),
+          alignment: Alignment.center,
+          child: Text('$number', style: AQTypography.of(context, AQText.labelLarge, color: c.onAccent)),
+        ),
+        const SizedBox(width: 12),
+        Semantics(header: true, child: Text(title, style: AQTypography.of(context, AQText.titleMedium))),
+        const SizedBox(width: 12),
+        Expanded(child: Container(height: 1, color: c.hairline)),
+      ]),
+    );
+  }
+}

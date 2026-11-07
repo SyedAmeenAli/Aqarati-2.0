@@ -673,6 +673,7 @@ class _AdFormScreenState extends ConsumerState<AdFormScreen> {
               text: tr('Reviewer feedback: ${ex.feedback}'),
             ),
           ),
+        AdminStepHeader(number: 1, title: tr('The banner')),
         AdminField(
           label: tr('Sponsor name'),
           controller: _sponsor,
@@ -714,6 +715,8 @@ class _AdFormScreenState extends ConsumerState<AdFormScreen> {
           onChanged: (_) => setState(() {}),
         ),
         const SizedBox(height: AQSpacing.x4),
+        const SizedBox(height: AQSpacing.x2),
+        AdminStepHeader(number: 2, title: tr('Where it shows')),
         DbFieldFrame(
           label: tr('Placement'),
           required: true,
@@ -749,6 +752,8 @@ class _AdFormScreenState extends ConsumerState<AdFormScreen> {
           ),
         ),
         const SizedBox(height: AQSpacing.x4),
+        const SizedBox(height: AQSpacing.x2),
+        AdminStepHeader(number: 3, title: tr('Image and schedule')),
         DbFieldFrame(
           label: tr('Banner image'),
           required: true,
