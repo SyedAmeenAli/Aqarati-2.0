@@ -11,12 +11,12 @@ const Map<String, (String, String)> brokerStrings = {
     'وسيط عقاراتي هو وسيط أنشأته عقاراتي وتحققت منه. يوافق مراجع أول على كل وسيط قبل ظهور الشارة.',
   ),
   'br.not.t': (
-    'Not the same as Aqary e-Broker',
-    'ليس مثل وسيط عقاري الإلكتروني',
+    'Not the same as selling your property',
+    'ليس مثل بيع عقارك',
   ),
   'br.not.b': (
-    'Aqary e-Broker is for owners who want to sell their own property. AQARATI Broker is a programme of brokers you can contact.',
-    'وسيط عقاري الإلكتروني للملّاك الذين يريدون بيع عقارهم. وسيط عقاراتي برنامج وسطاء يمكنك التواصل معهم.',
+    'Selling your property is for owners who want to sell their own property. AQARATI Broker is a programme of brokers you can contact.',
+    'بيع عقارك مخصص للملّاك الذين يريدون بيع عقارهم. وسيط عقاراتي برنامج وسطاء يمكنك التواصل معهم.',
   ),
   'br.how.t': ('What you can do', 'ما يمكنك فعله'),
   'br.how.1': ('Find a broker in your area.', 'ابحث عن وسيط في منطقتك.'),
@@ -30,7 +30,7 @@ const Map<String, (String, String)> brokerStrings = {
   ),
   'br.find': ('Find a broker', 'ابحث عن وسيط'),
   'br.sell': ('Selling your own property?', 'تبيع عقارك بنفسك؟'),
-  'br.sell.cta': ('Sell with Aqary e-Broker', 'البيع عبر وسيط عقاري'),
+  'br.sell.cta': ('Sell your property', 'بيع عقارك'),
   'br.list.title': ('AQARATI Brokers', 'وسطاء عقاراتي'),
   'br.list.empty.t': ('No brokers are listed yet', 'لا يوجد وسطاء بعد'),
   'br.list.empty.b': (

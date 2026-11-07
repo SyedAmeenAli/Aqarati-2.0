@@ -1,6 +1,24 @@
 /// Properties hub, category and type steps, the Home module grid and the entry experiences.
 /// ARABIC IS DRAFT COPY and needs native review.
 const Map<String, (String, String)> hubStrings = {
+  'act.chats': ('Chats', 'المحادثات'),
+  'ct.chats.empty.t': ('No chats yet', 'لا محادثات بعد'),
+  'ct.chats.empty.b': ('Start a chat from a property, a professional or a business profile.', 'ابدأ محادثة من عقار أو مختص أو ملف نشاط تجاري.'),
+  // Map results sheet
+  'map.sheet.open': ('Show results', 'عرض النتائج'),
+  'map.sheet.close': ('Hide results', 'إخفاء النتائج'),
+  // Contact actions (call, WhatsApp, in-app chat)
+  'ct.call': ('Call', 'اتصال'),
+  'ct.whatsapp': ('WhatsApp', 'واتساب'),
+  'ct.chat': ('Chat', 'محادثة'),
+  'ct.sample': ('Sample number', 'رقم تجريبي'),
+  'ct.open.fail': ('Could not open this on your device.', 'تعذّر فتح هذا على جهازك.'),
+  'ct.chat.title': ('Chat with {n}', 'محادثة مع {n}'),
+  'ct.chat.demo': ('Demo chat: your messages stay on this screen and are not sent.', 'محادثة تجريبية: رسائلك تبقى على هذه الشاشة ولا تُرسل.'),
+  'ct.chat.hello': ('Hello! How can I help you?', 'مرحبًا! كيف يمكنني مساعدتك؟'),
+  'ct.chat.helloAbout': ('Hello! How can I help you with {s}?', 'مرحبًا! كيف يمكنني مساعدتك بخصوص {s}؟'),
+  'ct.chat.hint': ('Write a message', 'اكتب رسالة'),
+  'ct.chat.send': ('Send message', 'إرسال الرسالة'),
   // Unified search
   'flt.apply': ('Apply filters', 'تطبيق التصفية'),
   // Home (premium pass)
@@ -66,13 +84,13 @@ const Map<String, (String, String)> hubStrings = {
   'hub.rent': ('Rent', 'إيجار'),
   'hub.rent.s': ('Find a property to rent.', 'ابحث عن عقار للإيجار.'),
   'hub.sell.eyebrow': ('FOR PROPERTY OWNERS', 'لملّاك العقارات'),
-  'hub.sell.t': ('Sell your property with Aqary e-Broker', 'بِع عقارك عبر وسيط عقاري'),
+  'hub.sell.t': ('Sell your property', 'بيع عقارك'),
   'hub.sell.b': ('Submit your property and let the Aqary team help you take the next step.', 'قدّم عقارك ودع فريق عقاري يساعدك على الخطوة التالية.'),
   'hub.sell.cta': ('Start selling', 'ابدأ البيع'),
-  'hub.sell': ('Sell with Aqary e-Broker', 'بيع عبر وسيط عقاري'),
+  'hub.sell': ('Sell your property', 'بيع عقارك'),
   'hub.sell.s': (
-    'Offer your property with Aqary e-Broker.',
-    'اعرض عقارك عبر وسيط عقاري.',
+    'Offer your property for sale.',
+    'اعرض عقارك للبيع.',
   ),
   'hub.fav': ('My Favorites', 'مفضلتي'),
   'hub.fav.s': ('Properties you saved.', 'العقارات التي حفظتها.'),
@@ -186,7 +204,7 @@ const Map<String, (String, String)> hubStrings = {
   'hp.buy.s': ('Find your next home or investment.', 'اعثر على منزلك أو استثمارك القادم.'),
   'hp.rent': ('Rent a property', 'استئجار عقار'),
   'hp.rent.s': ('Discover places to rent.', 'اكتشف أماكن للإيجار.'),
-  'hp.sell': ('Sell with Aqary e-Broker', 'البيع عبر وسيط عقاري'),
+  'hp.sell': ('Sell your property', 'بيع عقارك'),
   'hp.sell.s': ('Start your property submission.', 'ابدأ تقديم عقارك.'),
   'hp.fav': ('My Favorites', 'مفضلتي'),
   'hp.fav.s': ('Return to saved properties.', 'عد إلى العقارات المحفوظة.'),
@@ -234,7 +252,7 @@ const Map<String, (String, String)> hubStrings = {
   'int.rent': ('Rent a Property', 'استئجار عقار'),
   'int.rent.s': ('Places to rent.', 'أماكن للإيجار.'),
   'int.sell': ('Sell My Property', 'بيع عقاري'),
-  'int.sell.s': ('With Aqary e-Broker.', 'عبر وسيط عقاري.'),
+  'int.sell.s': ('Offer it for sale.', 'اعرضه للبيع.'),
   'int.development': ('Property Developments', 'المشاريع العقارية'),
   'int.development.s': ('Explore new projects.', 'اكتشف المشاريع الجديدة.'),
   'int.architecture': ('Find an Architect', 'ابحث عن مهندس معماري'),

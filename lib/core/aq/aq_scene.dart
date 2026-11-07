@@ -376,7 +376,9 @@ Future<T?> showAQSheet<T>(
       final bottom = MediaQuery.of(sheetContext).viewInsets.bottom;
       return Padding(
         padding: EdgeInsets.only(bottom: bottom),
-        child: DecoratedBox(
+        child: ConstrainedBox(
+          constraints: BoxConstraints(maxHeight: (MediaQuery.sizeOf(sheetContext).height - bottom) * 0.92),
+          child: DecoratedBox(
           decoration: BoxDecoration(
             color: c.surfaceRaised,
             borderRadius: const BorderRadius.vertical(
@@ -399,10 +401,12 @@ Future<T?> showAQSheet<T>(
                   ),
                 ),
                 const SizedBox(height: AQSpacing.x2),
-                builder(sheetContext),
+                // Tall content scrolls inside the sheet instead of running off the screen on a phone.
+                Flexible(child: SingleChildScrollView(child: builder(sheetContext))),
                 const SizedBox(height: AQSpacing.x3),
               ],
             ),
+          ),
           ),
         ),
       );

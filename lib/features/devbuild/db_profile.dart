@@ -20,6 +20,7 @@ import '../workspace/aq_home.dart' show aqImg;
 import 'db_models.dart';
 import 'db_review_widgets.dart';
 import 'db_repository.dart';
+import '../contact/contact_actions.dart';
 import 'db_widgets.dart';
 
 /// Not-found / unavailable frame shared by the detail screens.
@@ -225,6 +226,9 @@ Future<void> showDbContactSheet(
             if (pro.phone != null) row(ContactChannel.call, pro.phone!),
             if (pro.whatsapp != null)
               row(ContactChannel.whatsapp, pro.whatsapp!),
+            // Call, WhatsApp and chat as one-tap actions too (the rows above copy the number).
+            AQContactButtons(name: pro.name, phone: pro.phone ?? pro.whatsapp),
+            const SizedBox(height: AQSpacing.x3),
             AQSecondaryButton(
               label: f.t('common.close'),
               trailingChevron: false,

@@ -286,8 +286,8 @@ void main() {
         app(me(SignupPurpose.realEstateAgent, GrantState.approved), visited: visited, extra: [homeWorkspaceProvider.overrideWith((ref) => HomeWorkspace.buyer)]),
       );
       expect(find.byType(AQHomeScreen), findsOneWidget);
-      expect(find.text('Work'), findsOneWidget, reason: 'the switcher stays so the agent can return');
-      await tapText(t, 'Work');
+      expect(find.text('Listing'), findsOneWidget, reason: 'the switcher stays so the agent can return');
+      await tapText(t, 'Listing');
       expect(visited, contains('/agent'));
     });
 
@@ -296,7 +296,7 @@ void main() {
         await pumpHome(t, app(me(SignupPurpose.realEstateAgent, g)));
         expect(find.byType(AQHomeScreen), findsOneWidget, reason: g.name);
         expect(find.text('Work, in focus.'), findsNothing);
-        expect(find.text('Work'), findsNothing);
+        expect(find.text('Listing'), findsNothing);
         expect(find.text('My listings'), findsNothing);
         expect(find.text('Your application is not approved yet'), findsOneWidget, reason: g.name);
         await t.pumpWidget(const SizedBox());
@@ -312,7 +312,7 @@ void main() {
       await t.pumpWidget(const SizedBox());
       await pumpHome(t, app(me(SignupPurpose.userToShop, null)));
       expect(find.byType(AQHomeScreen), findsOneWidget);
-      expect(find.text('Work'), findsNothing);
+      expect(find.text('Listing'), findsNothing);
       expect(find.text('Add project'), findsNothing);
     });
 
@@ -394,7 +394,7 @@ void main() {
         t,
         app(me(SignupPurpose.realEstateAgent, GrantState.approved), visited: visited, extra: [homeWorkspaceProvider.overrideWith((ref) => HomeWorkspace.buyer)]),
       );
-      await t.tap(find.text('Work').first);
+      await t.tap(find.text('Listing').first);
       await t.pump(const Duration(milliseconds: 50));
       expect(t.takeException(), isNull);
       await settle(t);

@@ -12,6 +12,7 @@ import '../../data/models/enums.dart' show BusinessCategory;
 import '../../data/repositories/providers.dart';
 import '../viewing/widgets/viewing_format.dart';
 import '../viewing/widgets/viewing_scaffold.dart';
+import '../contact/contact_actions.dart';
 import '../workspace/aq_cards.dart' show aqListMaxWidth;
 import '../workspace/aq_thumb.dart' show AQThumb;
 import '../workspace/aq_home.dart' show aqImg, aqAllPropertiesProvider, AQResultCard, AQSkeletonBox;
@@ -131,6 +132,8 @@ class _Profile extends ConsumerWidget {
           const SizedBox(height: AQSpacing.x3),
           AQPrimaryButton(label: f.t('mnt.book.cta'), leadingIcon: 'calendar', trailingChevron: false, onPressed: () => context.push('/business/${b.id}/book')),
         ],
+        const SizedBox(height: AQSpacing.x3),
+        AQContactButtons(name: b.name, phone: aqDemoPhoneFor(b.id)),
         _head(context, f.t('bp.about')),
         Text(b.description.isEmpty ? f.t('bp.noDesc') : b.description, style: AQTypography.of(context, AQText.bodyMedium)),
         _head(context, f.t('bp.services')),

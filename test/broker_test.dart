@@ -92,9 +92,9 @@ void main() {
     await t.pumpWidget(app(demo()));
     await settle(t);
     expect(find.text('What the badge means'), findsOneWidget);
-    expect(find.text('Not the same as Aqary e-Broker'), findsOneWidget);
+    expect(find.text('Not the same as selling your property'), findsOneWidget);
     expect(find.text('Find a broker'), findsOneWidget);
-    await t.tap(find.text('Sell with Aqary e-Broker'));
+    await t.tap(find.text('Sell your property'));
     await settle(t);
     expect(find.text('SELL'), findsOneWidget);
   });
