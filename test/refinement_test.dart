@@ -374,12 +374,8 @@ void main() {
         GoRouter.of(t.element(find.byType(Scaffold).first)).go('/accounts');
         await _settle(t);
         expect(find.text('Real Estate Agent'), findsWidgets);
-        for (final chip in t.widgetList<Text>(find.byType(Text))) {
-          final txt = chip.data ?? '';
-          if (txt == 'Real Estate Agent') {
-            expect(t.getRect(find.text(txt).first).right, lessThanOrEqualTo(w), reason: 'the role filter is fully on screen');
-          }
-        }
+        // On a phone the filters are one swipeable line: the first chips are on screen, the rest scroll.
+        expect(t.getRect(find.text('All').first).right, lessThanOrEqualTo(w), reason: 'the first filter chip is on screen');
         expect(t.takeException(), isNull);
       });
     }

@@ -160,6 +160,71 @@ class _Rise extends StatelessWidget {
   }
 }
 
+/// Header of a detail page: a back pill, a monogram, the name and its status, on one glass card.
+class _DetailHeader extends StatelessWidget {
+  final String title, backLabel;
+  final String? subtitle;
+  final List<Widget> actions;
+  final VoidCallback onBack;
+  const _DetailHeader({required this.title, required this.subtitle, required this.actions, required this.onBack, required this.backLabel});
+  @override
+  Widget build(BuildContext context) {
+    final c = AQColors.of(context);
+    return Column(crossAxisAlignment: CrossAxisAlignment.stretch, children: [
+      Align(
+        alignment: AlignmentDirectional.centerStart,
+        child: Semantics(
+          button: true,
+          label: backLabel,
+          excludeSemantics: true,
+          onTap: onBack,
+          child: AQPressable(
+            onTap: onBack,
+            child: Container(
+              constraints: const BoxConstraints(minHeight: 40),
+              padding: const EdgeInsetsDirectional.fromSTEB(10, 0, 16, 0),
+              decoration: BoxDecoration(color: c.surfaceRaised.withValues(alpha: 0.85), borderRadius: BorderRadius.circular(20), border: Border.all(color: c.hairline)),
+              child: Row(mainAxisSize: MainAxisSize.min, children: [
+                AQIcon('chevron-left', size: 16, color: c.accentDeep, directional: true),
+                const SizedBox(width: 4),
+                Flexible(child: Text(backLabel, maxLines: 1, overflow: TextOverflow.ellipsis, style: AQTypography.of(context, AQText.labelMedium, color: c.accentDeep))),
+              ]),
+            ),
+          ),
+        ),
+      ),
+      const SizedBox(height: 12),
+      AQGlass(
+        radius: 28,
+        blur: 14,
+        fill: 0.68,
+        padding: const EdgeInsets.all(18),
+        child: Row(crossAxisAlignment: CrossAxisAlignment.start, children: [
+          Container(
+            width: 56,
+            height: 56,
+            decoration: BoxDecoration(
+              borderRadius: BorderRadius.circular(18),
+              gradient: LinearGradient(begin: Alignment.topLeft, end: Alignment.bottomRight, colors: [c.accent, c.accentDeep]),
+              boxShadow: [BoxShadow(color: c.accent.withValues(alpha: 0.4), blurRadius: 16, offset: const Offset(0, 6))],
+            ),
+            alignment: Alignment.center,
+            child: AQIcon('account', size: 28, color: c.onAccent),
+          ),
+          const SizedBox(width: 14),
+          Expanded(
+            child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+              Semantics(header: true, child: Text(title, style: AQTypography.of(context, AQText.headlineSmall))),
+              if (subtitle != null) Padding(padding: const EdgeInsets.only(top: 2), child: Text(subtitle!, style: AQTypography.of(context, AQText.bodySmall, soft: true))),
+              if (actions.isNotEmpty) Padding(padding: const EdgeInsets.only(top: 10), child: Wrap(spacing: 8, runSpacing: 8, children: actions)),
+            ]),
+          ),
+        ]),
+      ),
+    ]);
+  }
+}
+
 class _NavItem {
   final String label, icon, route;
   const _NavItem(this.label, this.icon, this.route);
@@ -217,8 +282,9 @@ class _Sidebar extends ConsumerWidget {
     return Container(
       width: inDrawer ? null : AdminSize.sidebar,
       decoration: BoxDecoration(
-        color: c.surfaceRaised,
+        gradient: LinearGradient(begin: Alignment.topCenter, end: Alignment.bottomCenter, colors: [c.surfaceRaised, Color.alphaBlend(c.accent.withValues(alpha: 0.10), c.surfaceRaised)]),
         border: inDrawer ? null : BorderDirectional(end: BorderSide(color: c.hairline)),
+        boxShadow: inDrawer ? null : [BoxShadow(color: c.accentDeep.withValues(alpha: 0.08), blurRadius: 24)],
       ),
       child: SafeArea(
         child: Column(
@@ -242,7 +308,7 @@ class _Sidebar extends ConsumerWidget {
                 ],
               ),
             ),
-            if (inDrawer)
+            if (true)
               Padding(
                 padding: const EdgeInsetsDirectional.fromSTEB(16, 0, 16, 10),
                 child: _ProfileCard(name: s?.name ?? '', role: s == null ? '' : roleLabel(s.role)),
@@ -286,16 +352,7 @@ class _Sidebar extends ConsumerWidget {
               padding: const EdgeInsetsDirectional.fromSTEB(22, 8, 12, 14),
               child: Row(
                 children: [
-                  Expanded(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        Text(s?.name ?? '', maxLines: 1, overflow: TextOverflow.ellipsis, style: AQTypography.of(context, AQText.titleSmall)),
-                        Text(s == null ? '' : roleLabel(s.role), maxLines: 1, overflow: TextOverflow.ellipsis, style: AQTypography.of(context, AQText.bodySmall, soft: true)),
-                      ],
-                    ),
-                  ),
+                  const Spacer(),
                   AdminTextButton(
                     label: tr('Sign out'),
                     color: c.accentDeep,
@@ -412,7 +469,12 @@ class AdminFrame extends ConsumerWidget {
     final wide = MediaQuery.sizeOf(context).width >= 960;
     final side = wide ? 32.0 : AQSpacing.gutter;
 
-    final header = Column(
+    final detail = onBack != null
+        ? _DetailHeader(title: title, subtitle: subtitle, actions: actions, onBack: onBack!, backLabel: backLabel ?? 'Back')
+        : null;
+    final header = detail != null
+        ? Padding(padding: const EdgeInsets.only(bottom: 20), child: detail)
+        : Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
         if (onBack != null)
@@ -746,33 +808,35 @@ class _SideItemState extends State<_SideItem> {
             onTap: _go,
             pressedScale: 0.99,
             child: AnimatedContainer(
-              duration: AQMotion.scaled(context, AQMotion.fast),
-              height: 36,
-              padding: const EdgeInsets.symmetric(horizontal: 10),
+              duration: AQMotion.scaled(context, const Duration(milliseconds: 260)),
+              curve: Curves.easeOutCubic,
+              height: 46,
+              padding: const EdgeInsetsDirectional.fromSTEB(8, 0, 12, 0),
               decoration: BoxDecoration(
-                color: selected ? c.surfaceSelected : (_hover ? c.ink.withValues(alpha: 0.04) : Colors.transparent),
-                borderRadius: BorderRadius.circular(AdminSize.control),
+                gradient: selected ? LinearGradient(begin: Alignment.topLeft, end: Alignment.bottomRight, colors: [c.accent, c.accentDeep]) : null,
+                color: selected ? null : (_hover ? c.accent.withValues(alpha: 0.08) : Colors.transparent),
+                borderRadius: BorderRadius.circular(16),
+                boxShadow: selected ? [BoxShadow(color: c.accent.withValues(alpha: 0.35), blurRadius: 14, offset: const Offset(0, 5))] : const [],
               ),
               child: Row(
                 children: [
                   AnimatedContainer(
-                    duration: AQMotion.scaled(context, AQMotion.fast),
-                    width: 3,
-                    height: 16,
-                    margin: const EdgeInsetsDirectional.only(end: 8),
+                    duration: AQMotion.scaled(context, const Duration(milliseconds: 260)),
+                    width: 32,
+                    height: 32,
                     decoration: BoxDecoration(
-                      color: selected ? c.accent : Colors.transparent,
-                      borderRadius: BorderRadius.circular(2),
+                      color: selected ? Colors.white.withValues(alpha: 0.2) : c.accent.withValues(alpha: 0.09),
+                      borderRadius: BorderRadius.circular(11),
                     ),
+                    child: Center(child: AQIcon(widget.item.icon, size: 18, color: selected ? Colors.white : c.accentDeep)),
                   ),
-                  AQIcon(widget.item.icon, size: 18, color: selected ? c.accentDeep : c.inkSoft),
-                  const SizedBox(width: 10),
+                  const SizedBox(width: 12),
                   Expanded(
                     child: Text(
                       widget.item.label,
                       maxLines: 1,
                       overflow: TextOverflow.ellipsis,
-                      style: AQTypography.of(context, AQText.titleSmall, color: selected ? c.accentDeep : c.ink).copyWith(
+                      style: AQTypography.of(context, AQText.titleSmall, color: selected ? Colors.white : c.ink).copyWith(
                         fontWeight: selected ? FontWeight.w700 : FontWeight.w500,
                       ),
                     ),
@@ -1832,7 +1896,22 @@ Widget adminFilterRow(
 /// Filter chips always wrap onto as many lines as they need: on a phone no label is ever cut off.
 Widget _chipLine(BuildContext context, List<(String, bool, VoidCallback)> pills) {
   final chips = [for (final p in pills) AdminChip(label: p.$1, selected: p.$2, onTap: p.$3)];
-  return Wrap(spacing: 6, runSpacing: 6, children: chips);
+  if (MediaQuery.sizeOf(context).width >= 720) return Wrap(spacing: 6, runSpacing: 6, children: chips);
+  // On a phone every filter is one swipeable line, so the list is never pushed off the screen.
+  return SizedBox(
+    height: 40,
+    child: ShaderMask(
+      blendMode: BlendMode.dstIn,
+      shaderCallback: (r) => const LinearGradient(colors: [Colors.black, Colors.black, Colors.transparent], stops: [0, 0.9, 1]).createShader(r),
+      child: ListView.separated(
+        scrollDirection: Axis.horizontal,
+        padding: const EdgeInsetsDirectional.only(end: 28),
+        itemCount: chips.length,
+        separatorBuilder: (_, _) => const SizedBox(width: 6),
+        itemBuilder: (_, i) => Center(child: chips[i]),
+      ),
+    ),
+  );
 }
 
 /// A wrapped row of choice chips, for forms.
@@ -2048,7 +2127,6 @@ class _ProfileCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final c = AQColors.of(context);
-    final initials = name.trim().isEmpty ? 'A' : name.trim().split(RegExp(r'\s+')).take(2).map((w) => w[0].toUpperCase()).join();
     return _Rise(
       index: 1,
       child: AQGlass(
@@ -2066,7 +2144,7 @@ class _ProfileCard extends StatelessWidget {
               boxShadow: [BoxShadow(color: c.accent.withValues(alpha: 0.4), blurRadius: 12, offset: const Offset(0, 4))],
             ),
             alignment: Alignment.center,
-            child: Text(initials, style: AQTypography.of(context, AQText.titleSmall, color: c.onAccent)),
+            child: AQIcon('account', size: 22, color: c.onAccent),
           ),
           const SizedBox(width: 12),
           Expanded(
