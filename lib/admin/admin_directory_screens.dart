@@ -430,7 +430,7 @@ class _AccountsState extends ConsumerState<AdminAccountsScreen> {
         else
           AdminTable(
             headers: const ['Name', 'Role', 'Status', 'City', 'Joined'],
-            flex: const [4, 3, 2, 2, 2],
+            flex: const [4, 3, 3, 2, 2],
             rows: [
               for (final a in shown)
                 AdminTableRow(
