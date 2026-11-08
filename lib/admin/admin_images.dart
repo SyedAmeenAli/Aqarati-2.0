@@ -3,6 +3,7 @@ import 'package:flutter/material.dart' hide Text;
 import '../core/aq/aq_primitives.dart';
 import '../core/aq/aq_tokens.dart';
 import '../features/workspace/aq_home.dart' show aqImg;
+import 'admin_directory.dart' show AcctRole;
 import 'admin_modules.dart' show ModKey;
 
 /// Pictures for the Admin Console's fictional records, so a listing, project, company or portfolio
@@ -43,6 +44,15 @@ const _modImages = <String, String>{
 
 /// The picture of an Admin module record, or null for a record that has none (people, announcements).
 String? adminModImage(ModKey k, String id) => _modImages['${k.name}:$id'];
+
+/// A cover picture for a business account, chosen by its kind of work. People (shoppers, agents) have none.
+String? adminRoleCover(AcctRole role) => switch (role) {
+      AcctRole.development => 'assets/properties/p2/02_Apartment_buildings_in_Muscat.jpg',
+      AcctRole.construction => 'assets/businesses/b2/05_Construction_site_with_tower_crane.jpg',
+      AcctRole.architecture => 'assets/businesses/b1/05_Contemporary_architectural_facad.jpg',
+      AcctRole.interior => 'assets/businesses/b3/06_Styled_bedroom_interior_photography.jpg',
+      _ => null,
+    };
 
 /// A rounded square picture, or an icon when [asset] is null. Admin shows no initials: they would be
 /// untranslated Latin letters on an Arabic screen.
