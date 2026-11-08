@@ -6,6 +6,7 @@ import '../core/aq/aq_primitives.dart';
 import '../core/aq/aq_tokens.dart';
 import '../core/aq/aq_typography.dart';
 import '../features/viewing/domain/viewing_presentation.dart' show AQTone;
+import '../features/workspace/aq_home.dart' show aqImg;
 import '../features/viewing/widgets/viewing_format.dart';
 import '../features/ads/ad_models.dart';
 import '../features/ads/sponsored_banner.dart' show SponsoredBannerView;
@@ -485,6 +486,14 @@ class AdminAccountDetailScreen extends ConsumerWidget {
       backLabel: tr('Back to accounts'),
       actions: [adminStatusPill(acctStatusName(a.status), _acctLook(a.status))],
       children: [
+        if (adminRoleCover(a.role) case final cover?)
+          Padding(
+            padding: const EdgeInsets.only(bottom: AQSpacing.x3),
+            child: ClipRRect(
+              borderRadius: BorderRadius.circular(AQRadius.large),
+              child: SizedBox(height: 160, width: double.infinity, child: ExcludeSemantics(child: aqImg(cover, cacheWidth: 900))),
+            ),
+          ),
         AdminKeyValues([
           ('Role', roleName(a.role)),
           ('Status', acctStatusName(a.status)),
